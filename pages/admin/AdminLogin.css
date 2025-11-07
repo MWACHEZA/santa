@@ -1,0 +1,367 @@
+.admin-login {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.login-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  padding: 3rem;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-header {
+  margin-bottom: 2rem;
+}
+
+.church-logo {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem auto;
+  box-shadow: 0 8px 25px rgba(45, 80, 22, 0.3);
+}
+
+.cross {
+  color: white;
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.login-header h1 {
+  color: var(--primary-green);
+  margin: 0 0 0.5rem 0;
+  font-size: 2rem;
+}
+
+.login-header p {
+  color: var(--gray);
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.quick-login-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin: 0 0 2rem 0;
+  padding: 0.5rem 0;
+}
+
+.quick-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.9rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quick-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.quick-btn:hover::before {
+  opacity: 1;
+}
+
+.quick-btn svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  transition: transform 0.2s ease;
+}
+
+.quick-btn:hover svg {
+  transform: scale(1.15);
+}
+
+.quick-btn.admin {
+  background: linear-gradient(145deg, #4a6f28, #5a8a2b);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.quick-btn.secretary {
+  background: linear-gradient(145deg, #2c5282, #4299e1);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.quick-btn.priest {
+  background: linear-gradient(145deg, #6b46c1, #9f7aea);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.quick-btn.reporter {
+  background: linear-gradient(145deg, #d69e2e, #f6ad55);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.quick-btn.parishioner {
+  background: linear-gradient(145deg, #38a169, #48bb78);
+  border-color: rgba(255, 255, 255, 0.15);
+  grid-column: 2; /* Center the parishioner button in the grid */
+}
+
+.quick-btn:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+  z-index: 1;
+}
+
+.quick-btn:active {
+  transform: translateY(1px) scale(0.99);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-form {
+  margin-bottom: 2rem;
+}
+
+.form-group {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--primary-green);
+  font-weight: 600;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: 1rem;
+  color: var(--gray);
+  z-index: 1;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 1.25rem 1rem 1.25rem 3.5rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  line-height: 1.5;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(45, 80, 22, 0.1);
+}
+
+.input-wrapper input:disabled {
+  background: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--gray);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: color 0.3s ease;
+}
+
+.password-toggle:hover {
+  color: var(--primary-green);
+}
+
+.password-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.error-message {
+  background: #fee;
+  color: var(--red);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid #fcc;
+  font-size: 0.9rem;
+}
+
+.login-btn {
+  width: 100%;
+  background: var(--primary-green);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: var(--primary-green-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(45, 80, 22, 0.3);
+}
+
+.login-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.login-btn.loading {
+  background: var(--gray);
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.login-info {
+  background: var(--light-gray);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--gold);
+}
+
+.login-info h3 {
+  color: var(--primary-green);
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.login-info p {
+  margin: 0.5rem 0;
+  color: var(--dark-gray);
+  font-family: 'Courier New', monospace;
+}
+
+.login-info small {
+  color: var(--gray);
+  font-style: italic;
+}
+
+.login-footer {
+  border-top: 1px solid #e9ecef;
+  padding-top: 1.5rem;
+  color: var(--gray);
+}
+
+.login-footer p {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .quick-login-buttons {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .quick-btn.parishioner {
+    grid-column: span 2; /* Make parishioner button full width on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-login-buttons {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .quick-btn.parishioner {
+    grid-column: 1; /* Reset grid column for smallest screens */
+  }
+  
+  .quick-btn {
+    padding: 1rem 0.75rem;
+    font-size: 1rem;
+  }
+  .admin-login {
+    padding: 1rem;
+  }
+  
+  .login-container {
+    padding: 2rem 1.5rem;
+  }
+  
+  .church-logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .cross {
+    font-size: 28px;
+  }
+  
+  .login-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .input-wrapper input {
+    padding: 1.125rem 1rem 1.125rem 3rem;
+  }
+  
+  .input-icon {
+    left: 1rem;
+  }
+  
+  .password-toggle {
+    right: 0.75rem;
+  }
+}

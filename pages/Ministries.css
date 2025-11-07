@@ -1,0 +1,127 @@
+.ministries {
+  min-height: 100vh;
+}
+
+.ministry-section {
+  margin-bottom: 4rem;
+}
+
+.section-title {
+  color: var(--primary-green);
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 3px;
+  background: var(--gold);
+  margin: 1rem auto;
+  border-radius: 2px;
+}
+
+.ministry-card {
+  border-left: 4px solid var(--primary-green);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.ministry-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.ministry-card.youth {
+  border-left-color: #45b7d1;
+}
+
+.ministry-card.youth .ministry-icon {
+  color: #45b7d1;
+}
+
+.ministry-card.womens {
+  border-left-color: #f093fb;
+}
+
+.ministry-card.womens .ministry-icon {
+  color: #f093fb;
+}
+
+.ministry-card.children {
+  border-left-color: #f39c12;
+}
+
+.ministry-card.children .ministry-icon {
+  color: #f39c12;
+}
+
+.ministry-icon {
+  width: 48px;
+  height: 48px;
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+  padding: 12px;
+  background: var(--light-gray);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ministry-card h3 {
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.ministry-card p {
+  color: var(--gray);
+  line-height: 1.6;
+  margin-bottom: 0.75rem;
+}
+
+.ministry-card p:last-child {
+  margin-bottom: 0;
+}
+
+.ministry-card strong {
+  color: var(--primary-green);
+  font-weight: 600;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ministry-section {
+    margin-bottom: 3rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .ministry-card h3 {
+    font-size: 1.1rem;
+  }
+  
+  .ministry-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-title {
+    font-size: 1.25rem;
+  }
+  
+  .ministry-card {
+    padding: 1rem;
+  }
+}

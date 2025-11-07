@@ -1,0 +1,954 @@
+.header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fffe 100%);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid rgba(45, 80, 22, 0.1);
+}
+
+.urgent-banner {
+  color: white;
+  padding: 8px 0;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+
+.urgent-banner.urgent {
+  background: linear-gradient(135deg, var(--red), #e74c3c);
+}
+
+.urgent-banner.info {
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light));
+  animation: none;
+}
+
+.urgent-banner.event {
+  background: linear-gradient(135deg, var(--gold), #f39c12);
+  animation: none;
+}
+
+.urgent-text {
+  margin: 0;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.header-main {
+  padding: 0.75rem 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.logo-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(45, 80, 22, 0.05);
+  border-radius: 50px;
+  transition: all 0.3s ease;
+}
+
+.logo-section:hover {
+  background: rgba(45, 80, 22, 0.1);
+  transform: translateY(-1px);
+}
+
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-green);
+  box-shadow: 0 4px 15px rgba(45, 80, 22, 0.25);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  background: white;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.cross {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.church-info h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-green) 0%, #4a7c2a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+}
+
+.church-info p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* Responsive Logo Styles */
+@media (max-width: 768px) {
+  .logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .church-info h1 {
+    font-size: 1.5rem;
+  }
+  
+  .church-info p {
+    font-size: 0.8rem;
+  }
+  
+  .logo-section {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .church-info h1 {
+    font-size: 1.3rem;
+  }
+  
+  .church-info p {
+    font-size: 0.75rem;
+  }
+  
+  .logo-section {
+    gap: 0.5rem;
+  }
+  
+  .user-actions {
+    gap: 0.5rem;
+  }
+  
+  .lang-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  
+  .user-info {
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .user-details {
+    font-size: 0.8rem;
+  }
+  
+  .user-type {
+    display: none; /* Hide user type on very small screens */
+  }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .logo {
+    min-width: 50px;
+    min-height: 50px;
+  }
+  
+  .logo:active {
+    transform: scale(0.95);
+  }
+}
+
+/* User Actions Container */
+.user-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(45, 80, 22, 0.1);
+}
+
+.lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(45, 80, 22, 0.1);
+  border: 1px solid rgba(45, 80, 22, 0.2);
+  border-radius: 20px;
+  padding: 0.5rem 0.75rem;
+  color: var(--primary-green);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.85rem;
+}
+
+/* User Info Styles */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, rgba(45, 80, 22, 0.1) 0%, rgba(45, 80, 22, 0.05) 100%);
+  border: 1px solid rgba(45, 80, 22, 0.2);
+  border-radius: 25px;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.user-details {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary-green);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.username {
+  font-weight: 600;
+}
+
+.user-type {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  font-style: italic;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--red);
+  border: 2px solid var(--red);
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.logout-btn:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.logout-text {
+  font-size: 14px;
+}
+
+/* Mobile User Section */
+.mobile-user-section {
+  display: none;
+  border-top: 2px solid var(--light-gray);
+  padding-top: 1rem;
+  margin-top: 1rem;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--dark-gray);
+  font-weight: 500;
+}
+
+.mobile-username {
+  font-size: 14px;
+}
+
+.mobile-logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--red);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.mobile-logout-btn:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.lang-btn:hover {
+  background: var(--primary-green);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--primary-green);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: var(--light-gray);
+}
+
+/* Side Navigation Styles */
+.nav {
+  display: none; /* Hide horizontal nav, will be replaced by side nav */
+}
+
+.side-nav-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(45, 80, 22, 0.1);
+  border: 1px solid rgba(45, 80, 22, 0.2);
+  border-radius: 25px;
+  padding: 0.5rem 1rem;
+  color: var(--primary-green);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.side-nav-toggle:hover {
+  background: rgba(45, 80, 22, 0.15);
+  transform: translateY(-1px);
+}
+
+.side-nav-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.side-nav-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.side-nav {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 320px;
+  height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fffe 100%);
+  box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+.side-nav.open {
+  left: 0;
+}
+
+.side-nav-header {
+  padding: 2rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(45, 80, 22, 0.1);
+  background: rgba(45, 80, 22, 0.03);
+}
+
+.side-nav-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--primary-green);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.side-nav-close:hover {
+  background: rgba(45, 80, 22, 0.1);
+  transform: rotate(90deg);
+}
+
+.side-nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.side-nav-logo .logo {
+  width: 60px;
+  height: 60px;
+}
+
+.side-nav-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--primary-green) 0%, #4a7c2a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+}
+
+.side-nav-subtitle {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  opacity: 0.8;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 1.5rem 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #374151;
+  font-weight: 600;
+  padding: 1rem 1.5rem;
+  text-decoration: none;
+  border-radius: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  font-size: 1rem;
+  background: transparent;
+  border: none;
+  border-left: 4px solid transparent;
+  margin: 0.25rem 0;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(135deg, var(--primary-green) 0%, #4a7c2a 100%);
+  transition: width 0.3s ease;
+}
+
+.nav-link-icon {
+  font-size: 1.2rem;
+  min-width: 20px;
+  z-index: 1;
+}
+
+.nav-link:hover {
+  color: var(--primary-green);
+  background: rgba(45, 80, 22, 0.05);
+  border-left-color: var(--primary-green);
+  padding-left: 2rem;
+}
+
+.nav-link:hover::before {
+  width: 100%;
+  opacity: 0.1;
+}
+
+.nav-link.active {
+  color: var(--primary-green);
+  background: rgba(45, 80, 22, 0.1);
+  border-left-color: var(--primary-green);
+  font-weight: 700;
+}
+
+.nav-link.active::before {
+  width: 100%;
+  opacity: 0.1;
+}
+
+.nav-link-giving {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  font-weight: 700;
+  border-left-color: #f59e0b;
+  border-radius: 25px;
+  margin: 1rem 1.5rem;
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.3);
+}
+
+.nav-link-giving:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  transform: translateX(5px);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  padding-left: 1.5rem;
+}
+
+/* Side Navigation Sections */
+.side-nav-section {
+  margin: 2rem 0;
+}
+
+.side-nav-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #9ca3af;
+  padding: 0 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* User Profile in Side Nav */
+.side-nav-user {
+  padding: 1.5rem;
+  border-top: 1px solid rgba(45, 80, 22, 0.1);
+  background: rgba(45, 80, 22, 0.03);
+  margin-top: auto;
+}
+
+.side-nav-user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.side-nav-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+}
+
+.side-nav-user-details h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--primary-green);
+  font-weight: 700;
+}
+
+.side-nav-user-details p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  opacity: 0.8;
+}
+
+/* Dropdown Menu Styles */
+.dropdown-container {
+  position: relative;
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.dropdown-icon {
+  transition: transform 0.3s ease;
+}
+
+.dropdown-icon.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  display: none;
+}
+
+.dropdown-menu.open {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--dark-gray);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: var(--light-gray);
+  color: var(--primary-green);
+  padding-left: 1.25rem;
+}
+
+/* Mobile and Responsive Styles */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0 1rem;
+  }
+
+  .logo-section {
+    gap: 0.75rem;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .logo-section .logo {
+    width: 40px;
+    height: 40px;
+  }
+
+  .church-info h1 {
+    font-size: 1.2rem;
+  }
+
+  .church-info p {
+    font-size: 0.75rem;
+  }
+
+  .user-actions {
+    gap: 0.75rem;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .lang-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .user-info {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .user-details {
+    font-size: 0.8rem;
+  }
+
+  .side-nav-toggle {
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* Side Navigation Mobile Adjustments */
+  .side-nav {
+    width: 280px;
+    left: -280px;
+  }
+
+  .side-nav-header {
+    padding: 1.5rem 1rem 0.75rem;
+  }
+
+  .side-nav-logo .logo {
+    width: 50px;
+    height: 50px;
+  }
+
+  .side-nav-title {
+    font-size: 1.1rem;
+  }
+
+  .side-nav-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .nav-link {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .nav-link-icon {
+    font-size: 1.1rem;
+  }
+
+  .side-nav-section-title {
+    font-size: 0.75rem;
+    padding: 0 1rem;
+  }
+
+  .side-nav-user {
+    padding: 1rem;
+  }
+
+  .side-nav-user-avatar {
+    width: 35px;
+    height: 35px;
+  }
+}
+
+/* Small Mobile Devices (iPhone SE, small Android phones) */
+@media (max-width: 480px) {
+  .header-main {
+    padding: 0.5rem 0;
+  }
+
+  .header-content {
+    padding: 0 0.75rem;
+  }
+
+  .logo-section {
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .logo-section .logo {
+    width: 35px;
+    height: 35px;
+    border-width: 2px;
+  }
+
+  .church-info h1 {
+    font-size: 1rem;
+    letter-spacing: -0.25px;
+  }
+
+  .church-info p {
+    font-size: 0.7rem;
+  }
+
+  .user-actions {
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .lang-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+  }
+
+  .user-info {
+    padding: 0.25rem 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .user-details {
+    font-size: 0.75rem;
+    gap: 0.25rem;
+  }
+
+  .username {
+    display: none; /* Hide username on very small screens */
+  }
+
+  .side-nav-toggle {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
+  }
+
+  /* Side Navigation for Small Mobile */
+  .side-nav {
+    width: 260px;
+    left: -260px;
+  }
+
+  .side-nav-header {
+    padding: 1rem 0.75rem 0.5rem;
+  }
+
+  .side-nav-close {
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.25rem;
+  }
+
+  .side-nav-logo {
+    gap: 0.75rem;
+  }
+
+  .side-nav-logo .logo {
+    width: 45px;
+    height: 45px;
+  }
+
+  .side-nav-title {
+    font-size: 1rem;
+  }
+
+  .side-nav-subtitle {
+    font-size: 0.75rem;
+  }
+
+  .side-nav-section {
+    margin: 1.5rem 0;
+  }
+
+  .side-nav-section-title {
+    font-size: 0.7rem;
+    padding: 0 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .nav-link {
+    padding: 0.6rem 0.75rem;
+    font-size: 0.85rem;
+    gap: 0.75rem;
+  }
+
+  .nav-link-icon {
+    font-size: 1rem;
+    min-width: 18px;
+  }
+
+  .nav-link-giving {
+    margin: 0.75rem 1rem;
+    padding: 0.6rem 0.75rem;
+  }
+
+  .side-nav-user {
+    padding: 0.75rem;
+  }
+
+  .side-nav-user-info {
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .side-nav-user-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .side-nav-user-details h4 {
+    font-size: 0.9rem;
+  }
+
+  .side-nav-user-details p {
+    font-size: 0.75rem;
+  }
+}
+
+/* Extra Small Devices (very small phones) */
+@media (max-width: 360px) {
+  .side-nav {
+    width: 240px;
+    left: -240px;
+  }
+
+  .header-content {
+    padding: 0 0.5rem;
+  }
+
+  .logo-section {
+    padding: 0.25rem;
+  }
+
+  .user-actions {
+    padding: 0.25rem;
+  }
+
+  .lang-btn span {
+    display: none; /* Hide language text on very small screens */
+  }
+
+  .user-type {
+    display: none; /* Hide user role on very small screens */
+  }
+
+  .side-nav-toggle span {
+    display: none; /* Show only menu icon */
+  }
+
+  .side-nav-header {
+    padding: 0.75rem 0.5rem 0.5rem;
+  }
+
+  .nav-link {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .side-nav-section-title {
+    padding: 0 0.5rem;
+  }
+
+  .nav-link-giving {
+    margin: 0.5rem;
+  }
+
+  .side-nav-user {
+    padding: 0.5rem;
+  }
+}

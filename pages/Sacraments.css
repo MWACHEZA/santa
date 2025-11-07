@@ -1,0 +1,265 @@
+/* Sacraments Page Styles */
+.sacraments {
+  min-height: 100vh;
+  background: var(--light-gray);
+}
+
+.sacraments-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.sacraments-header h1 {
+  color: var(--primary-green);
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.sacraments-header p {
+  color: var(--gray);
+  font-size: 1.1rem;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Sacrament Navigation */
+.sacrament-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 3rem;
+  flex-wrap: wrap;
+}
+
+.sacrament-tab {
+  background: white;
+  border: 2px solid transparent;
+  padding: 1rem;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--gray);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sacrament-tab:hover {
+  background: var(--primary-green);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(45, 80, 22, 0.3);
+}
+
+.sacrament-tab.active {
+  background: var(--primary-green);
+  color: white;
+  border-color: var(--primary-green-dark);
+  box-shadow: 0 4px 20px rgba(45, 80, 22, 0.3);
+}
+
+.sacrament-tab span {
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Sacrament Details */
+.sacrament-details {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.sacrament-overview {
+  background: white;
+  margin-bottom: 2rem;
+  border-left: 4px solid var(--primary-green);
+}
+
+.sacrament-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--light-gray);
+}
+
+.sacrament-header h2 {
+  color: var(--primary-green);
+  font-size: 2rem;
+  margin: 0;
+}
+
+.sacrament-description {
+  font-size: 1.1rem;
+  color: var(--gray);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.sacrament-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.info-section h3 {
+  color: var(--primary-green);
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.info-section ul {
+  list-style: none;
+  padding: 0;
+}
+
+.info-section li {
+  background: var(--light-gray);
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-green);
+}
+
+.info-section p {
+  color: var(--gray);
+  line-height: 1.6;
+}
+
+/* Questions and Answers */
+.qa-section {
+  margin-bottom: 2rem;
+}
+
+.qa-section h3 {
+  color: var(--primary-green);
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.qa-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.qa-item {
+  background: white;
+  border-left: 4px solid var(--gold);
+  transition: transform 0.3s ease;
+}
+
+.qa-item:hover {
+  transform: translateY(-2px);
+}
+
+.question {
+  color: var(--primary-green);
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.answer {
+  color: var(--gray);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Contact Information */
+.contact-info {
+  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light));
+  color: white;
+  border-left: 4px solid var(--gold);
+}
+
+.contact-info h3 {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.contact-info p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+}
+
+.contact-details {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.contact-details p {
+  margin-bottom: 0.5rem;
+  color: white;
+}
+
+.contact-details strong {
+  color: var(--gold);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sacraments-header h1 {
+    font-size: 2rem;
+  }
+  
+  .sacrament-nav {
+    gap: 0.25rem;
+  }
+  
+  .sacrament-tab {
+    min-width: 100px;
+    padding: 0.75rem;
+  }
+  
+  .sacrament-tab span {
+    font-size: 0.8rem;
+  }
+  
+  .sacrament-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .sacrament-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .sacrament-info-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .contact-details {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sacrament-nav {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .sacrament-tab {
+    width: 100%;
+    max-width: 200px;
+    flex-direction: row;
+    justify-content: center;
+  }
+  
+  .sacraments-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .qa-grid {
+    gap: 1rem;
+  }
+}
