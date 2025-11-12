@@ -26,6 +26,26 @@ const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated: isUserAuthenticated, user, isLoading: authLoading } = useAuth();
   const { isLoading: adminLoading } = useAdmin();
 
+  // Debug logging
+  console.log('🔍 AuthenticatedApp render:', {
+    isUserAuthenticated,
+    user: user?.username,
+    userRole: user?.role,
+    authLoading,
+    adminLoading,
+    pathname: window.location.pathname,
+    timestamp: new Date().toISOString()
+  });
+
+  // Additional debugging for blank screen
+  if (!authLoading && !adminLoading && !isUserAuthenticated) {
+    console.log('🚨 Not authenticated, should redirect to login');
+  }
+  
+  if (!authLoading && !adminLoading && isUserAuthenticated) {
+    console.log('✅ Authenticated, should show app content');
+  }
+
   // Helper function to get default route based on user role
   const getDefaultRoute = (userRole: string) => {
     switch (userRole) {
@@ -42,10 +62,28 @@ const AuthenticatedApp: React.FC = () => {
 
   // Show loading state while checking authentication or admin context
   if (authLoading || adminLoading) {
+    console.log('🔄 Showing loading screen:', { authLoading, adminLoading });
     return (
-      <div className="loading-container">
+      <div className="loading-container" style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        width: '100vw', 
+        height: '100vh', 
+        backgroundColor: 'white', 
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center'
+      }}>
         <LoadingSpinner />
-        <p>Loading...</p>
+        <p style={{ marginTop: '1rem', fontSize: '1.2rem', color: '#4a90e2' }}>
+          {authLoading ? 'Checking authentication...' : 'Loading application...'}
+        </p>
+        <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
+          Debug: authLoading={authLoading.toString()}, adminLoading={adminLoading.toString()}
+        </p>
       </div>
     );
   }
@@ -63,15 +101,30 @@ const AuthenticatedApp: React.FC = () => {
   // If authenticated but on login page, redirect to appropriate dashboard
   if (isUserAuthenticated && window.location.pathname === '/login') {
     const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
+    console.log('🔄 Redirecting authenticated user to:', defaultRoute);
     return <Navigate to={defaultRoute} replace />;
   }
 
+  // If authenticated but on root path, redirect to appropriate dashboard
+  if (isUserAuthenticated && window.location.pathname === '/') {
+    const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
+    console.log('🔄 Redirecting from root to:', defaultRoute);
+    
+    // For parishioners, don't redirect from root - let them stay on home page
+    if (user?.role === 'parishioner') {
+      console.log('✅ Parishioner on home page, no redirect needed');
+      // Don't redirect, let them see the home page
+    } else {
+      return <Navigate to={defaultRoute} replace />;
+    }
+  }
+
   return (
-    <>
+    <div key={`auth-${isUserAuthenticated}-${user?.id}`} style={{ minHeight: '100vh', overflow: 'auto' }}>
       {/* Show Header and Footer only for authenticated non-admin routes */}
       {isUserAuthenticated && !window.location.pathname.startsWith('/admin') && <Header />}
       
-      <main>
+      <main style={{ minHeight: '100vh', overflow: 'auto', paddingBottom: '2rem' }}>
         <Routes>
           {/* Authentication Routes - Always accessible */}
           <Route path="/login" element={<ModernLogin />} />
@@ -112,13 +165,19 @@ const AuthenticatedApp: React.FC = () => {
           <Route path="/profile" element={isUserAuthenticated ? <EnhancedProfile /> : <Navigate to="/login" replace />} />
           
           {/* Redirect unknown routes */}
-          <Route path="*" element={<Navigate to={isUserAuthenticated ? "/" : "/login"} replace />} />
+          <Route path="*" element={
+            <Navigate to={
+              isUserAuthenticated 
+                ? getDefaultRoute(user?.role || 'parishioner')
+                : "/login"
+            } replace />
+          } />
         </Routes>
       </main>
       
       {/* Show Footer only for authenticated non-admin routes */}
       {isUserAuthenticated && !window.location.pathname.startsWith('/admin') && <Footer />}
-    </>
+    </div>
   );
 };
 

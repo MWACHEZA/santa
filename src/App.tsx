@@ -5,9 +5,12 @@ import { AdminProvider } from './contexts/AdminContext';
 import { AuthProvider } from './contexts/AuthContext';
 import AuthenticatedApp from './components/AuthenticatedApp';
 import './App.css';
+import './styles/global-scrollable.css';
 
 // Main App Wrapper Component
 const AppContent: React.FC = () => {
+  console.log('🚀 App starting...');
+  
   return (
     <LanguageProvider>
       <AuthProvider>

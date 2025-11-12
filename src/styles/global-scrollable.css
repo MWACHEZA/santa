@@ -1,0 +1,385 @@
+/* Global scrollable styles for all pages and screen sizes */
+
+/* Ensure html and body allow proper scrolling */
+html {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Root app container */
+#root {
+  min-height: 100vh;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main content areas */
+main {
+  flex: 1;
+  min-height: 100vh;
+  overflow: visible !important;
+  padding-bottom: 2rem;
+  box-sizing: border-box;
+}
+
+/* All page containers */
+.page-container,
+.dashboard-container,
+.admin-container,
+.content-container {
+  min-height: 100vh;
+  overflow: visible !important;
+  padding: 1rem;
+  box-sizing: border-box;
+  max-width: 100vw;
+}
+
+/* Ensure all content sections are scrollable */
+.content-section,
+.card,
+.panel,
+.form-section {
+  overflow: visible !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Force scrolling on containers that might have fixed heights */
+.fixed-height-container {
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+
+/* Navigation specific responsive scrolling */
+@media (max-width: 1200px) {
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    padding: 0.75rem;
+    min-height: calc(100vh + 1px); /* Force scrollable content */
+  }
+  
+  /* Ensure navigation remains scrollable on tablets */
+  .admin-sidebar,
+  .side-nav,
+  .sidebar-nav {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+@media (max-width: 768px) {
+  main {
+    padding-bottom: 3rem;
+  }
+  
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    padding: 0.5rem;
+    min-height: calc(100vh + 2rem);
+  }
+  
+  /* Ensure mobile content is always scrollable */
+  body {
+    min-height: calc(100vh + 1px);
+  }
+  
+  /* Mobile navigation scrolling enhancements */
+  .admin-sidebar,
+  .side-nav,
+  .sidebar-nav,
+  .side-nav-content {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain;
+  }
+  
+  /* Ensure side navigation is fully scrollable on mobile */
+  .side-nav {
+    height: 100vh !important;
+    max-height: 100vh !important;
+  }
+}
+
+@media (max-width: 480px) {
+  main {
+    padding-bottom: 4rem;
+  }
+  
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    padding: 0.25rem;
+    min-height: calc(100vh + 3rem);
+  }
+  
+  /* Small mobile navigation scrolling */
+  .admin-sidebar,
+  .side-nav {
+    width: 280px !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  
+  .sidebar-nav,
+  .side-nav-content {
+    overflow-y: auto !important;
+    max-height: none !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+@media (max-width: 320px) {
+  main {
+    padding-bottom: 5rem;
+  }
+  
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    padding: 0.125rem;
+    min-height: calc(100vh + 4rem);
+  }
+}
+
+/* Height-based media queries for short screens */
+@media (max-height: 600px) {
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    min-height: 120vh !important;
+    padding-bottom: 6rem !important;
+  }
+}
+
+@media (max-height: 400px) {
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    min-height: 150vh !important;
+    padding-bottom: 8rem !important;
+  }
+}
+
+/* Landscape orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+  .page-container,
+  .dashboard-container,
+  .admin-container {
+    min-height: 130vh !important;
+    padding: 0.5rem !important;
+    padding-bottom: 4rem !important;
+  }
+}
+
+/* Tables and lists - ensure they're scrollable */
+.table-container,
+.list-container {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  width: 100%;
+  table-layout: auto;
+  overflow: visible;
+}
+
+/* Forms - ensure they're scrollable */
+.form-container,
+form {
+  overflow: visible !important;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Modals and popups - ensure they're scrollable */
+.modal,
+.popup,
+.dialog {
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Grid layouts - ensure they don't break scrolling */
+.grid,
+.grid-container {
+  overflow: visible !important;
+  max-width: 100%;
+}
+
+/* Flex layouts - ensure they allow scrolling */
+.flex,
+.flex-container {
+  overflow: visible !important;
+  flex-wrap: wrap;
+}
+
+/* Images and media - prevent overflow */
+img,
+video,
+iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Text content - prevent overflow */
+p, div, span, h1, h2, h3, h4, h5, h6 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Pre and code blocks */
+pre, code {
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Universal scrolling guarantee */
+* {
+  box-sizing: border-box;
+}
+
+/* Prevent any element from blocking scrolling */
+*:not(.modern-auth):not(.auth-container):not(.loading-container) {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Special handling for admin pages */
+.admin-dashboard,
+.admin-content {
+  min-height: 100vh;
+  overflow: visible !important;
+  padding-bottom: 3rem;
+}
+
+/* Special handling for home/dashboard pages */
+.home-container,
+.dashboard-content {
+  min-height: 100vh;
+  overflow: visible !important;
+  padding-bottom: 2rem;
+}
+
+/* Ensure sidebars and navigation don't break scrolling */
+.sidebar,
+.navigation,
+.nav-container,
+.admin-sidebar,
+.side-nav,
+.sidebar-nav,
+.side-nav-content {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 100vh !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+/* Ensure navigation always appears above content */
+.side-nav,
+.side-nav-overlay {
+  z-index: 10000 !important;
+  position: fixed !important;
+}
+
+.admin-sidebar {
+  z-index: 1000 !important;
+}
+
+/* Prevent any content from appearing above navigation */
+.hero,
+.hero-slider,
+.slide,
+.hero-content,
+.glass-tile,
+.card,
+.section {
+  z-index: auto !important;
+}
+
+/* Ensure navigation menu button is accessible */
+.side-nav-toggle {
+  z-index: 10001 !important;
+  position: relative !important;
+}
+
+/* Enhanced scrollbar styles for all navigation */
+.sidebar::-webkit-scrollbar,
+.navigation::-webkit-scrollbar,
+.nav-container::-webkit-scrollbar,
+.admin-sidebar::-webkit-scrollbar,
+.side-nav::-webkit-scrollbar,
+.sidebar-nav::-webkit-scrollbar,
+.side-nav-content::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.navigation::-webkit-scrollbar-track,
+.nav-container::-webkit-scrollbar-track,
+.admin-sidebar::-webkit-scrollbar-track,
+.side-nav::-webkit-scrollbar-track,
+.sidebar-nav::-webkit-scrollbar-track,
+.side-nav-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.navigation::-webkit-scrollbar-thumb,
+.nav-container::-webkit-scrollbar-thumb,
+.admin-sidebar::-webkit-scrollbar-thumb,
+.side-nav::-webkit-scrollbar-thumb,
+.sidebar-nav::-webkit-scrollbar-thumb,
+.side-nav-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.navigation::-webkit-scrollbar-thumb:hover,
+.nav-container::-webkit-scrollbar-thumb:hover,
+.admin-sidebar::-webkit-scrollbar-thumb:hover,
+.side-nav::-webkit-scrollbar-thumb:hover,
+.sidebar-nav::-webkit-scrollbar-thumb:hover,
+.side-nav-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Footer spacing to ensure content is always scrollable */
+.footer-spacer {
+  height: 2rem;
+  width: 100%;
+}
+
+/* Print media - ensure content is visible */
+@media print {
+  * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
+}

@@ -179,7 +179,7 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className="admin-dashboard admin-container">
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">

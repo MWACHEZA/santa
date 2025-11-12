@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 import { 
   Lock, 
   User, 
@@ -23,8 +24,9 @@ interface ModernLoginProps {
 }
 
 const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }) => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -33,6 +35,33 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
   const [isLoading, setIsLoading] = useState(false);
   const [showRegister, setShowRegister] = useState(initialShowRegister);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone' | 'username'>('email');
+
+  // Navigate after successful authentication
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('🚀 User authenticated, navigating...', user.role);
+      const getDefaultRoute = (userRole: string) => {
+        switch (userRole) {
+          case 'admin':
+          case 'secretary':
+          case 'priest':
+          case 'reporter':
+            return '/admin';
+          case 'parishioner':
+          default:
+            return '/';
+        }
+      };
+      
+      const defaultRoute = getDefaultRoute(user.role);
+      console.log('🔄 Navigating to:', defaultRoute);
+      
+      // Use setTimeout to ensure state updates are complete
+      setTimeout(() => {
+        navigate(defaultRoute, { replace: true });
+      }, 100);
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

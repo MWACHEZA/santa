@@ -3,12 +3,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, Globe, LogOut, User, ChevronDown, Home, Heart, Camera, Users, Calendar, Newspaper, Phone, DollarSign, Church, BookOpen } from 'lucide-react';
+import { Menu, X, Globe, LogOut, User, Home, Heart, Camera, Users, Calendar, Newspaper, Phone, DollarSign, Church, BookOpen } from 'lucide-react';
 import './Header.css';
 
 const Header: React.FC = () => {
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
-  const [isGetInvolvedOpen, setIsGetInvolvedOpen] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
   const sideNavRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
@@ -22,7 +21,7 @@ const Header: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsGetInvolvedOpen(false);
+        // Handle dropdown close if needed
       }
     };
 
@@ -171,9 +170,11 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Navigation Links */}
-        <div className="side-nav-section">
-          <h3 className="side-nav-section-title">Main Navigation</h3>
+        {/* Scrollable Content Area */}
+        <div className="side-nav-content">
+          {/* Navigation Links */}
+          <div className="side-nav-section">
+            <h3 className="side-nav-section-title">Main Navigation</h3>
           <ul className="nav-list">
             <li>
               <Link 
@@ -287,6 +288,7 @@ const Header: React.FC = () => {
 
         {/* Giving Section */}
         <div className="side-nav-section">
+          <h3 className="side-nav-section-title">Support</h3>
           <ul className="nav-list">
             <li>
               <Link 
@@ -300,8 +302,9 @@ const Header: React.FC = () => {
             </li>
           </ul>
         </div>
+        </div>
 
-        {/* User Section */}
+        {/* User Section - Outside scrollable area */}
         {user ? (
           <div className="side-nav-user">
             <div className="side-nav-user-info">

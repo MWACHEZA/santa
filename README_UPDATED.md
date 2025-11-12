@@ -200,7 +200,7 @@ REACT_APP_ENVIRONMENT=development
 
 ## 📦 Deployment
 
-### Render.com (Recommended)
+### Docker Deployment (Recommended)
 
 1. **Push to GitHub**
    ```bash
@@ -209,11 +209,13 @@ REACT_APP_ENVIRONMENT=development
    git push origin main
    ```
 
-2. **Deploy using Blueprint**
-   - Login to [Render.com](https://render.com)
-   - Create new Blueprint
-   - Connect your repository
-   - Render will automatically detect `render.yaml` and deploy all services
+2. **Deploy using Docker**
+   - Build and run with Docker:
+   ```bash
+   docker build -t st-patricks-app .
+   docker run -p 3000:3000 -p 3001:3001 st-patricks-app
+   ```
+   - Or use Docker Compose: `docker-compose up -d`
 
 3. **Configure Environment Variables**
    - Set database credentials
@@ -379,7 +381,8 @@ st-patricks-makokoba/
 │   ├── utils/                       # Utility functions
 │   └── styles/                      # Global styles
 ├── public/                          # Static assets
-├── render.yaml                      # Render deployment config
+├── Dockerfile                       # Docker container config
+├── docker-compose.yml               # Docker Compose config
 ├── DEPLOYMENT_GUIDE.md              # Deployment instructions
 ├── package.json                     # Frontend dependencies
 └── README.md                        # This file
@@ -541,7 +544,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **React Team** for the excellent frontend framework
 - **Node.js Community** for the robust backend platform
 - **MySQL Team** for the reliable database system
-- **Render.com** for the excellent hosting platform
+- **Docker Community** for the excellent containerization platform
 
 ## 📞 Support
 

@@ -193,25 +193,63 @@ function saveUsers(users: StoredUser[]) {
   localStorage.setItem(USER_STORE_KEY, JSON.stringify(users));
 }
 function findUserByIdentifier(users: StoredUser[], identifier: string): StoredUser | undefined {
-  const idLower = identifier.trim().toLowerCase();
+  const trimmedId = identifier.trim();
+  const idLower = trimmedId.toLowerCase();
+  
   return users.find(u =>
     u.username.toLowerCase() === idLower ||
     (u.email?.toLowerCase() === idLower) ||
-    (u.phone?.replace(/\s+/g, '') === identifier.trim().replace(/\s+/g, ''))
+    (u.phone?.replace(/\s+/g, '') === trimmedId.replace(/\s+/g, ''))
   );
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [user, setUser] = useState<User | null>(() => {
-    // Check if user is already logged in (from localStorage)
-    const savedUser = localStorage.getItem('currentUser');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start with loading true
+  const [user, setUser] = useState<User | null>(null); // Start with null, will be set after hydration
+
+  // Initialize user from localStorage on mount
+  useEffect(() => {
+    const initializeAuth = () => {
+      console.log('🔄 Initializing auth state...');
+      try {
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          console.log('✅ Found saved user:', parsedUser.username);
+          setUser(parsedUser);
+        } else {
+          console.log('ℹ️ No saved user found');
+        }
+      } catch (error) {
+        console.error('❌ Error parsing saved user:', error);
+        // Clear corrupted data
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+      } finally {
+        console.log('✅ Auth initialization complete, setting loading to false');
+        setIsLoading(false); // Auth state is now ready
+      }
+    };
+
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('⚠️ Auth initialization timeout, forcing loading to false');
+      setIsLoading(false);
+    }, 5000); // 5 second timeout
+
+    initializeAuth();
+
+    // Clear timeout if initialization completes normally
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   const login = async (identifier: string, password: string): Promise<{ success: boolean; role?: UserRole; message?: string; mustChangePassword?: boolean }> => {
+    // Set loading state during login
+    console.log('🔐 Starting login process...');
+    setIsLoading(true);
+    
     // Trim whitespace from inputs
-    const trimmedIdentifier = identifier.trim().toLowerCase();
+    const trimmedIdentifier = identifier.trim();
     const trimmedPassword = password.trim();
 
     try {
@@ -237,11 +275,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const mustChange = newUser.mustChangePassword === true || trimmedPassword === 'Password';
         if (mustChange) {
           localStorage.setItem('pendingPasswordChangeUser', newUser.username);
+          setIsLoading(false);
           return { success: true, role: newUser.role, message: 'Password change required', mustChangePassword: true };
         } else {
+          console.log('✅ API Login successful, setting user:', newUser.username);
           setUser(newUser);
           localStorage.setItem('currentUser', JSON.stringify(newUser));
           localStorage.setItem('authToken', (response as any).token || '');
+          setIsLoading(false);
           return { success: true, role: newUser.role, message: `Welcome ${newUser.username}!` };
         }
       }
@@ -250,46 +291,58 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // This is expected behavior in development/offline mode
     }
 
-    // Fallback to default users for development and local user store
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      // Fallback to default users for development and local user store
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-    const users = loadUsers();
-    const foundUser = findUserByIdentifier(users, trimmedIdentifier);
-    const isPasswordValid = foundUser && foundUser.password === trimmedPassword;
+      const users = loadUsers();
+      const foundUser = findUserByIdentifier(users, trimmedIdentifier);
+      const isPasswordValid = foundUser && foundUser.password === trimmedPassword;
 
-    if (foundUser && isPasswordValid) {
-      const newUser: User = { 
-        id: foundUser.id,
-        username: foundUser.username,
-        email: foundUser.email,
-        phone: foundUser.phone,
-        firstName: foundUser.firstName,
-        lastName: foundUser.lastName,
-        role: foundUser.role,
-        mustChangePassword: foundUser.mustChangePassword,
-        dateOfBirth: foundUser.dateOfBirth,
-        address: foundUser.address,
-        emergencyContact: foundUser.emergencyContact,
-        emergencyPhone: foundUser.emergencyPhone,
-        createdAt: foundUser.createdAt,
-        updatedAt: foundUser.updatedAt
-      };
-      
-      const mustChange = newUser.mustChangePassword === true || trimmedPassword === 'Password';
-      if (mustChange) {
-        localStorage.setItem('pendingPasswordChangeUser', newUser.username);
-        return { success: true, role: newUser.role, message: 'Password change required', mustChangePassword: true };
-      } else {
-        setUser(newUser);
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
-        return { success: true, role: foundUser.role, message: `Welcome ${foundUser.firstName || foundUser.username}!` };
+      if (foundUser && isPasswordValid) {
+        const newUser: User = { 
+          id: foundUser.id,
+          username: foundUser.username,
+          email: foundUser.email,
+          phone: foundUser.phone,
+          firstName: foundUser.firstName,
+          lastName: foundUser.lastName,
+          role: foundUser.role,
+          mustChangePassword: foundUser.mustChangePassword,
+          dateOfBirth: foundUser.dateOfBirth,
+          address: foundUser.address,
+          emergencyContact: foundUser.emergencyContact,
+          emergencyPhone: foundUser.emergencyPhone,
+          createdAt: foundUser.createdAt,
+          updatedAt: foundUser.updatedAt
+        };
+        
+        const mustChange = newUser.mustChangePassword === true || trimmedPassword === 'Password';
+        if (mustChange) {
+          localStorage.setItem('pendingPasswordChangeUser', newUser.username);
+          setIsLoading(false);
+          return { success: true, role: newUser.role, message: 'Password change required', mustChangePassword: true };
+        } else {
+          console.log('✅ Local Login successful, setting user:', newUser.username);
+          setUser(newUser);
+          localStorage.setItem('currentUser', JSON.stringify(newUser));
+          setIsLoading(false);
+          return { success: true, role: foundUser.role, message: `Welcome ${foundUser.firstName || foundUser.username}!` };
+        }
       }
-    }
 
-    return {
-      success: false,
-      message: 'Invalid credentials. Please check your email/phone and password.'
-    };
+      setIsLoading(false);
+      return {
+        success: false,
+        message: 'Invalid credentials. Please check your email/phone and password.'
+      };
+    } catch (error) {
+      setIsLoading(false);
+      return {
+        success: false,
+        message: 'An error occurred during login. Please try again.'
+      };
+    }
   };
 
   const register = async (data: RegistrationData): Promise<{ success: boolean; message: string }> => {

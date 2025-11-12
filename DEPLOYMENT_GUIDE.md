@@ -1,11 +1,11 @@
 # 🚀 St. Patrick's Catholic Church - Deployment Guide
 
-This comprehensive guide covers deployment options for the St. Patrick's Catholic Church Management System, with detailed instructions for Render.com deployment and other platforms.
+This comprehensive guide covers deployment options for the St. Patrick's Catholic Church Management System, with detailed instructions for Docker deployment and manual server setup.
 
 ## 📋 Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Render.com Deployment (Recommended)](#rendercom-deployment)
+2. [Docker Deployment (Recommended)](#docker-deployment)
 3. [Manual Server Deployment](#manual-server-deployment)
 4. [Environment Configuration](#environment-configuration)
 5. [Database Setup](#database-setup)
@@ -23,24 +23,16 @@ This comprehensive guide covers deployment options for the St. Patrick's Catholi
 - **Git**
 
 ### Required Accounts
-- **Render.com** account (for cloud deployment)
 - **Domain name** (optional, for custom domain)
 - **Email service** (Gmail, SendGrid, etc.)
 
-## 🌐 Render.com Deployment (Recommended)
+## 🐳 Docker Deployment (Recommended)
 
-Render.com provides an excellent platform for deploying full-stack applications with automatic scaling and built-in security.
+Docker provides a consistent and portable deployment solution for the St. Patrick's Catholic Church Management System.
 
 ### Step 1: Prepare Your Repository
 
-1. **Push to GitHub/GitLab**
-   ```bash
-   git add .
-   git commit -m "Prepare for deployment"
-   git push origin main
-   ```
-
-2. **Verify File Structure**
+1. **Verify File Structure**
    ```
    st-patricks-makokoba/
    ├── backend/
@@ -49,123 +41,108 @@ Render.com provides an excellent platform for deploying full-stack applications 
    │   └── ...
    ├── src/
    │   ├── components/
-   │   └── ...
+   └── ...
    ├── package.json
-   ├── render.yaml
+   ├── Dockerfile
+   ├── docker-compose.yml
    └── README.md
    ```
 
-### Step 2: Create Render Services
+### Step 2: Create Docker Configuration
 
-#### Option A: Using Blueprint (Recommended)
+1. **Create Dockerfile**
+   ```dockerfile
+   # Frontend build stage
+   FROM node:18-alpine AS frontend-build
+   WORKDIR /app
+   COPY package*.json ./
+   RUN npm ci --only=production
+   COPY . .
+   RUN npm run build
 
-1. **Login to Render Dashboard**
-   - Go to [render.com](https://render.com)
-   - Sign in with GitHub/GitLab
+   # Backend build stage
+   FROM node:18-alpine AS backend-build
+   WORKDIR /app/backend
+   COPY backend/package*.json ./
+   RUN npm ci --only=production
 
-2. **Create New Blueprint**
-   - Click "New +" → "Blueprint"
-   - Connect your repository
-   - Render will automatically detect `render.yaml`
-   - Review and deploy all services
+   # Production stage
+   FROM node:18-alpine
+   WORKDIR /app
 
-#### Option B: Manual Service Creation
+   # Copy backend
+   COPY --from=backend-build /app/backend/node_modules ./backend/node_modules
+   COPY backend/ ./backend/
 
-1. **Create Database Service**
-   - Click "New +" → "PostgreSQL" or "MySQL"
-   - Name: `st-patricks-db`
-   - Plan: Starter (can upgrade later)
-   - Note down connection details
+   # Copy frontend build
+   COPY --from=frontend-build /app/build ./frontend/build
 
-2. **Create Backend Service**
-   - Click "New +" → "Web Service"
-   - Connect repository
-   - Settings:
-     - **Name**: `st-patricks-api`
-     - **Runtime**: Node
-     - **Build Command**: `cd backend && npm install`
-     - **Start Command**: `cd backend && npm start`
-     - **Plan**: Starter
+   # Install serve to serve frontend
+   RUN npm install -g serve
 
-3. **Create Frontend Service**
-   - Click "New +" → "Static Site"
-   - Connect repository
-   - Settings:
-     - **Name**: `st-patricks-frontend`
-     - **Build Command**: `npm install && npm run build`
-     - **Publish Directory**: `build`
+   EXPOSE 3000 3001
 
-### Step 3: Configure Environment Variables
+   # Start both frontend and backend
+   CMD ["sh", "-c", "cd backend && npm start & serve -s frontend/build -l 3000"]
+   ```
 
-#### Backend Environment Variables
-```bash
-# Database Configuration
-DB_HOST=<render-database-host>
-DB_PORT=3306
-DB_USER=<render-database-user>
-DB_PASSWORD=<render-database-password>
-DB_NAME=st_patricks_db
+2. **Create docker-compose.yml**
+   ```yaml
+   version: '3.8'
+   services:
+     db:
+       image: mysql:8.0
+       environment:
+         MYSQL_ROOT_PASSWORD: rootpassword
+         MYSQL_DATABASE: st_patricks_db
+         MYSQL_USER: st_patricks_user
+         MYSQL_PASSWORD: secure_password
+       ports:
+         - "3306:3306"
+       volumes:
+         - mysql_data:/var/lib/mysql
+         - ./backend/comprehensive-database-schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
-# Application Settings
-NODE_ENV=production
-PORT=3001
-JWT_SECRET=<generate-secure-random-string>
-BCRYPT_ROUNDS=12
+     app:
+       build: .
+       ports:
+         - "3000:3000"
+         - "3001:3001"
+       environment:
+         - NODE_ENV=production
+         - DB_HOST=db
+         - DB_PORT=3306
+         - DB_USER=st_patricks_user
+         - DB_PASSWORD=secure_password
+         - DB_NAME=st_patricks_db
+         - JWT_SECRET=your_jwt_secret_minimum_32_characters
+         - REACT_APP_API_URL=http://localhost:3001
+       depends_on:
+         - db
+       volumes:
+         - ./backend/uploads:/app/backend/uploads
 
-# CORS Configuration
-CORS_ORIGIN=https://st-patricks.onrender.com
+   volumes:
+     mysql_data:
+   ```
 
-# File Upload Settings
-MAX_FILE_SIZE=52428800
-UPLOAD_PATH=/opt/render/project/src/uploads
+### Step 3: Build and Run
 
-# Email Configuration
-EMAIL_HOST=smtp.gmail.com
-EMAIL_PORT=587
-EMAIL_USER=<your-email@gmail.com>
-EMAIL_PASS=<your-app-password>
-EMAIL_FROM=noreply@stpatricks.com
-```
-
-#### Frontend Environment Variables
-```bash
-REACT_APP_API_URL=https://st-patricks-api.onrender.com
-REACT_APP_ENVIRONMENT=production
-GENERATE_SOURCEMAP=false
-CI=false
-```
-
-### Step 4: Database Initialization
-
-1. **Connect to Database**
+1. **Build and Start Services**
    ```bash
-   mysql -h <render-db-host> -P <port> -u <user> -p<password>
+   # Build and start all services
+   docker-compose up -d
+
+   # View logs
+   docker-compose logs -f
+
+   # Stop services
+   docker-compose down
    ```
 
-2. **Run Database Schema**
-   ```sql
-   SOURCE comprehensive-database-schema.sql;
-   ```
-
-3. **Verify Tables Created**
-   ```sql
-   USE st_patricks_db;
-   SHOW TABLES;
-   ```
-
-### Step 5: Custom Domain (Optional)
-
-1. **Add Custom Domain in Render**
-   - Go to service settings
-   - Add custom domain: `www.stpatricks.com`
-   - Follow DNS configuration instructions
-
-2. **Configure DNS Records**
-   ```
-   Type: CNAME
-   Name: www
-   Value: st-patricks.onrender.com
-   ```
+2. **Access Application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:3001
 
 ## 🖥️ Manual Server Deployment
 

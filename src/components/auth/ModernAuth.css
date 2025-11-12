@@ -49,15 +49,44 @@
   padding: 0;
 }
 
+/* Ensure body and html allow scrolling */
+html, body {
+  height: 100%;
+  overflow: hidden; /* Prevent double scrollbars */
+}
+
+/* Force scrolling for all screen sizes */
+.modern-auth * {
+  /* Ensure no element prevents scrolling */
+  max-height: none !important;
+}
+
+.modern-auth .auth-container,
+.modern-auth .auth-form-panel,
+.modern-auth .form-container {
+  /* Force content to be scrollable */
+  overflow: visible !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
 /* Main Container */
 .modern-auth {
   min-height: 100vh;
+  height: 100vh;
   width: 100vw;
   position: fixed;
   top: 0;
   left: 0;
   z-index: 1000;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  /* Ensure scrolling works on all devices */
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  /* Force scrollbar to always be available */
+  overflow-y: scroll;
 }
 
 /* Background */
@@ -139,14 +168,29 @@
   z-index: 2;
   min-height: 100vh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 2rem;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  box-sizing: border-box;
+  /* Ensure container can scroll */
+  width: 100%;
+  max-width: 100vw;
+  /* Force content to be scrollable */
+  overflow: visible;
+  flex-wrap: wrap;
 }
 
 .register-container {
   align-items: flex-start;
   padding: 1rem;
+  min-height: auto;
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+  /* Ensure register container is scrollable */
+  max-height: none;
+  overflow: visible;
 }
 
 /* Progress Bar (Registration) */
@@ -310,7 +354,10 @@
   background: var(--white);
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-2xl);
-  overflow: hidden;
+  overflow: visible;
+  /* Ensure form panel can expand and scroll */
+  min-height: auto;
+  height: auto;
 }
 
 .register-panel {
@@ -952,6 +999,8 @@
   .auth-container {
     flex-direction: column;
     gap: 2rem;
+    /* Ensure scrolling on tablets */
+    padding-bottom: 3rem;
   }
   
   .auth-branding {
@@ -962,11 +1011,20 @@
   .brand-title {
     font-size: 2rem;
   }
+  
+  /* Make sure form panels are scrollable */
+  .auth-form-panel {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 768px) {
   .auth-container {
     padding: 1rem;
+    /* Force scrolling on mobile */
+    padding-bottom: 4rem;
+    align-items: flex-start;
   }
   
   .form-container {
@@ -997,15 +1055,42 @@
     width: 100px;
     height: 100px;
   }
+  
+  /* Ensure form panels are fully scrollable */
+  .auth-form-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    overflow: visible;
+  }
+  
+  .register-panel {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 480px) {
+  .auth-container {
+    padding: 0.5rem;
+    min-height: 100vh;
+    /* Ensure proper scrolling on small screens */
+    align-items: flex-start;
+    padding-top: 1rem;
+    padding-bottom: 3rem;
+  }
+  
   .form-container {
-    padding: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .form-header h2 {
+    font-size: 1.5rem;
   }
   
   .modern-input {
     padding: 0.75rem 1rem 0.75rem 2.5rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px; /* Ensure touch-friendly size */
   }
   
   .input-icon {
@@ -1014,17 +1099,224 @@
   
   .password-toggle-modern {
     right: 0.875rem;
+    min-width: 44px;
+    min-height: 44px;
   }
   
   .form-navigation {
     flex-direction: column;
+    gap: 0.75rem;
   }
   
   .nav-btn {
     justify-content: center;
+    padding: 0.875rem 1rem;
+    min-height: 44px;
   }
   
   .next-btn {
     margin-left: 0;
   }
+  
+  .login-method-selector {
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+  
+  .method-btn {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8rem;
+    min-height: 44px;
+    flex: 1;
+    min-width: 120px;
+  }
+  
+  .modern-submit-btn {
+    padding: 1rem 1.5rem;
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 48px;
+  }
+  
+  /* Improve scrollable areas */
+  .terms-box {
+    max-height: 200px;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Ensure form panels don't overflow */
+  .auth-form-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+@media (max-width: 320px) {
+  .form-container {
+    padding: 0.75rem;
+  }
+  
+  .form-header h2 {
+    font-size: 1.25rem;
+  }
+  
+  .brand-title {
+    font-size: 1.5rem;
+  }
+  
+  .church-logo-modern {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .modern-input {
+    padding: 0.625rem 0.75rem 0.625rem 2.25rem;
+  }
+  
+  .input-icon {
+    left: 0.75rem;
+  }
+  
+  .password-toggle-modern {
+    right: 0.75rem;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .auth-container {
+    padding: 0.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 1rem;
+    align-items: flex-start;
+  }
+  
+  .auth-branding {
+    display: none; /* Hide branding on landscape to save space */
+  }
+  
+  .form-container {
+    padding: 1rem;
+  }
+  
+  .form-header {
+    margin-bottom: 1rem;
+  }
+  
+  .form-header h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .church-logo-modern {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 280px) {
+  .modern-auth {
+    font-size: 14px;
+    /* Force scrolling on extra small screens */
+    overflow-y: scroll !important;
+  }
+  
+  .auth-container {
+    padding: 0.25rem;
+    padding-bottom: 5rem; /* Extra bottom padding for scrolling */
+  }
+  
+  .form-container {
+    padding: 0.5rem;
+  }
+  
+  .modern-input {
+    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    font-size: 16px;
+  }
+  
+  .input-icon {
+    left: 0.5rem;
+  }
+  
+  .password-toggle-modern {
+    right: 0.5rem;
+  }
+  
+  .method-btn {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    min-width: 100px;
+  }
+  
+  /* Ensure all form elements are visible and scrollable */
+  .auth-form-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .modern-input {
+    border-width: 1px; /* Thinner borders on high DPI */
+  }
+}
+
+/* Universal scrolling fix for all screen sizes */
+@media (max-height: 600px) {
+  .auth-container {
+    min-height: 120vh !important; /* Force content to be taller than viewport */
+    padding-bottom: 6rem !important;
+  }
+  
+  .modern-auth {
+    overflow-y: scroll !important;
+  }
+}
+
+@media (max-height: 400px) {
+  .auth-container {
+    min-height: 150vh !important; /* Even more height for very short screens */
+    padding-bottom: 8rem !important;
+  }
+  
+  .form-container {
+    padding: 1rem !important;
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .modern-auth *,
+  .modern-auth *::before,
+  .modern-auth *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .floating-element {
+    animation: none;
+  }
+  
+  .logo-glow {
+    animation: none;
+  }
+}
+
+/* Final scrolling guarantee */
+.modern-auth {
+  /* Ensure scrolling is always possible */
+  min-height: 100vh !important;
+  overflow-y: scroll !important;
+}
+
+.modern-auth .auth-container {
+  /* Always make content scrollable */
+  min-height: calc(100vh + 1px) !important;
 }

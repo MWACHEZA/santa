@@ -40,7 +40,7 @@ const Home: React.FC = () => {
   };
 
   return (
-    <div className="home">
+    <div className="home page-container">
       {/* Hero Section */}
       <section className="hero">
         {/* Background Image Slider */}
