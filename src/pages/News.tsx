@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useAdmin } from '../contexts/AdminContext';
 import { Newspaper, Globe, Church, Calendar, ExternalLink, X, Archive } from 'lucide-react';
 import './News.css';
 
 const News: React.FC = () => {
-  const { t } = useLanguage();
   const { 
     getPublishedParishNews, 
     externalNews, 

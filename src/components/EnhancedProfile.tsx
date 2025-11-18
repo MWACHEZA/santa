@@ -1,57 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   User, Mail, Phone, Calendar, MapPin, UserCheck, Save, Edit, X, 
-  Heart, Church, Users, Crown, BookOpen, Award 
+  Heart, Church, Users, Crown 
 } from 'lucide-react';
 import './EnhancedProfile.css';
 
 const EnhancedProfile: React.FC = () => {
-  const { user, updateUser } = useAuth();
+  const { user, saveProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'parish' | 'sacraments' | 'priest'>('basic');
   
-  const [formData, setFormData] = useState({
-    // Basic Information
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    dateOfBirth: user?.dateOfBirth || '',
-    gender: user?.gender || '',
-    address: user?.address || '',
-    emergencyContact: user?.emergencyContact || '',
-    emergencyPhone: user?.emergencyPhone || '',
-    
-    // Parish Membership (optional for parishioners)
-    association: user?.association || '',
-    section: user?.section || '',
-    
-    // Sacramental Information (for parishioners)
-    isBaptized: user?.isBaptized ?? null,
-    baptismDate: user?.baptismDate || '',
-    baptismVenue: user?.baptismVenue || '',
-    
-    isConfirmed: user?.isConfirmed ?? null,
-    confirmationDate: user?.confirmationDate || '',
-    confirmationVenue: user?.confirmationVenue || '',
-    
-    receivesCommunion: user?.receivesCommunion ?? null,
-    firstCommunionDate: user?.firstCommunionDate || '',
-    
-    isMarried: user?.isMarried ?? null,
-    marriageDate: user?.marriageDate || '',
-    marriageVenue: user?.marriageVenue || '',
-    spouseName: user?.spouseName || '',
-    
-    // Priest-specific Information (for priests only)
-    ordinationDate: user?.ordinationDate || '',
-    ordinationVenue: user?.ordinationVenue || '',
-    ordainedBy: user?.ordainedBy || ''
+  const mapUserToForm = (currentUser: typeof user) => ({
+    firstName: currentUser?.firstName || '',
+    lastName: currentUser?.lastName || '',
+    email: currentUser?.email || '',
+    phone: currentUser?.phone || '',
+    dateOfBirth: currentUser?.dateOfBirth || '',
+    gender: currentUser?.gender || '',
+    address: currentUser?.address || '',
+    emergencyContact: currentUser?.emergencyContact || '',
+    emergencyPhone: currentUser?.emergencyPhone || '',
+    association: currentUser?.association || '',
+    section: currentUser?.section || '',
+    isBaptized: currentUser?.isBaptized ?? null,
+    baptismDate: currentUser?.baptismDate || '',
+    baptismVenue: currentUser?.baptismVenue || '',
+    isConfirmed: currentUser?.isConfirmed ?? null,
+    confirmationDate: currentUser?.confirmationDate || '',
+    confirmationVenue: currentUser?.confirmationVenue || '',
+    receivesCommunion: currentUser?.receivesCommunion ?? null,
+    firstCommunionDate: currentUser?.firstCommunionDate || '',
+    isMarried: currentUser?.isMarried ?? null,
+    marriageDate: currentUser?.marriageDate || '',
+    marriageVenue: currentUser?.marriageVenue || '',
+    spouseName: currentUser?.spouseName || '',
+    ordinationDate: currentUser?.ordinationDate || '',
+    ordinationVenue: currentUser?.ordinationVenue || '',
+    ordainedBy: currentUser?.ordainedBy || ''
   });
+
+  const [formData, setFormData] = useState(() => mapUserToForm(user));
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  useEffect(() => {
+    setFormData(mapUserToForm(user));
+  }, [user]);
 
   // Calculate age from date of birth
   const calculateAge = (dateOfBirth: string): number | null => {
@@ -93,13 +89,13 @@ const EnhancedProfile: React.FC = () => {
     setMessage(null);
 
     try {
-      if (!updateUser) {
-        throw new Error('Update function not available');
+      if (!saveProfile) {
+        throw new Error('Save function not available');
       }
 
-      const result = updateUser(user.id, {
+      const result = await saveProfile({
         ...formData,
-        gender: formData.gender as 'male' | 'female' | undefined,
+        gender: (formData.gender || undefined) as 'male' | 'female' | undefined,
         updatedAt: new Date().toISOString()
       });
 
@@ -127,34 +123,7 @@ const EnhancedProfile: React.FC = () => {
 
   const handleCancel = () => {
     // Reset form data to original user data
-    setFormData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      dateOfBirth: user?.dateOfBirth || '',
-      gender: user?.gender || '',
-      address: user?.address || '',
-      emergencyContact: user?.emergencyContact || '',
-      emergencyPhone: user?.emergencyPhone || '',
-      association: user?.association || '',
-      section: user?.section || '',
-      isBaptized: user?.isBaptized ?? null,
-      baptismDate: user?.baptismDate || '',
-      baptismVenue: user?.baptismVenue || '',
-      isConfirmed: user?.isConfirmed ?? null,
-      confirmationDate: user?.confirmationDate || '',
-      confirmationVenue: user?.confirmationVenue || '',
-      receivesCommunion: user?.receivesCommunion ?? null,
-      firstCommunionDate: user?.firstCommunionDate || '',
-      isMarried: user?.isMarried ?? null,
-      marriageDate: user?.marriageDate || '',
-      marriageVenue: user?.marriageVenue || '',
-      spouseName: user?.spouseName || '',
-      ordinationDate: user?.ordinationDate || '',
-      ordinationVenue: user?.ordinationVenue || '',
-      ordainedBy: user?.ordainedBy || ''
-    });
+    setFormData(mapUserToForm(user));
     setIsEditing(false);
     setMessage(null);
   };

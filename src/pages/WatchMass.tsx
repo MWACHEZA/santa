@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Play, Calendar, Clock, Users, Video, Eye } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import './WatchMass.css';
 
 interface LiveStream {
@@ -29,7 +28,6 @@ interface VideoArchive {
 const WatchMass: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'live' | 'archive'>('live');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  // const { user } = useAuth(); // Currently unused
 
   // Mock data - replace with actual API calls
   const [liveStreams] = useState<LiveStream[]>([

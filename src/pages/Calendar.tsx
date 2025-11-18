@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
 import { useAdmin } from '../contexts/AdminContext';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, Plus } from 'lucide-react';
 import './Calendar.css';
 
 const Calendar: React.FC = () => {
-  const { t } = useLanguage();
   const { getPublishedEvents, hasPermission, isAuthenticated } = useAdmin();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'month' | 'upcoming'>('month');

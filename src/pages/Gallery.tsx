@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Camera, Users, Church, Heart, Crown, Cross, Flower2, Image } from 'lucide-react';
+import { Camera, Users, Church, Heart, Cross, Flower2, Image } from 'lucide-react';
 import './Gallery.css';
 
 interface GalleryImage {

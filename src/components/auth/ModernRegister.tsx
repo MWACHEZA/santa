@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { 
   User, 
   Mail, 
@@ -16,7 +15,8 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
-  X
+  X,
+  Camera
 } from 'lucide-react';
 import './ModernAuth.css';
 
@@ -26,8 +26,10 @@ interface ModernRegisterProps {
 }
 
 interface RegisterFormData {
+  username: string;
   firstName: string;
   lastName: string;
+  middleName: string;
   email: string;
   phone: string;
   password: string;
@@ -39,6 +41,7 @@ interface RegisterFormData {
   emergencyPhone: string;
   section: string;
   associations: string[];
+  profilePicture: File | null;
   agreeToTerms: boolean;
 }
 
@@ -47,12 +50,13 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
   onRegistrationSuccess 
 }) => {
   const { register } = useAuth();
-  const { t } = useLanguage();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegisterFormData>({
+    username: '',
     firstName: '',
     lastName: '',
+    middleName: '',
     email: '',
     phone: '',
     password: '',
@@ -64,6 +68,7 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     emergencyPhone: '',
     section: '',
     associations: [],
+    profilePicture: null,
     agreeToTerms: false
   });
   
@@ -98,18 +103,11 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     }));
   };
 
-  const handleAssociationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData(prev => ({
-      ...prev,
-      associations: selectedOptions
-    }));
-  };
 
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return !!(formData.firstName && formData.lastName && formData.email && formData.phone);
+        return !!(formData.username && formData.firstName && formData.lastName && formData.email && formData.phone);
       case 2:
         return !!(formData.password && formData.confirmPassword && 
                  formData.password === formData.confirmPassword && 
@@ -143,10 +141,12 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
 
     try {
       const result = await register({
+        username: formData.username,
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
+        middleName: formData.middleName,
         phone: formData.phone,
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender as 'male' | 'female',
@@ -154,7 +154,8 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         emergencyContact: formData.emergencyContact,
         emergencyPhone: formData.emergencyPhone,
         section: formData.section,
-        associations: formData.associations
+        associations: formData.associations,
+        profilePicture: formData.profilePicture
       });
 
       if (result.success) {
@@ -192,6 +193,23 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         <p>Let's start with your basic details</p>
       </div>
 
+      <div className="form-group">
+        <label htmlFor="username">Username</label>
+        <div className="input-container">
+          <User className="input-icon" size={20} />
+          <input
+            type="text"
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleInputChange}
+            placeholder="Choose a unique username"
+            required
+            className="modern-input"
+          />
+        </div>
+      </div>
+
       <div className="form-row">
         <div className="form-group">
           <label htmlFor="firstName">First Name</label>
@@ -225,6 +243,22 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
               className="modern-input"
             />
           </div>
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="middleName">Middle Name (Optional)</label>
+        <div className="input-container">
+          <User className="input-icon" size={20} />
+          <input
+            type="text"
+            id="middleName"
+            name="middleName"
+            value={formData.middleName}
+            onChange={handleInputChange}
+            placeholder="Enter your middle name"
+            className="modern-input"
+          />
         </div>
       </div>
 
@@ -487,56 +521,78 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
               className="modern-input"
             >
               <option value="">Select section (optional)</option>
-              <option value="st-gabriel">St Gabriel</option>
-              <option value="st-augustine">St Augustine</option>
-              <option value="st-mary-magdalena">St Mary Magdalena</option>
-              <option value="st-michael">St Michael</option>
-              <option value="st-stephen">St Stephen</option>
-              <option value="st-francis-of-assisi">St Francis of Assisi</option>
-              <option value="st-monica">St Monica</option>
-              <option value="st-theresa">St Theresa</option>
-              <option value="st-bernadette">St Bernadette</option>
-              <option value="st-philomina">St Philomina</option>
-              <option value="st-peter">St Peter</option>
-              <option value="st-bernard">St Bernard</option>
-              <option value="st-veronica">St Veronica</option>
-              <option value="st-paul">St Paul</option>
-              <option value="st-luke">St Luke</option>
-              <option value="st-basil">St Basil</option>
-              <option value="st-anthony">St Anthony</option>
+              <option value="St Gabriel">St Gabriel</option>
+              <option value="St Augustine">St Augustine</option>
+              <option value="St Mary Magdalena">St Mary Magdalena</option>
+              <option value="St Michael">St Michael</option>
+              <option value="St Stephen">St Stephen</option>
+              <option value="St Francis of Assisi">St Francis of Assisi</option>
+              <option value="St Monica">St Monica</option>
+              <option value="St Theresa">St Theresa</option>
+              <option value="St Bernadette">St Bernadette</option>
+              <option value="St Philomina">St Philomina</option>
+              <option value="St Peter">St Peter</option>
+              <option value="St Bernard">St Bernard</option>
+              <option value="St Veronica">St Veronica</option>
+              <option value="St Paul">St Paul</option>
+              <option value="St Luke">St Luke</option>
+              <option value="St Basil">St Basil</option>
+              <option value="St Anthony">St Anthony</option>
             </select>
           </div>
         </div>
 
         <div className="form-group">
-          <label htmlFor="associations">Associations (Multiple selections allowed)</label>
+          <label htmlFor="association">Association</label>
           <div className="input-container">
             <Users className="input-icon" size={20} />
             <select
-              id="associations"
-              name="associations"
-              multiple
-              value={formData.associations}
-              onChange={handleAssociationChange}
-              className="modern-input multi-select"
-              size={6}
+              id="association"
+              name="association"
+              value={formData.associations[0] || ''}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                associations: e.target.value ? [e.target.value] : []
+              }))}
+              className="modern-input"
             >
-              <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
-              <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
-              <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
-              <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
-              <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
-              <option value="sodality-our-lady">Sodality of Our Lady</option>
-              <option value="st-anne">St Anne</option>
-              <option value="st-joseph">St Joseph</option>
-              <option value="couples-association">Couples Association</option>
-              <option value="focolare">Focolare</option>
-              <option value="womens-forum">Women's Forum</option>
-              <option value="association-altar-servers">Association of Altar Servers</option>
+              <option value="">Select association (optional)</option>
+              <option value="Missionary Childhood (MCA)">Missionary Childhood (MCA)</option>
+              <option value="Catholic Junior Youth Association (CJA)">Catholic Junior Youth Association (CJA)</option>
+              <option value="Catholic Senior Youth Association (CYA)">Catholic Senior Youth Association (CYA)</option>
+              <option value="Catholic Young Adults Association (CYAA)">Catholic Young Adults Association (CYAA)</option>
+              <option value="Most Sacred Heart of Jesus">Most Sacred Heart of Jesus</option>
+              <option value="Sodality of Our Lady">Sodality of Our Lady</option>
+              <option value="St Anne">St Anne</option>
+              <option value="St Joseph">St Joseph</option>
+              <option value="Couples Association">Couples Association</option>
+              <option value="Focolare">Focolare</option>
+              <option value="Women's Forum">Women's Forum</option>
+              <option value="Association of Altar Servers">Association of Altar Servers</option>
             </select>
           </div>
-          <small className="form-help">Hold Ctrl (Cmd on Mac) to select multiple associations</small>
         </div>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="profilePicture">Profile Picture (Optional)</label>
+        <div className="input-container">
+          <Camera className="input-icon" size={20} />
+          <input
+            type="file"
+            id="profilePicture"
+            name="profilePicture"
+            accept="image/*"
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              profilePicture: e.target.files?.[0] || null
+            }))}
+            className="modern-input"
+          />
+        </div>
+        {formData.profilePicture && (
+          <p className="file-info">Selected: {formData.profilePicture.name}</p>
+        )}
       </div>
     </div>
   );

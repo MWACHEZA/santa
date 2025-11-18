@@ -131,6 +131,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     try {
       // Prepare registration data
       const registrationData = {
+        username: (formData.email.trim().toLowerCase().split('@')[0] || formData.phone.replace(/\s/g, '') || `${formData.firstName}${formData.lastName}`).toLowerCase(),
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim().toLowerCase(),

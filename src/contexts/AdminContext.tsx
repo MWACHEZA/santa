@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import { useAuth, type UserRole, type User } from './AuthContext';
 
 // Define all the necessary interfaces
@@ -350,12 +350,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [sacraments, setSacraments] = useState<Sacrament[]>([]);
   const [prayerIntentions, setPrayerIntentions] = useState<PrayerIntention[]>([]);
 
-  const hasPermission = (permission: Permission): boolean => {
+  const hasPermission = useCallback((permission: Permission): boolean => {
     if (!user) return false;
     if (user.role === 'admin') return true;
     const permissions = ROLE_PERMISSIONS[user.role] || [];
     return permissions.includes(permission);
-  };
+  }, [user]);
 
   // Announcement methods
   const addAnnouncement = useCallback((announcement: Omit<Announcement, 'id' | 'createdAt'>) => {

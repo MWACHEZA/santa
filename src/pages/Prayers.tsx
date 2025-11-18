@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Heart, Cross, Crown, Star, Sun, Moon, Clock, Image, Church, BookOpen, Calendar } from 'lucide-react';
+import { Heart, Cross, Crown, Star, Sun, Moon, Clock, Image, Church, Calendar } from 'lucide-react';
 import './Prayers.css';
 
 const Prayers: React.FC = () => {

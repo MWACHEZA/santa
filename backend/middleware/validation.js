@@ -44,6 +44,8 @@ const validateUserRegistration = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
+  // allow multipart profile picture (handled by multer, not Joi)
+  body('profilePicture').optional(),
   body('firstName')
     .optional()
     .isLength({ min: 1, max: 50 })

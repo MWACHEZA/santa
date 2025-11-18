@@ -13,8 +13,7 @@ import {
   Archive,
   Eye,
   Save,
-  X,
-  AlertCircle
+  X
 } from 'lucide-react';
 import './NewsManagement.css';
 
@@ -35,8 +34,7 @@ const NewsManagement: React.FC = () => {
     addParishNews,
     updateParishNews,
     deleteParishNews,
-    archiveParishNews,
-    getPublishedParishNews
+    archiveParishNews
   } = useAdmin();
 
   const [showForm, setShowForm] = useState(false);
@@ -59,7 +57,6 @@ const NewsManagement: React.FC = () => {
     isPublished: false
   });
 
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadPreview, setUploadPreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -80,7 +77,6 @@ const NewsManagement: React.FC = () => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setUploadedFile(file);
       
       // Create preview for images
       if (file.type.startsWith('image/')) {
@@ -133,7 +129,6 @@ const NewsManagement: React.FC = () => {
       authorRole: 'secretary',
       isPublished: false
     });
-    setUploadedFile(null);
     setUploadPreview('');
     setShowForm(false);
     setEditingNews(null);

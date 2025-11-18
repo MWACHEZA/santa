@@ -21,13 +21,17 @@ async function checkDatabase() {
     
     // Check if database exists
     console.log('\n📊 Checking database...');
-    const [databases] = await connection.execute('SHOW DATABASES LIKE ?', [process.env.DB_NAME || 'st_patricks_church']);
+    const dbName = process.env.DB_NAME || 'st_patricks_db';
+    const [databases] = await connection.execute(
+      'SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = ?',
+      [dbName]
+    );
     
     if (databases.length > 0) {
-      console.log(`✅ Database '${process.env.DB_NAME || 'st_patricks_church'}' exists!`);
+      console.log(`✅ Database '${dbName}' exists!`);
       
       // Use the database
-      await connection.execute(`USE ${process.env.DB_NAME || 'st_patricks_church'}`);
+      await connection.query(`USE \`${dbName}\``);
       
       // Check tables
       console.log('\n📋 Checking tables...');
@@ -58,7 +62,7 @@ async function checkDatabase() {
       }
       
     } else {
-      console.log(`⚠️  Database '${process.env.DB_NAME || 'st_patricks_church'}' does not exist`);
+      console.log(`⚠️  Database '${dbName}' does not exist`);
       console.log('💡 Run the backend server to create the database');
     }
     

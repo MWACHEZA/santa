@@ -25,6 +25,19 @@ import LoadingSpinner from './common/LoadingSpinner';
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated: isUserAuthenticated, user, isLoading: authLoading } = useAuth();
   const { isLoading: adminLoading } = useAdmin();
+  const [forceReady, setForceReady] = React.useState(false);
+
+  // Force ready state after 3 seconds to prevent infinite loading
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (authLoading || adminLoading) {
+        console.log('⚠️ Forcing app to be ready after timeout');
+        setForceReady(true);
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [authLoading, adminLoading]);
 
   // Debug logging
   console.log('🔍 AuthenticatedApp render:', {
@@ -33,6 +46,7 @@ const AuthenticatedApp: React.FC = () => {
     userRole: user?.role,
     authLoading,
     adminLoading,
+    forceReady,
     pathname: window.location.pathname,
     timestamp: new Date().toISOString()
   });
@@ -60,9 +74,9 @@ const AuthenticatedApp: React.FC = () => {
     }
   };
 
-  // Show loading state while checking authentication or admin context
-  if (authLoading || adminLoading) {
-    console.log('🔄 Showing loading screen:', { authLoading, adminLoading });
+  // Show loading state while checking authentication or admin context (unless forced ready)
+  if ((authLoading || adminLoading) && !forceReady) {
+    console.log('🔄 Showing loading screen:', { authLoading, adminLoading, forceReady });
     return (
       <div className="loading-container" style={{ 
         position: 'fixed', 
@@ -82,7 +96,7 @@ const AuthenticatedApp: React.FC = () => {
           {authLoading ? 'Checking authentication...' : 'Loading application...'}
         </p>
         <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
-          Debug: authLoading={authLoading.toString()}, adminLoading={adminLoading.toString()}
+          Debug: authLoading={authLoading.toString()}, adminLoading={adminLoading.toString()}, forceReady={forceReady.toString()}
         </p>
       </div>
     );

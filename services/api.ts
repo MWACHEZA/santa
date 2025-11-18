@@ -176,7 +176,7 @@ export const authApi = {
   
   getProfile: () => apiClient.get('/auth/profile'),
   
-  updateProfile: (data: { email?: string }) =>
+  updateProfile: (data: Record<string, any>) =>
     apiClient.put('/auth/profile', data),
   
   changePassword: (data: { currentPassword: string; newPassword: string }) =>

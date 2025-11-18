@@ -23,6 +23,41 @@ const categoryRoutes = require('./routes/categories');
 const uploadRoutes = require('./routes/upload');
 const analyticsRoutes = require('./routes/analytics');
 
+const ensureUserProfilesTable = async () => {
+  const createTableSql = `
+    CREATE TABLE IF NOT EXISTS user_profiles (
+      user_id VARCHAR(36) PRIMARY KEY,
+      association VARCHAR(100),
+      section VARCHAR(100),
+      is_baptized BOOLEAN,
+      baptism_date DATE,
+      baptism_venue VARCHAR(255),
+      is_confirmed BOOLEAN,
+      confirmation_date DATE,
+      confirmation_venue VARCHAR(255),
+      receives_communion BOOLEAN,
+      first_communion_date DATE,
+      is_married BOOLEAN,
+      marriage_date DATE,
+      marriage_venue VARCHAR(255),
+      spouse_name VARCHAR(150),
+      ordination_date DATE,
+      ordination_venue VARCHAR(255),
+      ordained_by VARCHAR(150),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `;
+  
+  try {
+    await db.execute(createTableSql);
+    console.log('✅ Ensured user_profiles table exists');
+  } catch (error) {
+    console.error('❌ Failed to ensure user_profiles table:', error.message);
+  }
+};
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -39,12 +74,30 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS configuration
+// CORS configuration - Allow multiple origins including port 3001
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Body parsing middleware
@@ -155,6 +208,9 @@ const startServer = async () => {
     // Test database connection
     await db.execute('SELECT 1');
     console.log('✅ Database connected successfully');
+    
+    // Ensure extended profile table exists
+    await ensureUserProfilesTable();
     
     // Start server
     app.listen(PORT, () => {

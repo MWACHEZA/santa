@@ -18,6 +18,7 @@ interface RegisterFormData {
   section: string;
   association: string;
   agreeToTerms: boolean;
+  profilePicture?: File;
 }
 
 interface RegisterProps {
@@ -48,6 +49,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<RegisterFormData> = {};
@@ -117,6 +119,36 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     }
   };
 
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setMessage({ type: 'error', text: 'Please select a valid image file' });
+        return;
+      }
+
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({ type: 'error', text: 'Image size must be less than 5MB' });
+        return;
+      }
+
+      // Set the file
+      setFormData(prev => ({
+        ...prev,
+        profilePicture: file
+      }));
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setProfilePicturePreview(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -130,7 +162,8 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
 
     try {
       // Prepare registration data
-      const registrationData = {
+      const registrationData: any = {
+        username: (formData.email.trim().toLowerCase().split('@')[0] || formData.phone.replace(/\s/g, '') || `${formData.firstName}${formData.lastName}`).toLowerCase(),
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim().toLowerCase(),
@@ -145,6 +178,11 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
         association: formData.association || undefined,
         role: 'parishioner' as const // Automatically set as parishioner
       };
+
+      // Add profile picture if selected
+      if (formData.profilePicture) {
+        registrationData.profilePicture = formData.profilePicture;
+      }
 
       const result = await register(registrationData);
 
@@ -221,6 +259,38 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           {/* Personal Information */}
           <div className="form-section">
             <h3>Personal Information</h3>
+
+            {/* Profile Picture Upload */}
+            <div className="form-group">
+              <label>Profile Picture (Optional)</label>
+              <div className="profile-picture-upload">
+                <div className="profile-picture-preview">
+                  {profilePicturePreview ? (
+                    <img src={profilePicturePreview} alt="Profile Preview" className="preview-image" />
+                  ) : (
+                    <div className="no-image-placeholder">
+                      <span>👤</span>
+                      <span>No image selected</span>
+                    </div>
+                  )}
+                </div>
+                <div className="upload-controls">
+                  <input
+                    type="file"
+                    id="profilePicture"
+                    name="profilePicture"
+                    accept="image/*"
+                    onChange={handleProfilePictureChange}
+                    className="file-input"
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="profilePicture" className="btn-upload">
+                    Choose Photo
+                  </label>
+                  <p className="help-text">JPG, PNG, GIF (Max 5MB)</p>
+                </div>
+              </div>
+            </div>
             
             <div className="form-row">
               <div className="form-group">

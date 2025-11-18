@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   Lock, 
@@ -25,7 +24,6 @@ interface ModernLoginProps {
 
 const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }) => {
   const { login, isAuthenticated, user } = useAuth();
-  const { t } = useLanguage();
   const navigate = useNavigate();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -326,9 +324,9 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
             <div className="form-footer">
               <p>
                 By signing in, you agree to our{' '}
-                <a href="#" className="link">Terms of Service</a>{' '}
+                <button type="button" className="link">Terms of Service</button>{' '}
                 and{' '}
-                <a href="#" className="link">Privacy Policy</a>
+                <button type="button" className="link">Privacy Policy</button>
               </p>
             </div>
           </div>

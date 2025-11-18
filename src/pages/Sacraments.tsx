@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../contexts/LanguageContext';
-import { Cross, Heart, Crown, Church, Users, BookOpen, Droplets } from 'lucide-react';
+import { Cross, Heart, Crown, Church, BookOpen, Droplets } from 'lucide-react';
 import './Sacraments.css';
 
 interface Sacrament {
@@ -14,7 +13,6 @@ interface Sacrament {
 }
 
 const Sacraments: React.FC = () => {
-  const { t } = useLanguage();
   const [activeSacrament, setActiveSacrament] = useState<string>('baptism');
 
   const sacraments: Sacrament[] = [

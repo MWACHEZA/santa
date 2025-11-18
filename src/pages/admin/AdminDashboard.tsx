@@ -61,7 +61,6 @@ const AdminDashboard: React.FC = () => {
     announcements, 
     events, 
     galleryImages, 
-    getActiveAnnouncement,
     getPublishedEvents,
     getPublishedImages,
     hasPermission
@@ -87,23 +86,20 @@ const AdminDashboard: React.FC = () => {
 
   // Set initial section based on user permissions
   React.useEffect(() => {
-    if (hasPermission('overview')) {
-      setActiveSection('overview');
-    } else if (hasPermission('announcements')) {
-      setActiveSection('announcements');
-    } else if (hasPermission('events')) {
-      setActiveSection('events');
-    } else if (hasPermission('gallery')) {
-      setActiveSection('gallery');
-    } else if (hasPermission('news')) {
-      setActiveSection('news');
-    } else if (hasPermission('priest_desk')) {
-      setActiveSection('priests-desk');
-    }
+    const candidates: { section: AdminSection; perm: Parameters<typeof hasPermission>[0] }[] = [
+      { section: 'overview', perm: 'overview' },
+      { section: 'announcements', perm: 'announcements' },
+      { section: 'events', perm: 'events' },
+      { section: 'gallery', perm: 'gallery' },
+      { section: 'news', perm: 'news' },
+      { section: 'priests-desk', perm: 'priest_desk' }
+    ];
+    const firstAllowed = candidates.find(c => hasPermission(c.perm));
+    if (firstAllowed) setActiveSection(firstAllowed.section);
   }, [hasPermission]);
 
   const handleLogout = () => {
-    if (window.confirm('Are you sure you want to logout?')) {
+    if (globalThis.confirm?.('Are you sure you want to logout?')) {
       logout();
     }
   };
@@ -172,7 +168,7 @@ const AdminDashboard: React.FC = () => {
       away: parishMembers.filter(m => m.status === 'away').length,
       offline: parishMembers.filter(m => m.status === 'offline').length,
       activeToday: parishMembers.filter(m => 
-        new Date().getTime() - m.lastLogin.getTime() < 86400000
+        Date.now() - m.lastLogin.getTime() < 86400000
       ).length
     },
     website: websiteAnalytics
@@ -427,27 +423,12 @@ const AdminDashboard: React.FC = () => {
           </div>
         </header>
 
-        <div className="admin-content">
-          {activeSection === 'overview' && <OverviewSection stats={stats} setActiveSection={setActiveSection} parishMembers={parishMembers} />}
-          {activeSection === 'announcements' && <AnnouncementManager />}
-          {activeSection === 'events' && <EventManager />}
-          {activeSection === 'gallery' && <GalleryManager />}
-          {activeSection === 'news' && <NewsManagement />}
-          {activeSection === 'contact' && <ContactSection />}
-          {activeSection === 'schedule' && <ScheduleSection />}
-          {activeSection === 'priests-desk' && <PriestsDeskSection />}
-          {activeSection === 'prayers' && <PrayerManager />}
-          {activeSection === 'images' && <ImageManager />}
-          {activeSection === 'analytics' && <Analytics />}
-          {activeSection === 'videos' && <VideoManager />}
-          {activeSection === 'themes' && <ThemeManagementSection />}
-          {activeSection === 'ministries' && <MinistryManagementSection />}
-          {activeSection === 'sacraments' && <SacramentManagementSection />}
-          {activeSection === 'section-images' && <SectionImageManagementSection />}
-          {activeSection === 'prayer-intentions' && <PrayerIntentionManagementSection />}
-          {activeSection === 'profile' && <EnhancedProfile />}
-          {activeSection === 'users' && <UserManagement />}
-        </div>
+        <MainContent 
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+          stats={stats}
+          parishMembers={parishMembers}
+        />
       </main>
     </div>
   );
@@ -478,6 +459,37 @@ const getSectionTitle = (section: AdminSection): string => {
   return sectionTitles[section] || 'Unknown Section';
 };
 
+const MainContent: React.FC<{ 
+  activeSection: AdminSection; 
+  setActiveSection: (section: AdminSection) => void; 
+  stats: any; 
+  parishMembers: ParishMember[] 
+}> = ({ activeSection, setActiveSection, stats, parishMembers }) => {
+  return (
+    <div className="admin-content">
+      {activeSection === 'overview' && <OverviewSection stats={stats} setActiveSection={setActiveSection} parishMembers={parishMembers} />}
+      {activeSection === 'announcements' && <AnnouncementManager />}
+      {activeSection === 'events' && <EventManager />}
+      {activeSection === 'gallery' && <GalleryManager />}
+      {activeSection === 'news' && <NewsManagement />}
+      {activeSection === 'contact' && <ContactSection />}
+      {activeSection === 'schedule' && <ScheduleSection />}
+      {activeSection === 'priests-desk' && <PriestsDeskSection />}
+      {activeSection === 'prayers' && <PrayerManager />}
+      {activeSection === 'images' && <ImageManager />}
+      {activeSection === 'analytics' && <Analytics />}
+      {activeSection === 'videos' && <VideoManager />}
+      {activeSection === 'themes' && <ThemeManagementSection />}
+      {activeSection === 'ministries' && <MinistryManagementSection />}
+      {activeSection === 'sacraments' && <SacramentManagementSection />}
+      {activeSection === 'section-images' && <SectionImageManagementSection />}
+      {activeSection === 'prayer-intentions' && <PrayerIntentionManagementSection />}
+      {activeSection === 'profile' && <EnhancedProfile />}
+      {activeSection === 'users' && <UserManagement />}
+    </div>
+  );
+};
+
 // Overview Section Component
 const OverviewSection: React.FC<{ 
   stats: any; 
@@ -491,7 +503,7 @@ const OverviewSection: React.FC<{
     <div className="overview-section">
       {/* Quick Stats Cards */}
       <div className="stats-grid">
-        <div className="stat-card clickable" onClick={() => setActiveSection('announcements')}>
+        <button type="button" className="stat-card clickable" aria-label="Go to announcements" onClick={() => setActiveSection('announcements')}>
           <div className="stat-icon announcements">
             <Bell size={20} />
           </div>
@@ -500,9 +512,9 @@ const OverviewSection: React.FC<{
             <div className="stat-label">Active Announcements</div>
             <div className="stat-sublabel">{stats.totalAnnouncements} total</div>
           </div>
-        </div>
+        </button>
 
-        <div className="stat-card clickable" onClick={() => setActiveSection('events')}>
+        <button type="button" className="stat-card clickable" aria-label="Go to events" onClick={() => setActiveSection('events')}>
           <div className="stat-icon events">
             <Calendar size={20} />
           </div>
@@ -511,9 +523,9 @@ const OverviewSection: React.FC<{
             <div className="stat-label">Published Events</div>
             <div className="stat-sublabel">{stats.totalEvents} total</div>
           </div>
-        </div>
+        </button>
 
-        <div className="stat-card clickable" onClick={() => setActiveSection('gallery')}>
+        <button type="button" className="stat-card clickable" aria-label="Go to gallery" onClick={() => setActiveSection('gallery')}>
           <div className="stat-icon gallery">
             <Image size={20} />
           </div>
@@ -522,9 +534,9 @@ const OverviewSection: React.FC<{
             <div className="stat-label">Gallery Images</div>
             <div className="stat-sublabel">{stats.totalImages} total</div>
           </div>
-        </div>
+        </button>
 
-        <div className="stat-card clickable" onClick={() => setActiveSection('analytics')}>
+        <button type="button" className="stat-card clickable" aria-label="Go to analytics" onClick={() => setActiveSection('analytics')}>
           <div className="stat-icon users">
             <Users size={20} />
           </div>
@@ -533,7 +545,7 @@ const OverviewSection: React.FC<{
             <div className="stat-label">Parish Members Online</div>
             <div className="stat-sublabel">{stats.parishMembers.total} total members</div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Quick Actions */}
@@ -631,7 +643,7 @@ const OverviewSection: React.FC<{
                   <div className="member-name">{member.name}</div>
                   <div className="member-time">
                     {member.status === 'online' ? 'Active now' : 
-                     `${Math.floor((new Date().getTime() - member.lastLogin.getTime()) / 60000)} min ago`}
+                     `${Math.floor((Date.now() - member.lastLogin.getTime()) / 60000)} min ago`}
                   </div>
                 </div>
                 <div className={`member-status ${member.status}`}></div>
@@ -673,42 +685,8 @@ const OverviewSection: React.FC<{
   );
 };
 
-// Placeholder components for other sections
-const AnnouncementsSection: React.FC = () => (
-  <div className="section-placeholder">
-    <Bell size={48} />
-    <h3>Announcements Management</h3>
-    <p>Create, edit, and manage parish announcements</p>
-    <button className="btn btn-primary">
-      <Plus size={20} />
-      Add New Announcement
-    </button>
-  </div>
-);
 
-const EventsSection: React.FC = () => (
-  <div className="section-placeholder">
-    <Calendar size={48} />
-    <h3>Events Management</h3>
-    <p>Manage parish events and community calendar</p>
-    <button className="btn btn-primary">
-      <Plus size={20} />
-      Add New Event
-    </button>
-  </div>
-);
 
-const GallerySection: React.FC = () => (
-  <div className="section-placeholder">
-    <Image size={48} />
-    <h3>Gallery Management</h3>
-    <p>Upload and organize parish photos</p>
-    <button className="btn btn-primary">
-      <Plus size={20} />
-      Upload Images
-    </button>
-  </div>
-);
 
 
 
@@ -796,7 +774,7 @@ Parish Priest`
   };
 
   const handleDeleteMessage = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this message?')) {
+    if (globalThis.confirm?.('Are you sure you want to delete this message?')) {
       setMessages(messages.filter(msg => msg.id !== id));
     }
   };
@@ -881,8 +859,9 @@ Parish Priest`
             <div className="message-form">
               <div className="form-row">
                 <div className="form-group">
-                  <label>Message Title *</label>
+                  <label htmlFor="message-title">Message Title *</label>
                   <input
+                    id="message-title"
                     type="text"
                     value={currentMessage.title}
                     onChange={(e) => setCurrentMessage({...currentMessage, title: e.target.value})}
@@ -891,8 +870,9 @@ Parish Priest`
                   />
                 </div>
                 <div className="form-group">
-                  <label>Message Date *</label>
+                  <label htmlFor="message-date">Message Date *</label>
                   <input
+                    id="message-date"
                     type="date"
                     value={currentMessage.date}
                     onChange={(e) => setCurrentMessage({...currentMessage, date: e.target.value})}
@@ -902,8 +882,9 @@ Parish Priest`
               </div>
 
               <div className="form-group">
-                <label>Expiration Date *</label>
+                <label htmlFor="message-expiration">Expiration Date *</label>
                 <input
+                  id="message-expiration"
                   type="date"
                   value={currentMessage.expirationDate}
                   onChange={(e) => setCurrentMessage({...currentMessage, expirationDate: e.target.value})}
@@ -914,8 +895,9 @@ Parish Priest`
               </div>
 
               <div className="form-group">
-                <label>Message Content *</label>
+                <label htmlFor="message-content">Message Content *</label>
                 <textarea
+                  id="message-content"
                   value={currentMessage.content}
                   onChange={(e) => setCurrentMessage({...currentMessage, content: e.target.value})}
                   rows={12}
@@ -953,7 +935,7 @@ Parish Priest`
   );
 };
 
-const AnalyticsSection: React.FC<{
+export const AnalyticsSection: React.FC<{
   websiteData: any;
   parishMembers: ParishMember[];
 }> = ({ websiteData, parishMembers }) => {
@@ -1017,8 +999,8 @@ const AnalyticsSection: React.FC<{
           </div>
           <div className="chart-container">
             <div className="bar-chart">
-              {websiteData.monthlyData.map((month: any, index: number) => (
-                <div key={index} className="bar-group">
+              {websiteData.monthlyData.map((month: any) => (
+                <div key={month.month} className="bar-group">
                   <div className="bar-container">
                     <div 
                       className="bar visitors" 
@@ -1055,8 +1037,8 @@ const AnalyticsSection: React.FC<{
             <BarChart3 size={20} />
           </div>
           <div className="pages-chart">
-            {websiteData.topPages.map((page: any, index: number) => (
-              <div key={index} className="page-row">
+            {websiteData.topPages.map((page: any) => (
+              <div key={page.page} className="page-row">
                 <div className="page-info">
                   <span className="page-name">{page.page}</span>
                   <span className="page-views">{page.views.toLocaleString()}</span>
@@ -1118,7 +1100,7 @@ const AnalyticsSection: React.FC<{
                     <span className="member-name">{member.name}</span>
                     <span className="member-last-seen">
                       {member.status === 'online' ? 'Active now' : 
-                       `Last seen ${Math.floor((new Date().getTime() - member.lastLogin.getTime()) / 60000)} min ago`}
+                       `Last seen ${Math.floor((Date.now() - member.lastLogin.getTime()) / 60000)} min ago`}
                     </span>
                   </div>
                   <div className={`member-status-indicator ${member.status}`}></div>
@@ -1190,7 +1172,7 @@ const AnalyticsSection: React.FC<{
               <Users size={24} />
             </div>
             <div className="summary-content">
-              <h4>{parishMembers.filter(m => new Date().getTime() - m.lastLogin.getTime() < 86400000).length}</h4>
+              <h4>{parishMembers.filter(m => Date.now() - m.lastLogin.getTime() < 86400000).length}</h4>
               <p>Active Members Today</p>
               <span className="summary-change positive">Highest this week</span>
             </div>
@@ -1236,30 +1218,33 @@ const ContactSection: React.FC = () => {
       </div>
 
       <div className="contact-form">
-        <div className="form-row">
-          <div className="form-group">
-            <label>Main Phone Number</label>
-            <input
-              type="text"
-              value={contactInfo.phone}
-              onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
-              disabled={!isEditing}
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="contact-phone">Main Phone Number</label>
+              <input
+                id="contact-phone"
+                type="text"
+                value={contactInfo.phone}
+                onChange={(e) => setContactInfo({...contactInfo, phone: e.target.value})}
+                disabled={!isEditing}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="contact-email">Email Address</label>
+              <input
+                id="contact-email"
+                type="email"
+                value={contactInfo.email}
+                onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
+                disabled={!isEditing}
+              />
+            </div>
           </div>
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
-              value={contactInfo.email}
-              onChange={(e) => setContactInfo({...contactInfo, email: e.target.value})}
-              disabled={!isEditing}
-            />
-          </div>
-        </div>
 
         <div className="form-group">
-          <label>Church Address</label>
+          <label htmlFor="contact-address">Church Address</label>
           <textarea
+            id="contact-address"
             value={contactInfo.address}
             onChange={(e) => setContactInfo({...contactInfo, address: e.target.value})}
             disabled={!isEditing}
@@ -1268,8 +1253,9 @@ const ContactSection: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label>Emergency Contact</label>
+          <label htmlFor="contact-emergency">Emergency Contact</label>
           <input
+            id="contact-emergency"
             type="text"
             value={contactInfo.emergencyPhone}
             onChange={(e) => setContactInfo({...contactInfo, emergencyPhone: e.target.value})}
@@ -1281,8 +1267,9 @@ const ContactSection: React.FC = () => {
           <h4>Office Hours</h4>
           <div className="form-row">
             <div className="form-group">
-              <label>Weekdays</label>
+              <label htmlFor="office-weekdays">Weekdays</label>
               <input
+                id="office-weekdays"
                 type="text"
                 value={contactInfo.office.weekdays}
                 onChange={(e) => setContactInfo({
@@ -1293,8 +1280,9 @@ const ContactSection: React.FC = () => {
               />
             </div>
             <div className="form-group">
-              <label>Saturday</label>
+              <label htmlFor="office-saturday">Saturday</label>
               <input
+                id="office-saturday"
                 type="text"
                 value={contactInfo.office.saturday}
                 onChange={(e) => setContactInfo({
@@ -1305,8 +1293,9 @@ const ContactSection: React.FC = () => {
               />
             </div>
             <div className="form-group">
-              <label>Sunday</label>
+              <label htmlFor="office-sunday">Sunday</label>
               <input
+                id="office-sunday"
                 type="text"
                 value={contactInfo.office.sunday}
                 onChange={(e) => setContactInfo({
@@ -1361,12 +1350,13 @@ const ScheduleSection: React.FC = () => {
       </div>
 
       <div className="schedule-grid">
-        {massSchedule.map((schedule, index) => (
+            {massSchedule.map((schedule, index) => (
           <div key={schedule.day} className="schedule-card">
             <h4>{schedule.day}</h4>
             <div className="times-section">
-              <label>Mass Times</label>
+              <label htmlFor={`times-${schedule.day}`}>Mass Times</label>
               <input
+                id={`times-${schedule.day}`}
                 type="text"
                 value={schedule.times.join(', ')}
                 onChange={(e) => updateSchedule(index, 'times', e.target.value.split(', '))}
@@ -1375,8 +1365,9 @@ const ScheduleSection: React.FC = () => {
               />
             </div>
             <div className="language-section">
-              <label>Languages</label>
+              <label htmlFor={`language-${schedule.day}`}>Languages</label>
               <input
+                id={`language-${schedule.day}`}
                 type="text"
                 value={schedule.language}
                 onChange={(e) => updateSchedule(index, 'language', e.target.value)}
@@ -1392,7 +1383,7 @@ const ScheduleSection: React.FC = () => {
 };
 
 // User Management Section Component
-const UserManagementSection: React.FC = () => {
+export const UserManagementSection: React.FC = () => {
   const [users, setUsers] = useState([
     { id: '1', username: 'parishioner', email: 'parishioner@example.com', role: 'user', status: 'active', lastLogin: '2024-01-15' },
     { id: '2', username: 'admin', email: 'admin@stpatricks.org', role: 'admin', status: 'active', lastLogin: '2024-01-16' }
@@ -1503,7 +1494,7 @@ const UserManagementSection: React.FC = () => {
   };
 
   const handleDeleteUser = (userId: string) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (globalThis.confirm?.('Are you sure you want to delete this user?')) {
       setUsers(users.filter(user => user.id !== userId));
     }
   };
@@ -1631,8 +1622,9 @@ const UserManagementSection: React.FC = () => {
                 </div>
               )}
               <div className="form-group">
-                <label>New Password:</label>
+                <label htmlFor="reset-password">New Password:</label>
                 <input
+                  id="reset-password"
                   type="password"
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
@@ -1645,8 +1637,9 @@ const UserManagementSection: React.FC = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Confirm Password:</label>
+                <label htmlFor="confirm-password">Confirm Password:</label>
                 <input
+                  id="confirm-password"
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -1767,16 +1760,18 @@ const ThemeManagementSection: React.FC = () => {
           <h4>Add New Theme</h4>
           <div className="form-row">
             <div className="form-group">
-              <label>Year</label>
+              <label htmlFor="theme-year">Year</label>
               <input
+                id="theme-year"
                 type="number"
                 value={newTheme.year}
-                onChange={(e) => setNewTheme({...newTheme, year: parseInt(e.target.value)})}
+                onChange={(e) => setNewTheme({...newTheme, year: Number.parseInt(e.target.value)})}
               />
             </div>
             <div className="form-group">
-              <label>Title</label>
+              <label htmlFor="theme-title">Title</label>
               <input
+                id="theme-title"
                 type="text"
                 placeholder="Theme title"
                 value={newTheme.title}
@@ -1785,8 +1780,9 @@ const ThemeManagementSection: React.FC = () => {
             </div>
           </div>
           <div className="form-group">
-            <label>Subtitle</label>
+            <label htmlFor="theme-subtitle">Subtitle</label>
             <input
+              id="theme-subtitle"
               type="text"
               placeholder="Theme subtitle"
               value={newTheme.subtitle}
@@ -1794,8 +1790,9 @@ const ThemeManagementSection: React.FC = () => {
             />
           </div>
           <div className="form-group">
-            <label>Bible Verse</label>
+            <label htmlFor="theme-verse">Bible Verse</label>
             <input
+              id="theme-verse"
               type="text"
               placeholder="Bible verse reference"
               value={newTheme.verse}
@@ -1803,8 +1800,9 @@ const ThemeManagementSection: React.FC = () => {
             />
           </div>
           <div className="form-group">
-            <label>Description</label>
+            <label htmlFor="theme-description">Description</label>
             <textarea
+              id="theme-description"
               placeholder="Theme description"
               value={newTheme.description}
               onChange={(e) => setNewTheme({...newTheme, description: e.target.value})}
@@ -1815,7 +1813,7 @@ const ThemeManagementSection: React.FC = () => {
             label="Theme Image"
             onImageSelect={handleThemeImageSelect}
             onImageRemove={handleThemeImageRemove}
-            currentImageUrl={newTheme.imageUrl !== '/api/placeholder/400/300' ? newTheme.imageUrl : undefined}
+            currentImageUrl={newTheme.imageUrl === '/api/placeholder/400/300' ? undefined : newTheme.imageUrl}
             maxSizeInMB={3}
           />
           <div className="form-actions">
@@ -1936,8 +1934,9 @@ const MinistryManagementSection: React.FC = () => {
           <h4>Add New Ministry</h4>
           <div className="form-row">
             <div className="form-group">
-              <label>Ministry Name</label>
+              <label htmlFor="ministry-name">Ministry Name</label>
               <input
+                id="ministry-name"
                 type="text"
                 placeholder="Ministry name"
                 value={newMinistry.name}
@@ -1945,8 +1944,9 @@ const MinistryManagementSection: React.FC = () => {
               />
             </div>
             <div className="form-group">
-              <label>Contact Person</label>
+              <label htmlFor="ministry-contact">Contact Person</label>
               <input
+                id="ministry-contact"
                 type="text"
                 placeholder="Contact person"
                 value={newMinistry.contactPerson}
@@ -1955,8 +1955,9 @@ const MinistryManagementSection: React.FC = () => {
             </div>
           </div>
           <div className="form-group">
-            <label>Description</label>
+            <label htmlFor="ministry-description">Description</label>
             <textarea
+              id="ministry-description"
               placeholder="Ministry description"
               value={newMinistry.description}
               onChange={(e) => setNewMinistry({...newMinistry, description: e.target.value})}
@@ -1964,8 +1965,9 @@ const MinistryManagementSection: React.FC = () => {
             />
           </div>
           <div className="form-group">
-            <label>Meeting Time</label>
+            <label htmlFor="ministry-meeting">Meeting Time</label>
             <input
+              id="ministry-meeting"
               type="text"
               placeholder="Meeting time"
               value={newMinistry.meetingTime}
@@ -1976,7 +1978,7 @@ const MinistryManagementSection: React.FC = () => {
             label="Ministry Image"
             onImageSelect={handleImageSelect}
             onImageRemove={handleImageRemove}
-            currentImageUrl={newMinistry.imageUrl !== '/api/placeholder/300/200' ? newMinistry.imageUrl : undefined}
+            currentImageUrl={newMinistry.imageUrl === '/api/placeholder/300/200' ? undefined : newMinistry.imageUrl}
             maxSizeInMB={2}
           />
           <div className="form-actions">
@@ -2122,8 +2124,9 @@ const SacramentManagementSection: React.FC = () => {
         <div className="add-sacrament-form">
           <h4>Add New Sacrament</h4>
           <div className="form-group">
-            <label>Sacrament Name</label>
+            <label htmlFor="sacrament-name">Sacrament Name</label>
             <input
+              id="sacrament-name"
               type="text"
               placeholder="Sacrament name"
               value={newSacrament.name}
@@ -2131,8 +2134,9 @@ const SacramentManagementSection: React.FC = () => {
             />
           </div>
           <div className="form-group">
-            <label>Description</label>
+            <label htmlFor="sacrament-description">Description</label>
             <textarea
+              id="sacrament-description"
               placeholder="Sacrament description"
               value={newSacrament.description}
               onChange={(e) => setNewSacrament({...newSacrament, description: e.target.value})}
@@ -2140,10 +2144,11 @@ const SacramentManagementSection: React.FC = () => {
             />
           </div>
           <div className="form-group">
-            <label>Requirements</label>
+            <span className="form-label">Requirements</span>
             {newSacrament.requirements.map((req, index) => (
-              <div key={index} className="requirement-row">
+              <div key={`${req}-${index}`} className="requirement-row">
                 <input
+                  id={`req-${index}`}
                   type="text"
                   placeholder="Requirement"
                   value={req}
@@ -2163,8 +2168,9 @@ const SacramentManagementSection: React.FC = () => {
             </button>
           </div>
           <div className="form-group">
-            <label>Contact Information</label>
+            <label htmlFor="sacrament-contact">Contact Information</label>
             <input
+              id="sacrament-contact"
               type="text"
               placeholder="Contact information"
               value={newSacrament.contactInfo}
@@ -2175,7 +2181,7 @@ const SacramentManagementSection: React.FC = () => {
             label="Sacrament Image"
             onImageSelect={handleSacramentImageSelect}
             onImageRemove={handleSacramentImageRemove}
-            currentImageUrl={newSacrament.imageUrl !== '/api/placeholder/300/200' ? newSacrament.imageUrl : undefined}
+            currentImageUrl={newSacrament.imageUrl === '/api/placeholder/300/200' ? undefined : newSacrament.imageUrl}
             maxSizeInMB={2}
           />
           <div className="form-actions">
@@ -2197,8 +2203,8 @@ const SacramentManagementSection: React.FC = () => {
               <div className="sacrament-requirements">
                 <h5>Requirements:</h5>
                 <ul>
-                  {sacrament.requirements.map((req, index) => (
-                    <li key={index}>{req}</li>
+            {sacrament.requirements.map((req, index) => (
+                    <li key={`${req}-${index}`}>{req}</li>
                   ))}
                 </ul>
               </div>
@@ -2306,8 +2312,9 @@ const SectionImageManagementSection: React.FC = () => {
         <div className="add-image-form">
           <h4>Add New Section Image</h4>
           <div className="form-group">
-            <label>Section</label>
+            <label htmlFor="image-section">Section</label>
             <select
+              id="image-section"
               value={newImage.section}
               onChange={(e) => setNewImage({...newImage, section: e.target.value as any})}
             >
@@ -2318,8 +2325,9 @@ const SectionImageManagementSection: React.FC = () => {
             </select>
           </div>
           <div className="form-group">
-            <label>Title</label>
+            <label htmlFor="image-title">Title</label>
             <input
+              id="image-title"
               type="text"
               placeholder="Image title"
               value={newImage.title}
@@ -2330,7 +2338,7 @@ const SectionImageManagementSection: React.FC = () => {
             label="Section Image"
             onImageSelect={handleSectionImageSelect}
             onImageRemove={handleSectionImageRemove}
-            currentImageUrl={newImage.imageUrl !== '/api/placeholder/400/300' ? newImage.imageUrl : undefined}
+            currentImageUrl={newImage.imageUrl === '/api/placeholder/400/300' ? undefined : newImage.imageUrl}
             maxSizeInMB={3}
           />
           <div className="form-actions">
@@ -2343,7 +2351,7 @@ const SectionImageManagementSection: React.FC = () => {
       <div className="images-by-section">
         {Object.entries(groupedImages).map(([section, images]) => (
           <div key={section} className="section-group">
-            <h4>{section.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+            <h4>{section.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}</h4>
             <div className="images-grid">
               {images.map(image => (
                 <div key={image.id} className="image-card">
@@ -2464,3 +2472,4 @@ const PrayerIntentionManagementSection: React.FC = () => {
 
 
 export default AdminDashboard;
+export const PlaceholderSections = {};

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '../services/api';
 
 export type UserRole = 'admin' | 'secretary' | 'priest' | 'reporter' | 'parishioner' | 'vice_secretary';
@@ -49,8 +49,10 @@ export interface User {
 }
 
 interface RegistrationData {
+  username: string;
   firstName: string;
   lastName: string;
+  middleName?: string;
   email: string;
   phone: string;
   password: string;
@@ -60,7 +62,9 @@ interface RegistrationData {
   emergencyContact?: string;
   emergencyPhone?: string;
   section?: string;
-  associations?: string[];
+  association?: string; // Single association (for Register.tsx)
+  associations?: string[]; // Multiple associations (for ModernRegister.tsx)
+  profilePicture?: File | null;
   role?: UserRole;
 }
 
@@ -71,6 +75,8 @@ interface AuthContextType {
   login: (identifier: string, password: string) => Promise<{ success: boolean; role?: UserRole; message?: string; mustChangePassword?: boolean }>;
   register: (data: RegistrationData) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
+  refreshProfile: () => Promise<void>;
+  saveProfile: (updates: Partial<User>) => Promise<{ success: boolean; message: string }>;
   // Admin user management helpers
   listUsers: () => User[];
   createUser: (u: Omit<User, 'id'> & { password: string }) => { success: boolean; message: string };
@@ -177,6 +183,54 @@ const defaultUsers: StoredUser[] = [
   }
 ];
 
+const parseNullableBoolean = (value: any): boolean | null | undefined => {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    if (['true', '1'].includes(normalized)) return true;
+    if (['false', '0'].includes(normalized)) return false;
+  }
+  return null;
+};
+
+const transformApiUser = (apiUser: any): User => ({
+  id: apiUser.id,
+  username: apiUser.username,
+  email: apiUser.email ?? apiUser.emailAddress ?? undefined,
+  phone: apiUser.phone ?? apiUser.phoneNumber ?? undefined,
+  firstName: apiUser.firstName ?? apiUser.first_name ?? undefined,
+  lastName: apiUser.lastName ?? apiUser.last_name ?? undefined,
+  role: apiUser.role,
+  mustChangePassword: apiUser.mustChangePassword ?? apiUser.must_change_password ?? undefined,
+  dateOfBirth: apiUser.dateOfBirth ?? apiUser.date_of_birth ?? undefined,
+  gender: apiUser.gender ?? undefined,
+  address: apiUser.address ?? undefined,
+  emergencyContact: apiUser.emergencyContact ?? apiUser.emergency_contact ?? undefined,
+  emergencyPhone: apiUser.emergencyPhone ?? apiUser.emergency_phone ?? undefined,
+  association: apiUser.association ?? apiUser.associationName ?? undefined,
+  section: apiUser.section ?? apiUser.sectionName ?? undefined,
+  isBaptized: parseNullableBoolean(apiUser.isBaptized ?? apiUser.is_baptized),
+  baptismDate: apiUser.baptismDate ?? apiUser.baptism_date ?? undefined,
+  baptismVenue: apiUser.baptismVenue ?? apiUser.baptism_venue ?? undefined,
+  isConfirmed: parseNullableBoolean(apiUser.isConfirmed ?? apiUser.is_confirmed),
+  confirmationDate: apiUser.confirmationDate ?? apiUser.confirmation_date ?? undefined,
+  confirmationVenue: apiUser.confirmationVenue ?? apiUser.confirmation_venue ?? undefined,
+  receivesCommunion: parseNullableBoolean(apiUser.receivesCommunion ?? apiUser.receives_communion),
+  firstCommunionDate: apiUser.firstCommunionDate ?? apiUser.first_communion_date ?? undefined,
+  isMarried: parseNullableBoolean(apiUser.isMarried ?? apiUser.is_married),
+  marriageDate: apiUser.marriageDate ?? apiUser.marriage_date ?? undefined,
+  marriageVenue: apiUser.marriageVenue ?? apiUser.marriage_venue ?? undefined,
+  spouseName: apiUser.spouseName ?? apiUser.spouse_name ?? undefined,
+  ordinationDate: apiUser.ordinationDate ?? apiUser.ordination_date ?? undefined,
+  ordinationVenue: apiUser.ordinationVenue ?? apiUser.ordination_venue ?? undefined,
+  ordainedBy: apiUser.ordainedBy ?? apiUser.ordained_by ?? undefined,
+  createdAt: apiUser.createdAt ?? apiUser.created_at ?? undefined,
+  updatedAt: apiUser.updatedAt ?? apiUser.updated_at ?? undefined,
+});
+
 // Local user store helpers (persisted in localStorage)
 const USER_STORE_KEY = 'userStore';
 function loadUsers(): StoredUser[] {
@@ -204,162 +258,150 @@ function findUserByIdentifier(users: StoredUser[], identifier: string): StoredUs
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start with loading true
-  const [user, setUser] = useState<User | null>(null); // Start with null, will be set after hydration
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
 
-  // Initialize user from localStorage on mount
+  const persistUser = useCallback((rawUser: any | null) => {
+    if (!rawUser) {
+      setUser(null);
+      localStorage.removeItem('currentUser');
+      return null;
+    }
+    const mappedUser = transformApiUser(rawUser);
+    setUser(mappedUser);
+    localStorage.setItem('currentUser', JSON.stringify(mappedUser));
+    return mappedUser;
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    try {
+      const response = await api.auth.getProfile();
+      if (response.success && response.data?.user) {
+        persistUser(response.data.user);
+      }
+    } catch (error) {
+      console.error('Profile sync error:', error);
+    }
+  }, [persistUser]);
+
   useEffect(() => {
-    const initializeAuth = () => {
-      console.log('🔄 Initializing auth state...');
+    const initializeAuth = async () => {
       try {
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          console.log('✅ Found saved user:', parsedUser.username);
-          setUser(parsedUser);
-        } else {
-          console.log('ℹ️ No saved user found');
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          api.setAuthToken(token);
+          await refreshProfile();
         }
       } catch (error) {
-        console.error('❌ Error parsing saved user:', error);
-        // Clear corrupted data
-        localStorage.removeItem('currentUser');
+        console.error('Auth initialization failed:', error);
         localStorage.removeItem('authToken');
+        persistUser(null);
       } finally {
-        console.log('✅ Auth initialization complete, setting loading to false');
-        setIsLoading(false); // Auth state is now ready
+        setIsLoading(false);
       }
     };
 
-    // Add a timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      console.log('⚠️ Auth initialization timeout, forcing loading to false');
-      setIsLoading(false);
-    }, 5000); // 5 second timeout
-
     initializeAuth();
-
-    // Clear timeout if initialization completes normally
-    return () => clearTimeout(timeoutId);
-  }, []);
+  }, [persistUser, refreshProfile]);
 
   const login = async (identifier: string, password: string): Promise<{ success: boolean; role?: UserRole; message?: string; mustChangePassword?: boolean }> => {
-    // Set loading state during login
-    console.log('🔐 Starting login process...');
     setIsLoading(true);
-    
-    // Trim whitespace from inputs
     const trimmedIdentifier = identifier.trim();
+    const normalizedIdentifier = trimmedIdentifier.toLowerCase();
     const trimmedPassword = password.trim();
 
     try {
-      // Try API login first
-      const response = await api.auth.login({ 
-        username: identifier, // Can be username, email, or phone
-        password 
-      });
+      try {
+        const response = await api.auth.login({
+          username: identifier,
+          password
+        });
 
-      if (response.success && response.data) {
-        const userData = response.data;
-        const newUser: User = {
-          id: userData.id,
-          username: userData.username,
-          email: userData.email,
-          phone: userData.phone,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          role: userData.role,
-          mustChangePassword: userData.mustChangePassword
-        };
-        
-        const mustChange = newUser.mustChangePassword === true || trimmedPassword === 'Password';
-        if (mustChange) {
-          localStorage.setItem('pendingPasswordChangeUser', newUser.username);
-          setIsLoading(false);
-          return { success: true, role: newUser.role, message: 'Password change required', mustChangePassword: true };
-        } else {
-          console.log('✅ API Login successful, setting user:', newUser.username);
-          setUser(newUser);
-          localStorage.setItem('currentUser', JSON.stringify(newUser));
-          localStorage.setItem('authToken', (response as any).token || '');
-          setIsLoading(false);
-          return { success: true, role: newUser.role, message: `Welcome ${newUser.username}!` };
+        if (response.success && response.data?.user) {
+          const { user: apiUser, token, refreshToken } = response.data as any;
+          if (token) {
+            api.setAuthToken(token);
+            localStorage.setItem('authToken', token);
+          }
+          if (refreshToken) {
+            localStorage.setItem('refreshToken', refreshToken);
+          }
+          const mappedUser = persistUser(apiUser);
+          const mustChange = mappedUser?.mustChangePassword === true || trimmedPassword === 'Password';
+          if (mustChange && mappedUser) {
+            localStorage.setItem('pendingPasswordChangeUser', mappedUser.username);
+            return { success: true, role: mappedUser.role, message: 'Password change required', mustChangePassword: true };
+          }
+          return { success: true, role: mappedUser?.role, message: `Welcome ${mappedUser?.firstName || mappedUser?.username || 'back'}!` };
         }
+      } catch (error) {
+        console.warn('API login failed, attempting local fallback', error);
       }
-    } catch (error) {
-      // Silently fall back to local authentication when API is unavailable
-      // This is expected behavior in development/offline mode
-    }
 
-    try {
-      // Fallback to default users for development and local user store
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const users = loadUsers();
-      const foundUser = findUserByIdentifier(users, trimmedIdentifier);
+      const foundUser = findUserByIdentifier(users, normalizedIdentifier) || findUserByIdentifier(users, trimmedIdentifier);
       const isPasswordValid = foundUser && foundUser.password === trimmedPassword;
 
       if (foundUser && isPasswordValid) {
-        const newUser: User = { 
-          id: foundUser.id,
-          username: foundUser.username,
-          email: foundUser.email,
-          phone: foundUser.phone,
-          firstName: foundUser.firstName,
-          lastName: foundUser.lastName,
-          role: foundUser.role,
-          mustChangePassword: foundUser.mustChangePassword,
-          dateOfBirth: foundUser.dateOfBirth,
-          address: foundUser.address,
-          emergencyContact: foundUser.emergencyContact,
-          emergencyPhone: foundUser.emergencyPhone,
-          createdAt: foundUser.createdAt,
-          updatedAt: foundUser.updatedAt
-        };
-        
-        const mustChange = newUser.mustChangePassword === true || trimmedPassword === 'Password';
-        if (mustChange) {
-          localStorage.setItem('pendingPasswordChangeUser', newUser.username);
-          setIsLoading(false);
-          return { success: true, role: newUser.role, message: 'Password change required', mustChangePassword: true };
-        } else {
-          console.log('✅ Local Login successful, setting user:', newUser.username);
-          setUser(newUser);
-          localStorage.setItem('currentUser', JSON.stringify(newUser));
-          setIsLoading(false);
-          return { success: true, role: foundUser.role, message: `Welcome ${foundUser.firstName || foundUser.username}!` };
+        const mappedUser = persistUser(foundUser);
+        if (mappedUser) {
+          const mustChange = mappedUser.mustChangePassword === true || trimmedPassword === 'Password';
+          if (mustChange) {
+            localStorage.setItem('pendingPasswordChangeUser', mappedUser.username);
+            return { success: true, role: mappedUser.role, message: 'Password change required', mustChangePassword: true };
+          }
+          return { success: true, role: mappedUser.role, message: `Welcome ${mappedUser.firstName || mappedUser.username}!` };
         }
       }
 
-      setIsLoading(false);
       return {
         success: false,
         message: 'Invalid credentials. Please check your email/phone and password.'
       };
-    } catch (error) {
+    } finally {
       setIsLoading(false);
-      return {
-        success: false,
-        message: 'An error occurred during login. Please try again.'
-      };
     }
   };
 
   const register = async (data: RegistrationData): Promise<{ success: boolean; message: string }> => {
     try {
       setIsLoading(true);
+      
+      // Handle profile picture upload if present
+      let profilePictureUrl = undefined;
+      if (data.profilePicture) {
+        try {
+          const uploadResponse = await api.upload.uploadSingle(data.profilePicture, 'profile');
+          if (uploadResponse.success && uploadResponse.data?.url) {
+            profilePictureUrl = uploadResponse.data.url;
+          }
+        } catch (uploadError) {
+          console.warn('Profile picture upload failed, continuing without it:', uploadError);
+        }
+      }
+      
       const response = await api.auth.register({
-        username: data.email.split('@')[0], // Use email prefix as username
+        username: data.username, // Use provided username instead of email prefix
         email: data.email,
         password: data.password,
         role: 'parishioner',
         firstName: data.firstName,
         lastName: data.lastName,
+        middleName: data.middleName || undefined,
         phone: data.phone,
         dateOfBirth: data.dateOfBirth || undefined,
+        gender: data.gender || undefined,
         address: data.address || undefined,
         emergencyContact: data.emergencyContact || undefined,
-        emergencyPhone: data.emergencyPhone || undefined
+        emergencyPhone: data.emergencyPhone || undefined,
+        section: data.section || undefined,
+        association: Array.isArray(data.associations) ? data.associations[0] : data.association || undefined,
+        profilePicture: profilePictureUrl || undefined
       });
 
       if (response.success) {
@@ -407,15 +449,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('currentUser');
+    persistUser(null);
+    api.setAuthToken(null);
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('pendingPasswordChangeUser');
     // Clear any admin context data as well
     localStorage.removeItem('adminUser');
     localStorage.removeItem('adminToken');
     // Force reload to clear all state and redirect to login
     window.location.href = '/login';
+  };
+
+  const saveProfile = async (updates: Partial<User>) => {
+    try {
+      const response = await api.auth.updateProfile(updates);
+      if (response.success && response.data?.user) {
+        persistUser(response.data.user);
+        return { success: true, message: response.message || 'Profile updated successfully' };
+      }
+      return { success: false, message: response.message || 'Failed to update profile' };
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return {
+        success: false,
+        message: 'Failed to update profile. Please try again.'
+      };
+    }
   };
 
   // Admin user management (local-only implementation)
@@ -475,6 +535,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     register,
     logout,
+    refreshProfile,
+    saveProfile,
     listUsers,
     createUser,
     updateUser,

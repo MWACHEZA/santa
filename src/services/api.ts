@@ -164,11 +164,16 @@ export const authApi = {
     role?: string;
     firstName?: string;
     lastName?: string;
+    middleName?: string;
     phone?: string;
     dateOfBirth?: string;
+    gender?: string;
     address?: string;
     emergencyContact?: string;
     emergencyPhone?: string;
+    section?: string;
+    association?: string;
+    profilePicture?: File | null;
   }) =>
     apiClient.post('/auth/register', userData),
   
@@ -176,7 +181,7 @@ export const authApi = {
   
   getProfile: () => apiClient.get('/auth/profile'),
   
-  updateProfile: (data: { email?: string }) =>
+  updateProfile: (data: Record<string, any>) =>
     apiClient.put('/auth/profile', data),
   
   changePassword: (data: { currentPassword: string; newPassword: string }) =>

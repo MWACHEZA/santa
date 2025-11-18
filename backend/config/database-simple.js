@@ -9,9 +9,12 @@ const dbConfig = {
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'st_patricks_church',
   charset: 'utf8mb4',
-  acquireTimeout: 60000,
-  timeout: 60000,
-  reconnect: true
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+  idleTimeout: 300000,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 0
 };
 
 // Create connection pool
