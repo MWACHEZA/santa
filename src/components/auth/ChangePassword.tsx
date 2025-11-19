@@ -98,7 +98,7 @@ const ChangePassword: React.FC = () => {
         <div className="login-header">
           <div className="login-logo">
             <img 
-              src="/api/placeholder/80/80" 
+              src={'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%234a7c2a"/><stop offset="100%" stop-color="%232d5016"/></linearGradient></defs><circle cx="40" cy="40" r="38" fill="url(%23g)"/></svg>'}
               alt="St. Patrick's Logo" 
               className="logo-img"
             />

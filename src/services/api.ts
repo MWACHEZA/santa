@@ -46,9 +46,9 @@ class ApiClient {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    const token = this.token || localStorage.getItem('authToken');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
@@ -67,13 +67,16 @@ class ApiClient {
           ...this.getHeaders(),
           ...options.headers,
         },
+        credentials: 'include',
       };
 
       const response = await fetch(url, config);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        const errorMessage = data?.message || `HTTP error! status: ${response.status}`;
+        const err = new Error(errorMessage);
+        throw err;
       }
 
       return data;
@@ -83,7 +86,16 @@ class ApiClient {
         // Connection refused - API server not running (expected in development)
         throw error;
       } else {
-        console.error('API request failed:', error);
+        const msg = (error as any)?.message || '';
+        const isAuthError = typeof msg === 'string' && (
+          msg.includes('Invalid credentials') ||
+          msg.includes('Authentication required') ||
+          msg.includes('Insufficient permissions') ||
+          msg.includes('Unauthorized')
+        );
+        if (!isAuthError) {
+          console.error('API request failed:', error);
+        }
         throw error;
       }
     }
@@ -124,15 +136,16 @@ class ApiClient {
     try {
       const url = `${this.baseURL}${endpoint}`;
       const headers: HeadersInit = {};
-
-      if (this.token) {
-        headers['Authorization'] = `Bearer ${this.token}`;
+      const token = this.token || localStorage.getItem('authToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
       }
 
       const response = await fetch(url, {
         method: 'POST',
         headers,
         body: formData,
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -220,6 +233,27 @@ export const newsApi = {
   unarchive: (id: string) => apiClient.patch(`/news/${id}/unarchive`),
   
   getStats: () => apiClient.get('/news/stats/overview'),
+
+  // External aggregated news (Vatican, Diocese, ZCBC)
+  getExternal: (source: 'diocese' | 'vatican' | 'zimbabwe_catholic') => {
+    // Try common backend routes; whichever exists will respond
+    const endpoints = [
+      `/news/external?source=${source}`,
+      `/external/news?source=${source}`,
+      `/external/${source}`
+    ];
+    // Attempt endpoints sequentially
+    return (async () => {
+      for (const ep of endpoints) {
+        try {
+          const res = await apiClient.get(ep);
+          if (res && res.success) return res;
+        } catch {}
+      }
+      // Fallback empty response
+      return { success: false, data: { items: [] } } as ApiResponse<any>;
+    })();
+  },
 };
 
 // Categories API
@@ -372,7 +406,7 @@ export const usersApi = {
   delete: (id: string) => apiClient.delete(`/admin/users/${id}`),
   
   resetPassword: (id: string, newPassword: string) => 
-    apiClient.patch(`/admin/users/${id}/reset-password`, { newPassword }),
+    apiClient.patch(`/admin/users/${id}/reset-password`, { newPassword, password: newPassword }),
   
   toggle: (id: string) => apiClient.patch(`/admin/users/${id}/toggle`),
   

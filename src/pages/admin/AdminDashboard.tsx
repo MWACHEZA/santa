@@ -44,6 +44,7 @@ import {
   X
 } from 'lucide-react';
 import './AdminDashboard.css';
+import { api } from '../../services/api';
 
 type AdminSection = 'overview' | 'announcements' | 'events' | 'gallery' | 'contact' | 'schedule' | 'priests-desk' | 'analytics' | 'prayers' | 'images' | 'users' | 'themes' | 'ministries' | 'sacraments' | 'section-images' | 'prayer-intentions' | 'news' | 'videos' | 'profile';
 
@@ -71,6 +72,16 @@ const AdminDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<AdminSection>('overview');
   const [contentDropdownOpen, setContentDropdownOpen] = useState(false);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
+  const [parishMembers, setParishMembers] = useState<ParishMember[]>([]);
+  const [websiteData, setWebsiteData] = useState({
+    totalVisitors: 0,
+    todayVisitors: 0,
+    pageViews: 0,
+    avgSessionDuration: '0:00',
+    bounceRate: 0,
+    topPages: [] as { page: string; views: number; percentage: number }[],
+    monthlyData: [] as { month: string; visitors: number; pageViews: number }[],
+  });
 
   // Debug: Log user permissions
   React.useEffect(() => {
@@ -123,37 +134,51 @@ const AdminDashboard: React.FC = () => {
     return `Welcome ${name}`;
   };
 
-  // Mock data for parish members and website analytics
-  const parishMembers: ParishMember[] = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', lastLogin: new Date(), status: 'online' as const },
-    { id: '2', name: 'Mary Smith', email: 'mary@example.com', lastLogin: new Date(Date.now() - 300000), status: 'online' as const },
-    { id: '3', name: 'Peter Johnson', email: 'peter@example.com', lastLogin: new Date(Date.now() - 600000), status: 'online' as const },
-    { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', lastLogin: new Date(Date.now() - 1800000), status: 'away' as const },
-    { id: '5', name: 'Michael Brown', email: 'michael@example.com', lastLogin: new Date(Date.now() - 86400000), status: 'offline' as const }
-  ];
+  React.useEffect(() => {
+    const loadMembers = async () => {
+      try {
+        const res = await api.users.getAll();
+        const arr: any[] = (res.data?.users) || (Array.isArray(res.data) ? res.data : []);
+        const mapped: ParishMember[] = arr.map(u => {
+          const last = new Date(u.last_login ?? u.updated_at ?? u.created_at ?? Date.now());
+          const diff = Date.now() - last.getTime();
+          const status: ParishMember['status'] = diff < 10 * 60 * 1000 ? 'online' : diff < 30 * 60 * 1000 ? 'away' : 'offline';
+          const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.username || u.email || '';
+          return { id: u.id, name, email: u.email || '', lastLogin: last, status };
+        });
+        setParishMembers(mapped);
+      } catch {}
+    };
 
-  const websiteAnalytics = {
-    totalVisitors: 15420,
-    todayVisitors: 234,
-    pageViews: 45680,
-    avgSessionDuration: '4:32',
-    bounceRate: 32.5,
-    topPages: [
-      { page: 'Home', views: 12450, percentage: 27.3 },
-      { page: 'Mass Times', views: 8920, percentage: 19.5 },
-      { page: 'Events', views: 6780, percentage: 14.8 },
-      { page: 'Gallery', views: 5430, percentage: 11.9 },
-      { page: 'Contact', views: 4200, percentage: 9.2 }
-    ],
-    monthlyData: [
-      { month: 'Jan', visitors: 1200, pageViews: 3600 },
-      { month: 'Feb', visitors: 1450, pageViews: 4200 },
-      { month: 'Mar', visitors: 1680, pageViews: 4890 },
-      { month: 'Apr', visitors: 1920, pageViews: 5760 },
-      { month: 'May', visitors: 2100, pageViews: 6300 },
-      { month: 'Jun', visitors: 1850, pageViews: 5550 }
-    ]
-  };
+    const loadAnalytics = async () => {
+      try {
+        const [overviewRes, pagesRes] = await Promise.all([
+          api.analytics.getOverview(30),
+          api.analytics.getPages(30)
+        ]);
+        const o: any = overviewRes.success ? overviewRes.data : {};
+        const p: any = pagesRes.success ? pagesRes.data : {};
+        const pagesArr: any[] = p.pages || p.items || [];
+        const top = pagesArr.slice(0, 5).map((pg: any) => ({
+          page: pg.page || pg.title || 'Page',
+          views: pg.views || pg.count || 0,
+          percentage: pg.percentage || 0
+        }));
+        setWebsiteData({
+          totalVisitors: o.totalVisitors ?? o.visitors?.total ?? 0,
+          todayVisitors: o.todayVisitors ?? o.visitors?.today ?? 0,
+          pageViews: o.pageViews ?? o.pages?.total ?? 0,
+          avgSessionDuration: o.avgSessionDuration ?? o.engagement?.averageSessionTime ?? '0:00',
+          bounceRate: o.bounceRate ?? o.engagement?.bounceRate ?? 0,
+          topPages: top,
+          monthlyData: []
+        });
+      } catch {}
+    };
+
+    loadMembers();
+    loadAnalytics();
+  }, []);
 
   const stats = {
     totalAnnouncements: announcements.length,
@@ -171,7 +196,7 @@ const AdminDashboard: React.FC = () => {
         Date.now() - m.lastLogin.getTime() < 86400000
       ).length
     },
-    website: websiteAnalytics
+    website: websiteData
   };
 
   return (

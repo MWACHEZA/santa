@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdmin } from '../contexts/AdminContext';
 import Header from './Header';
@@ -16,7 +16,6 @@ import Contact from '../pages/Contact';
 import Giving from '../pages/Giving';
 import News from '../pages/News';
 import AdminDashboard from '../pages/admin/AdminDashboard';
-// import AdminLogin from '../pages/admin/AdminLogin'; // Currently unused
 import ModernLogin from './auth/ModernLogin';
 import ChangePassword from './auth/ChangePassword';
 import EnhancedProfile from './EnhancedProfile';
@@ -26,6 +25,7 @@ const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated: isUserAuthenticated, user, isLoading: authLoading } = useAuth();
   const { isLoading: adminLoading } = useAdmin();
   const [forceReady, setForceReady] = React.useState(false);
+  const location = useLocation();
 
   // Force ready state after 3 seconds to prevent infinite loading
   React.useEffect(() => {
@@ -47,7 +47,7 @@ const AuthenticatedApp: React.FC = () => {
     authLoading,
     adminLoading,
     forceReady,
-    pathname: window.location.pathname,
+    pathname: globalThis.location.pathname,
     timestamp: new Date().toISOString()
   });
 
@@ -102,41 +102,14 @@ const AuthenticatedApp: React.FC = () => {
     );
   }
 
-  // Public routes that don't require authentication
-  const isPublicRoute = window.location.pathname === '/login' || 
-                       window.location.pathname === '/register' ||
-                       window.location.pathname === '/change-password';
+  
 
-  // If not authenticated and not on a public route, redirect to login
-  if (!isUserAuthenticated && !isPublicRoute) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // If authenticated but on login page, redirect to appropriate dashboard
-  if (isUserAuthenticated && window.location.pathname === '/login') {
-    const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
-    console.log('🔄 Redirecting authenticated user to:', defaultRoute);
-    return <Navigate to={defaultRoute} replace />;
-  }
-
-  // If authenticated but on root path, redirect to appropriate dashboard
-  if (isUserAuthenticated && window.location.pathname === '/') {
-    const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
-    console.log('🔄 Redirecting from root to:', defaultRoute);
-    
-    // For parishioners, don't redirect from root - let them stay on home page
-    if (user?.role === 'parishioner') {
-      console.log('✅ Parishioner on home page, no redirect needed');
-      // Don't redirect, let them see the home page
-    } else {
-      return <Navigate to={defaultRoute} replace />;
-    }
-  }
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   return (
     <div key={`auth-${isUserAuthenticated}-${user?.id}`} style={{ minHeight: '100vh', overflow: 'auto' }}>
       {/* Show Header and Footer only for authenticated non-admin routes */}
-      {isUserAuthenticated && !window.location.pathname.startsWith('/admin') && <Header />}
+      {isUserAuthenticated && !isAdminRoute && <Header />}
       
       <main style={{ minHeight: '100vh', overflow: 'auto', paddingBottom: '2rem' }}>
         <Routes>
@@ -190,7 +163,7 @@ const AuthenticatedApp: React.FC = () => {
       </main>
       
       {/* Show Footer only for authenticated non-admin routes */}
-      {isUserAuthenticated && !window.location.pathname.startsWith('/admin') && <Footer />}
+      {isUserAuthenticated && !isAdminRoute && <Footer />}
     </div>
   );
 };

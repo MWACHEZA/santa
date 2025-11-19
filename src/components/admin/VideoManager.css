@@ -66,6 +66,8 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  overflow: auto;
+  padding: 1rem;
 }
 
 .video-form {
@@ -76,6 +78,7 @@
   max-width: 600px;
   max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .video-form h3 {

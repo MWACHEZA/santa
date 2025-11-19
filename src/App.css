@@ -96,6 +96,13 @@ a:hover {
 img {
   max-width: 100%;
   height: auto;
+  overflow: clip;
+  overflow-clip-margin: content-box;
+}
+
+video, canvas {
+  overflow: clip;
+  overflow-clip-margin: content-box;
 }
 
 /* Focus styles for accessibility */

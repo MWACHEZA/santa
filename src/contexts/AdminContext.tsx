@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState, useCallback } from 'react';
 import { useAuth, type UserRole, type User } from './AuthContext';
+import { api } from '../services/api';
 
 // Define all the necessary interfaces
 export interface Announcement {
@@ -212,7 +213,7 @@ type Permission =
   | 'mass_schedule' | 'sacraments' | 'prayers' 
   | 'readings' | 'overview' | 'priest_desk' 
   | 'analytics' | 'prayer_intentions' | 'gallery' 
-  | 'news' | 'images' | 'ministries' | 'section_images' | 'videos';
+  | 'news' | 'images' | 'ministries' | 'section_images' | 'videos' | 'users';
 
 interface AdminContextType {
   // Authentication
@@ -314,7 +315,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'announcements', 'events', 'contact', 'theme', 'mass_schedule',
     'sacraments', 'prayers', 'readings', 'overview', 'priest_desk',
     'analytics', 'prayer_intentions', 'gallery', 'news', 'images',
-    'ministries', 'section_images', 'videos'
+    'ministries', 'section_images', 'videos', 'users'
   ],
   secretary: [
     'announcements', 'events', 'contact', 'theme', 'mass_schedule',
@@ -339,7 +340,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [ministries, setMinistries] = useState<Ministry[]>([]);
   const [parishNews, setParishNews] = useState<ParishNews[]>([]);
-  const [externalNews] = useState<ExternalNews[]>([]);
+  const [externalNews, setExternalNews] = useState<ExternalNews[]>([]);
   const [newsArchive, setNewsArchive] = useState<NewsArchive[]>([]);
   const [sectionImages, setSectionImages] = useState<SectionImage[]>([]);
   const [themesOfYear, setThemesOfYear] = useState<ThemeOfYear[]>([]);
@@ -356,6 +357,183 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const permissions = ROLE_PERMISSIONS[user.role] || [];
     return permissions.includes(permission);
   }, [user]);
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      const [annRes, evtRes, galRes, minRes, newsRes, contactRes, schedRes, sacRes, prayRes, featRes] = await Promise.allSettled([
+        api.announcements.getAll(),
+        api.events.getAll(),
+        api.gallery.getAll(),
+        api.ministries.getAll(),
+        api.news.getAll(),
+        api.contact.get(),
+        api.schedule.getAll(),
+        api.sacraments.getAll(),
+        api.prayers.getAll(),
+        api.gallery.getFeatured?.() ?? Promise.resolve({ success: false })
+      ]);
+
+      if (annRes.status === 'fulfilled' && annRes.value?.success) {
+        const serverAnnouncements: any[] = (annRes.value.data?.announcements) || (Array.isArray(annRes.value.data) ? annRes.value.data : []);
+        const mapped: Announcement[] = serverAnnouncements.map(a => ({
+          id: a.id,
+          title: a.title,
+          message: a.content ?? '',
+          type: a.type === 'urgent' ? 'urgent' : a.type === 'event' || a.type === 'mass' ? 'event' : 'info',
+          isActive: !!a.is_active,
+          createdAt: a.created_at ?? new Date().toISOString(),
+          expiresAt: a.end_date ?? undefined
+        }));
+        setAnnouncements(mapped);
+      }
+
+      if (evtRes.status === 'fulfilled' && evtRes.value?.success) {
+        const serverEvents: any[] = (evtRes.value.data?.events) || (Array.isArray(evtRes.value.data) ? evtRes.value.data : []);
+        const mappedEvts: Event[] = serverEvents.map(e => ({
+          id: e.id,
+          title: e.title,
+          description: e.description ?? '',
+          date: e.event_date ?? e.created_at ?? new Date().toISOString(),
+          time: e.start_time ?? '',
+          location: e.location ?? '',
+          category: (e.category_name === 'mass' ? 'mass' : 'social'),
+          isPublished: !!e.is_published,
+          createdAt: e.created_at ?? new Date().toISOString()
+        }));
+        setEvents(mappedEvts);
+      }
+
+      if (galRes.status === 'fulfilled' && galRes.value?.success) {
+        const serverImages: any[] = (galRes.value.data?.images) || (Array.isArray(galRes.value.data) ? galRes.value.data : []);
+        const mappedImgs: GalleryImage[] = serverImages.map(i => ({
+          id: i.id,
+          title: i.title ?? '',
+          description: i.description ?? '',
+          url: i.image_url ?? i.thumbnail_url ?? '',
+          category: 'events',
+          uploadedAt: i.upload_date ?? i.created_at ?? new Date().toISOString(),
+          isPublished: true
+        }));
+        setGalleryImages(mappedImgs);
+      }
+
+      if (minRes.status === 'fulfilled' && (minRes.value as any)?.success) {
+        const arr: any[] = ((minRes.value as any).data?.ministries) || (Array.isArray((minRes.value as any).data) ? (minRes.value as any).data : []);
+        const mapped: Ministry[] = arr.map(m => ({
+          id: m.id,
+          name: m.name,
+          description: m.description ?? '',
+          imageUrl: m.image_url ?? '',
+          contactPerson: m.leader_name ?? m.leader_contact ?? '',
+          meetingTime: m.meeting_schedule ?? '',
+          isActive: m.is_active ?? true,
+          createdAt: m.created_at ?? new Date().toISOString()
+        }));
+        setMinistries(mapped);
+      }
+
+      if (newsRes.status === 'fulfilled' && (newsRes.value as any)?.success) {
+        const arr: any[] = ((newsRes.value as any).data?.news) || (Array.isArray((newsRes.value as any).data) ? (newsRes.value as any).data : []);
+        const mapped: ParishNews[] = arr.map(n => ({
+          id: n.id,
+          title: n.title,
+          summary: n.summary ?? '',
+          content: n.content ?? '',
+          category: n.category ?? undefined,
+          imageUrl: n.image_url ?? undefined,
+          author: n.author_name ?? n.author ?? '',
+          authorRole: (n.author_role ?? 'reporter'),
+          publishedAt: n.published_at ?? n.created_at ?? new Date().toISOString(),
+          isArchived: !!n.is_archived,
+          isPublished: !!n.is_published,
+          createdAt: n.created_at ?? new Date().toISOString()
+        }));
+        setParishNews(mapped);
+      }
+
+      if (contactRes.status === 'fulfilled' && (contactRes.value as any)?.success) {
+        const c: any = (contactRes.value as any).data || {};
+        setContactInfo({
+          address: c.address ?? undefined,
+          phone: Array.isArray(c.phone) ? c.phone : c.phone ? [c.phone] : undefined,
+          email: Array.isArray(c.email) ? c.email : c.email ? [c.email] : undefined,
+          officeHours: {
+            weekdays: (c.office_hours?.weekdays) ?? '',
+            saturday: (c.office_hours?.saturday) ?? '',
+            sunday: (c.office_hours?.sunday) ?? ''
+          },
+          staff: Array.isArray(c.staff) ? c.staff.map((s: any) => ({ name: s.name, position: s.position, phone: s.phone, email: s.email })) : []
+        });
+      }
+
+      if (schedRes.status === 'fulfilled' && (schedRes.value as any)?.success) {
+        const entries: any[] = ((schedRes.value as any).data?.schedule) || (Array.isArray((schedRes.value as any).data) ? (schedRes.value as any).data : []);
+        const byDay: Record<string, string[]> = {};
+        entries.forEach(e => {
+          const day = (e.day ?? e.day_of_week ?? '').toLowerCase();
+          const time = e.time ?? e.start_time ?? '';
+          if (!byDay[day]) byDay[day] = [];
+          if (time) byDay[day].push(time);
+        });
+        setMassSchedule({
+          weekdays: (byDay['monday'] || byDay['tuesday'] || byDay['wednesday'] || byDay['thursday'] || byDay['friday']) ? 'See daily schedule' : '',
+          saturday: (byDay['saturday'] || []).join(', '),
+          sunday: byDay['sunday'] || [],
+          confession: (entries.filter(e => (e.type ?? '').toLowerCase() === 'confession').map((e: any) => e.time)) || []
+        });
+      }
+
+      if (sacRes.status === 'fulfilled' && (sacRes.value as any)?.success) {
+        const arr: any[] = ((sacRes.value as any).data?.sacraments) || (Array.isArray((sacRes.value as any).data) ? (sacRes.value as any).data : []);
+        const mapped: Sacrament[] = arr.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description ?? '',
+          imageUrl: s.image_url ?? '',
+          requirements: Array.isArray(s.requirements) ? s.requirements : (typeof s.requirements === 'string' ? s.requirements.split(',').map((x: string) => x.trim()).filter(Boolean) : []),
+          contactInfo: s.contact_info ?? s.contact ?? '',
+          isActive: s.is_active ?? true,
+          createdAt: s.created_at ?? new Date().toISOString()
+        }));
+        setSacraments(mapped);
+      }
+
+      if (prayRes.status === 'fulfilled' && (prayRes.value as any)?.success) {
+        const arr: any[] = ((prayRes.value as any).data?.intentions) || (Array.isArray((prayRes.value as any).data) ? (prayRes.value as any).data : []);
+        const mapped: PrayerIntention[] = arr.map(p => ({
+          id: p.id,
+          name: p.requester_name ?? '',
+          email: p.requester_email ?? undefined,
+          intention: p.intention ?? '',
+          isUrgent: !!(p.is_urgent ?? p.urgent),
+          isPublic: !!(p.is_public ?? false),
+          submittedAt: p.submitted_at ?? p.created_at ?? new Date().toISOString(),
+          status: (p.is_approved ? 'approved' : 'pending')
+        }));
+        setPrayerIntentions(mapped);
+      }
+
+      if (featRes.status === 'fulfilled' && (featRes.value as any)?.success) {
+        const arr: any[] = ((featRes.value as any).data?.images) || [];
+        const mapped: SectionImage[] = arr.map((i: any) => ({
+          id: i.id,
+          section: 'parish_gallery',
+          title: i.title ?? '',
+          imageUrl: i.image_url ?? i.thumbnail_url ?? '',
+          isActive: true,
+          createdAt: i.created_at ?? new Date().toISOString()
+        }));
+        setSectionImages(mapped);
+      }
+    } catch (err) {
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (user && user.role !== 'parishioner') {
+      loadInitialData();
+    }
+  }, [user, loadInitialData]);
 
   // Announcement methods
   const addAnnouncement = useCallback((announcement: Omit<Announcement, 'id' | 'createdAt'>) => {
@@ -496,9 +674,99 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // External News methods
   const fetchExternalNews = useCallback(async (source: ExternalNews['source']) => {
     try {
-      // Mock implementation - replace with actual API call in production
-      console.log(`Fetching news from ${source}`);
-      // In production, this would call an external API
+      const res = await api.news.getExternal(source);
+      let mapped: ExternalNews[] = [];
+      if (res && (res as any).success) {
+        const items: any[] = (res as any).data?.items || (res as any).data?.news || (Array.isArray((res as any).data) ? (res as any).data : []);
+        mapped = items.map((n: any) => ({
+          id: String(n.id || n.guid || `${source}-${n.link || n.url || Date.now()}`),
+          title: n.title,
+          summary: n.summary || n.description || '',
+          imageUrl: n.imageUrl || n.image_url || n.thumbnail || undefined,
+          externalUrl: n.link || n.url || '',
+          source,
+          publishedAt: n.publishedAt || n.published_at || n.date || new Date().toISOString(),
+          fetchedAt: new Date().toISOString()
+        }));
+      }
+
+      if (!mapped.length) {
+        const rssCandidates: string[] = source === 'vatican'
+          ? [
+              'https://press.vatican.va/content/salastampa/en/rss.xml',
+              'https://www.vatican.va/news_services/or/resources/rss_en.xml',
+              'https://www.vaticannews.va/en/rss.xml'
+            ]
+          : source === 'diocese'
+          ? [
+              'https://archdioceseofbulawayo.org/feed/',
+              'https://archdioceseofbulawayo.org/?feed=rss2',
+              'http://archdioceseofbulawayo.org/feed/'
+            ]
+          : [
+              'https://zcbc.co.zw/feed',
+              'https://www.cbcz.org.zw/feed'
+            ];
+        let rssData: any | null = null;
+        for (const url of rssCandidates) {
+          try {
+            const resp = await fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`);
+            if (resp.ok) {
+              const json = await resp.json();
+              if (json && Array.isArray(json.items) && json.items.length) {
+                rssData = json;
+                break;
+              }
+            }
+            const proxied = url.startsWith('https://') ? `https://r.jina.ai/${url}` : `https://r.jina.ai/http://${url.replace(/^https?:\/\//,'')}`;
+            const resp2 = await fetch(proxied);
+            if (resp2.ok) {
+              const text = await resp2.text();
+              const itemBlocks = text.match(/<item[\s\S]*?<\/item>/g) || text.match(/<entry[\s\S]*?<\/entry>/g);
+              if (itemBlocks && itemBlocks.length) {
+                const parsed = itemBlocks.map((block) => {
+                  const get = (tag: string) => {
+                    const m = block.match(new RegExp(`<${tag}[^>]*>([\s\S]*?)<\/${tag}>`));
+                    return m ? m[1] : '';
+                  };
+                  const getAttr = (tag: string, attr: string) => {
+                    const m = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]+)"[^>]*\/>`));
+                    return m ? m[1] : '';
+                  };
+                  return {
+                    title: get('title').replace(/<[^>]*>/g, ''),
+                    link: get('link') || getAttr('link','href'),
+                    description: (get('description') || get('summary')).replace(/<[^>]*>/g, ''),
+                    pubDate: get('pubDate') || get('updated') || get('published'),
+                    thumbnail: getAttr('enclosure','url') || getAttr('media:content','url') || getAttr('media:thumbnail','url')
+                  };
+                });
+                rssData = { items: parsed };
+                break;
+              }
+            }
+          } catch {}
+        }
+        if (rssData) {
+          mapped = rssData.items.slice(0, 12).map((it: any) => ({
+            id: String(it.guid || `${source}-${it.link}`),
+            title: it.title,
+            summary: (it.description || it.summary || '').replace(/<[^>]*>/g, '').slice(0, 280),
+            imageUrl: it.thumbnail || it.enclosure || undefined,
+            externalUrl: it.link,
+            source,
+            publishedAt: it.pubDate || it.published || it.updated || new Date().toISOString(),
+            fetchedAt: new Date().toISOString()
+          }));
+        }
+      }
+
+      if (mapped.length) {
+        setExternalNews(prev => {
+          const others = prev.filter(n => n.source !== source);
+          return [...others, ...mapped];
+        });
+      }
     } catch (error) {
       console.error(`Failed to fetch ${source} news:`, error);
     }

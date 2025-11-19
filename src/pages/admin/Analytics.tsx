@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Users, 
   Eye, 
@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import { AnalyticsExporter, ExportFormat } from '../../utils/exportUtils';
 import './Analytics.css';
+import { api } from '../../services/api';
+import { useAdmin } from '../../contexts/AdminContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface AnalyticsData {
   users: {
@@ -57,109 +60,135 @@ interface AnalyticsData {
 const Analytics: React.FC = () => {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
   const [activeTab, setActiveTab] = useState<'overview' | 'content' | 'users' | 'videos' | 'demographics'>('overview');
+  const { listUsers } = useAuth();
+  const { parishNews, events, galleryImages } = useAdmin();
 
-  // Updated analytics data to reflect current system features
-  const [analyticsData] = useState<AnalyticsData>({
-    users: {
-      total: 1247,
-      active: 342,
-      newThisMonth: 89,
-      growth: 12.5
-    },
-    content: {
-      totalViews: 45680, // Updated to match image
-      videoViews: 18930, // Increased due to Watch Mass feature
-      newsViews: 12240,  // Increased news engagement
-      prayerViews: 14510 // High prayer engagement
-    },
-    videos: {
-      totalVideos: 67,   // More videos due to Watch Mass archive
-      liveStreams: 18,   // Active live streaming
-      totalWatchTime: '4,850 hours', // Increased watch time
-      averageViewDuration: '24:32'   // Better engagement
-    },
-    engagement: {
-      totalInteractions: 12680,
-      averageSessionTime: '4:32', // Matches image
-      bounceRate: 28.4,  // Improved due to better content
-      returnVisitors: 78.3 // Higher return rate
-    },
-    demographics: {
-      byGender: [
-        { gender: 'Female', count: 687, percentage: 58.0 },
-        { gender: 'Male', count: 498, percentage: 42.0 }
-      ],
-      byAge: [
-        { ageGroup: '18-30', count: 186, percentage: 14.9 },
-        { ageGroup: '31-45', count: 374, percentage: 30.0 },
-        { ageGroup: '46-60', count: 436, percentage: 35.0 },
-        { ageGroup: '61+', count: 251, percentage: 20.1 }
-      ],
-      bySection: [
-        { section: 'St Gabriel', count: 89, percentage: 8.2 },
-        { section: 'St Augustine', count: 76, percentage: 7.0 },
-        { section: 'St Mary Magdalena', count: 94, percentage: 8.7 },
-        { section: 'St Michael', count: 112, percentage: 10.3 },
-        { section: 'St Stephen', count: 67, percentage: 6.2 },
-        { section: 'St Francis of Assisi', count: 83, percentage: 7.6 },
-        { section: 'St Monica', count: 91, percentage: 8.4 },
-        { section: 'St Theresa', count: 78, percentage: 7.2 },
-        { section: 'St Bernadette', count: 85, percentage: 7.8 },
-        { section: 'St Philomina', count: 72, percentage: 6.6 },
-        { section: 'St Peter', count: 98, percentage: 9.0 },
-        { section: 'St Bernard', count: 69, percentage: 6.4 },
-        { section: 'St Veronica', count: 74, percentage: 6.8 },
-        { section: 'St Paul', count: 88, percentage: 8.1 },
-        { section: 'St Luke', count: 81, percentage: 7.5 },
-        { section: 'St Basil', count: 65, percentage: 6.0 },
-        { section: 'St Anthony', count: 92, percentage: 8.5 }
-      ],
-      byAssociation: [
-        { association: 'Missionary Childhood (MCA)', count: 145, percentage: 13.4 },
-        { association: 'Catholic Junior Youth (CJA)', count: 89, percentage: 8.2 },
-        { association: 'Catholic Senior Youth (CYA)', count: 124, percentage: 11.4 },
-        { association: 'Catholic Young Adults (CYAA)', count: 97, percentage: 8.9 },
-        { association: 'Most Sacred Heart of Jesus', count: 156, percentage: 14.4 },
-        { association: 'Sodality of Our Lady', count: 134, percentage: 12.3 },
-        { association: 'St Anne', count: 78, percentage: 7.2 },
-        { association: 'St Joseph', count: 92, percentage: 8.5 },
-        { association: 'Couples Association', count: 67, percentage: 6.2 },
-        { association: 'Focolare', count: 43, percentage: 4.0 },
-        { association: 'Women\'s Forum', count: 112, percentage: 10.3 },
-        { association: 'Association of Altar Servers', count: 87, percentage: 8.0 }
-      ]
-    },
-    popular: {
-      pages: [
-        { name: 'Home', views: 12450, growth: 8.2 }, // Updated to match image data
-        { name: 'Watch Mass', views: 8920, growth: 25.6 }, // New popular feature
-        { name: 'Mass Times', views: 6920, growth: 12.1 }, // From image
-        { name: 'Events', views: 6740, growth: 15.3 }, // From image
-        { name: 'Gallery', views: 5430, growth: 8.7 }, // From image
-        { name: 'Prayers', views: 4340, growth: 5.1 },
-        { name: 'Contact', views: 4200, growth: 3.2 }, // From image
-        { name: 'News', views: 3890, growth: 18.4 },
-        { name: 'Ministries', views: 2560, growth: 22.8 },
-        { name: 'Outreach', views: 1890, growth: 16.2 },
-        { name: 'Profile Management', views: 1240, growth: 45.8 } // New feature
-      ],
-      videos: [
-        { title: 'Sunday Mass - November 10, 2024 (Live)', views: 2450, duration: '1:18:45' },
-        { title: 'All Saints Day Special Service', views: 1890, duration: '45:20' },
-        { title: 'Youth Ministry Gathering', views: 1670, duration: '32:15' },
-        { title: 'Evening Prayer & Reflection', views: 1240, duration: '25:10' },
-        { title: 'Parish Community Meeting', views: 890, duration: '1:05:30' },
-        { title: 'Children\'s Mass Celebration', views: 760, duration: '38:22' }
-      ],
-      categories: [
-        { name: 'Live Mass', percentage: 35, color: '#2d5016' },
-        { name: 'Archived Masses', percentage: 28, color: '#4a7c2a' },
-        { name: 'Community Events', percentage: 20, color: '#6ba83a' },
-        { name: 'Prayer Services', percentage: 12, color: '#8bc34a' },
-        { name: 'Special Occasions', percentage: 5, color: '#a4d65e' }
-      ]
-    }
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
+    users: { total: 0, active: 0, newThisMonth: 0, growth: 0 },
+    content: { totalViews: 0, videoViews: 0, newsViews: 0, prayerViews: 0 },
+    videos: { totalVideos: 0, liveStreams: 0, totalWatchTime: '0h', averageViewDuration: '0:00' },
+    engagement: { totalInteractions: 0, averageSessionTime: '0:00', bounceRate: 0, returnVisitors: 0 },
+    demographics: { byGender: [], byAge: [], bySection: [], byAssociation: [] },
+    popular: { pages: [], videos: [], categories: [] }
   });
+
+  React.useEffect(() => {
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365;
+    const load = async () => {
+      try {
+        const [overviewRes, pagesRes, contentRes, videoRes, streamsRes, archiveRes] = await Promise.all([
+          api.analytics.getOverview(days),
+          api.analytics.getPages(days),
+          api.analytics.getContent(days),
+          api.videos.getVideoAnalytics({ timeRange: timeRange }),
+          api.videos.getStreams({ active: true }),
+          api.videos.getArchive({ published: true })
+        ]);
+        const o: any = overviewRes.success ? overviewRes.data : {};
+        const p: any = pagesRes.success ? pagesRes.data : {};
+        const c: any = contentRes.success ? contentRes.data : {};
+        const v: any = videoRes.success ? videoRes.data : {};
+        const pagesArr: any[] = p.pages || p.items || [];
+        const popularPages = pagesArr.map((pg: any) => ({ name: pg.page || pg.title || 'Page', views: pg.views || pg.count || 0, growth: pg.growth || 0 }));
+        const videoList: any[] = v.items || v.videos || [];
+        const popularVideos = videoList.map((vi: any) => ({ title: vi.title || 'Video', views: vi.views || 0, duration: vi.duration || '0:00' }));
+        const streams: any[] = (streamsRes.success && ((streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []))) || [];
+        const archives: any[] = (archiveRes.success && ((archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []))) || [];
+        const categoryCounts: Record<string, number> = {};
+        parishNews.forEach(n => {
+          const key = (n.category || 'news').toString();
+          categoryCounts[key] = (categoryCounts[key] || 0) + 1;
+        });
+        events.forEach(e => {
+          const key = (e.category || 'events').toString();
+          categoryCounts[key] = (categoryCounts[key] || 0) + 1;
+        });
+        galleryImages.forEach(g => {
+          const key = (g.category || 'gallery').toString();
+          categoryCounts[key] = (categoryCounts[key] || 0) + 1;
+        });
+        archives.forEach(vv => {
+          const key = (vv.category || 'mass').toString();
+          categoryCounts[key] = (categoryCounts[key] || 0) + 1;
+        });
+        const totalCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0) || 1;
+        const palette = ['#45b7d1', '#4ecdc4', '#ff6b6b', '#96ceb4', '#f7b267', '#b8de6f'];
+        const popularCategories = Object.entries(categoryCounts).map(([name, count], idx) => ({ name, percentage: Number(((count / totalCategories) * 100).toFixed(1)), color: palette[idx % palette.length] }));
+        setAnalyticsData({
+          users: {
+            total: o.users?.total ?? o.totalUsers ?? 0,
+            active: o.users?.active ?? o.activeUsers ?? 0,
+            newThisMonth: o.users?.newThisMonth ?? o.newUsers ?? 0,
+            growth: o.users?.growth ?? o.userGrowth ?? 0
+          },
+          content: {
+            totalViews: c.totalViews ?? o.content?.totalViews ?? o.pageViews ?? 0,
+            videoViews: c.videoViews ?? o.content?.videoViews ?? v.totalViews ?? 0,
+            newsViews: c.newsViews ?? o.content?.newsViews ?? 0,
+            prayerViews: c.prayerViews ?? o.content?.prayerViews ?? 0
+          },
+          videos: {
+            totalVideos: v.totalVideos ?? archives.length ?? (videoList.length || 0),
+            liveStreams: v.liveStreams ?? streams.length ?? 0,
+            totalWatchTime: v.totalWatchTime ?? '0h',
+            averageViewDuration: v.averageViewDuration ?? '0:00'
+          },
+          engagement: {
+            totalInteractions: o.engagement?.totalInteractions ?? 0,
+            averageSessionTime: o.engagement?.averageSessionTime ?? '0:00',
+            bounceRate: o.engagement?.bounceRate ?? 0,
+            returnVisitors: o.engagement?.returnVisitors ?? 0
+          },
+          demographics: { byGender: [], byAge: [], bySection: [], byAssociation: [] },
+          popular: { pages: popularPages, videos: popularVideos, categories: popularCategories }
+        });
+      } catch {}
+    };
+    load();
+  }, [timeRange, parishNews, events, galleryImages]);
+
+  const demographics = useMemo(() => {
+    const users = listUsers();
+    const total = users.length || 1;
+    const byGenderMap: Record<string, number> = {};
+    const byAgeMap: Record<string, number> = {};
+    const bySectionMap: Record<string, number> = {};
+    const byAssociationMap: Record<string, number> = {};
+    const calcAgeGroup = (dob?: string) => {
+      if (!dob) return 'Unknown';
+      const d = new Date(dob);
+      if (isNaN(d.getTime())) return 'Unknown';
+      const age = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
+      if (age < 13) return '0-12';
+      if (age < 18) return '13-17';
+      if (age < 25) return '18-24';
+      if (age < 35) return '25-34';
+      if (age < 46) return '35-45';
+      if (age < 61) return '46-60';
+      return '61+';
+    };
+    users.forEach(u => {
+      const g = (u.gender || 'unknown').toString();
+      byGenderMap[g] = (byGenderMap[g] || 0) + 1;
+      const ag = calcAgeGroup(u.dateOfBirth);
+      byAgeMap[ag] = (byAgeMap[ag] || 0) + 1;
+      const sec = u.section || 'Unknown';
+      bySectionMap[sec] = (bySectionMap[sec] || 0) + 1;
+      const assoc = u.association || 'None';
+      byAssociationMap[assoc] = (byAssociationMap[assoc] || 0) + 1;
+    });
+    const toArray = (map: Record<string, number>, labelKey: string) =>
+      Object.entries(map).map(([key, count]) => ({ [labelKey]: key, count, percentage: Number(((count / total) * 100).toFixed(1)) })) as any[];
+    const byGender = toArray(byGenderMap, 'gender');
+    const byAge = toArray(byAgeMap, 'ageGroup');
+    const bySection = toArray(bySectionMap, 'section');
+    const byAssociation = toArray(byAssociationMap, 'association');
+    return { byGender, byAge, bySection, byAssociation };
+  }, [listUsers]);
+
+  React.useEffect(() => {
+    setAnalyticsData(prev => ({ ...prev, demographics }));
+  }, [demographics]);
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -746,28 +775,50 @@ const Analytics: React.FC = () => {
                 <div className="summary-icon">👥</div>
                 <div className="summary-content">
                   <div className="summary-title">Most Common Age Group</div>
-                  <div className="summary-value">46-60 years (35.0%)</div>
+                  <div className="summary-value">{
+                    (() => {
+                      const arr = demographics.byAge.slice().sort((a, b) => b.count - a.count);
+                      return arr.length ? `${arr[0].ageGroup} (${arr[0].percentage}%)` : 'N/A';
+                    })()
+                  }</div>
                 </div>
               </div>
               <div className="summary-card">
                 <div className="summary-icon">⚖️</div>
                 <div className="summary-content">
                   <div className="summary-title">Gender Ratio</div>
-                  <div className="summary-value">58.0% Female, 42.0% Male</div>
+                  <div className="summary-value">{
+                    (() => {
+                      const male = demographics.byGender.find(g => g.gender?.toLowerCase() === 'male')?.percentage || 0;
+                      const female = demographics.byGender.find(g => g.gender?.toLowerCase() === 'female')?.percentage || 0;
+                      return `${female}% Female, ${male}% Male`;
+                    })()
+                  }</div>
                 </div>
               </div>
               <div className="summary-card">
                 <div className="summary-icon">⛪</div>
                 <div className="summary-content">
                   <div className="summary-title">Largest Section</div>
-                  <div className="summary-value">St. Mary (25.0%)</div>
+                  <div className="summary-value">{
+                    (() => {
+                      const arr = demographics.bySection.slice().sort((a, b) => b.count - a.count);
+                      return arr.length ? `${arr[0].section} (${arr[0].percentage}%)` : 'N/A';
+                    })()
+                  }</div>
                 </div>
               </div>
               <div className="summary-card">
                 <div className="summary-icon">🤝</div>
                 <div className="summary-content">
                   <div className="summary-title">Association Participation</div>
-                  <div className="summary-value">53.2% are members</div>
+                  <div className="summary-value">{
+                    (() => {
+                      const nonNone = demographics.byAssociation.filter(a => a.association && a.association !== 'None');
+                      const percent = nonNone.reduce((acc, a) => acc + a.percentage, 0);
+                      return `${percent.toFixed(1)}% are members`;
+                    })()
+                  }</div>
                 </div>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   User, Mail, Phone, Calendar, MapPin, UserCheck, Save, Edit, X, 
@@ -10,8 +10,14 @@ const EnhancedProfile: React.FC = () => {
   const { user, saveProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'parish' | 'sacraments' | 'priest'>('basic');
+  const toDateInput = (v?: string) => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v.slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  };
   
-  const mapUserToForm = (currentUser: typeof user) => ({
+  const mapUserToForm = useCallback((currentUser: typeof user) => ({
     firstName: currentUser?.firstName || '',
     lastName: currentUser?.lastName || '',
     email: currentUser?.email || '',
@@ -38,7 +44,7 @@ const EnhancedProfile: React.FC = () => {
     ordinationDate: currentUser?.ordinationDate || '',
     ordinationVenue: currentUser?.ordinationVenue || '',
     ordainedBy: currentUser?.ordainedBy || ''
-  });
+  }), []);
 
   const [formData, setFormData] = useState(() => mapUserToForm(user));
   
@@ -47,7 +53,7 @@ const EnhancedProfile: React.FC = () => {
 
   useEffect(() => {
     setFormData(mapUserToForm(user));
-  }, [user]);
+  }, [user, mapUserToForm]);
 
   // Calculate age from date of birth
   const calculateAge = (dateOfBirth: string): number | null => {
@@ -173,7 +179,15 @@ const EnhancedProfile: React.FC = () => {
     <div className="enhanced-profile">
       <div className="profile-header">
         <div className="profile-avatar">
-          <User size={48} />
+          {user.profilePictureUrl ? (
+            <img
+              src={user.profilePictureUrl}
+              alt={`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Profile picture'}
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <User size={48} />
+          )}
         </div>
         <h1 className="profile-name">{user.firstName} {user.lastName}</h1>
         <p className="profile-role">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
@@ -332,7 +346,7 @@ const EnhancedProfile: React.FC = () => {
                 <input
                   type="date"
                   name="dateOfBirth"
-                  value={formData.dateOfBirth}
+                  value={toDateInput(formData.dateOfBirth)}
                   onChange={handleInputChange}
                   disabled={!isEditing}
                 />
@@ -363,11 +377,12 @@ const EnhancedProfile: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">
+              <label className="form-label" htmlFor="address">
                 <MapPin size={16} />
                 Address
               </label>
               <textarea
+                id="address"
                 name="address"
                 value={formData.address}
                 onChange={handleInputChange}
@@ -379,8 +394,9 @@ const EnhancedProfile: React.FC = () => {
             <h4>Emergency Contact</h4>
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Contact Name</label>
+                <label className="form-label" htmlFor="emergencyContact">Contact Name</label>
                 <input
+                  id="emergencyContact"
                   type="text"
                   name="emergencyContact"
                   value={formData.emergencyContact}
@@ -390,8 +406,9 @@ const EnhancedProfile: React.FC = () => {
               </div>
               
               <div className="form-group">
-                <label className="form-label">Contact Phone</label>
+                <label className="form-label" htmlFor="emergencyPhone">Contact Phone</label>
                 <input
+                  id="emergencyPhone"
                   type="tel"
                   name="emergencyPhone"
                   value={formData.emergencyPhone}
@@ -409,11 +426,12 @@ const EnhancedProfile: React.FC = () => {
             
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="association">
                   <Users size={16} />
                   Association (Optional)
                 </label>
                 <input
+                  id="association"
                   type="text"
                   name="association"
                   value={formData.association}
@@ -424,11 +442,12 @@ const EnhancedProfile: React.FC = () => {
               </div>
               
               <div className="form-group">
-                <label className="form-label">
+                <label className="form-label" htmlFor="section">
                   <Church size={16} />
                   Section (Optional)
                 </label>
                 <input
+                  id="section"
                   type="text"
                   name="section"
                   value={formData.section}
@@ -453,18 +472,20 @@ const EnhancedProfile: React.FC = () => {
               {formData.isBaptized === true && (
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Baptism Date</label>
+                    <label className="form-label" htmlFor="baptismDate">Baptism Date</label>
                     <input
+                      id="baptismDate"
                       type="date"
                       name="baptismDate"
-                      value={formData.baptismDate}
+                      value={toDateInput(formData.baptismDate)}
                       onChange={handleInputChange}
                       disabled={!isEditing}
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Baptism Venue</label>
+                    <label className="form-label" htmlFor="baptismVenue">Baptism Venue</label>
                     <input
+                      id="baptismVenue"
                       type="text"
                       name="baptismVenue"
                       value={formData.baptismVenue}
@@ -484,18 +505,20 @@ const EnhancedProfile: React.FC = () => {
               {formData.isConfirmed === true && (
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Confirmation Date</label>
-                    <input
-                      type="date"
-                      name="confirmationDate"
-                      value={formData.confirmationDate}
-                      onChange={handleInputChange}
-                      disabled={!isEditing}
-                    />
+                    <label className="form-label" htmlFor="confirmationDate">Confirmation Date</label>
+                  <input
+                    id="confirmationDate"
+                    type="date"
+                    name="confirmationDate"
+                    value={toDateInput(formData.confirmationDate)}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                  />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Confirmation Venue</label>
+                    <label className="form-label" htmlFor="confirmationVenue">Confirmation Venue</label>
                     <input
+                      id="confirmationVenue"
                       type="text"
                       name="confirmationVenue"
                       value={formData.confirmationVenue}
@@ -514,11 +537,12 @@ const EnhancedProfile: React.FC = () => {
               
               {formData.receivesCommunion === true && (
                 <div className="form-group">
-                  <label className="form-label">First Communion Date</label>
+                  <label className="form-label" htmlFor="firstCommunionDate">First Communion Date</label>
                   <input
+                    id="firstCommunionDate"
                     type="date"
                     name="firstCommunionDate"
-                    value={formData.firstCommunionDate}
+                    value={toDateInput(formData.firstCommunionDate)}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                   />
@@ -535,30 +559,33 @@ const EnhancedProfile: React.FC = () => {
                 <>
                   <div className="form-row">
                     <div className="form-group">
-                      <label className="form-label">Spouse Name</label>
-                      <input
-                        type="text"
-                        name="spouseName"
-                        value={formData.spouseName}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                        placeholder="Full name of spouse"
-                      />
-                    </div>
-                    <div className="form-group">
-                      <label className="form-label">Marriage Date</label>
-                      <input
-                        type="date"
-                        name="marriageDate"
-                        value={formData.marriageDate}
-                        onChange={handleInputChange}
-                        disabled={!isEditing}
-                      />
-                    </div>
+                    <label className="form-label" htmlFor="spouseName">Spouse Name</label>
+                    <input
+                      id="spouseName"
+                      type="text"
+                      name="spouseName"
+                      value={formData.spouseName}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                      placeholder="Full name of spouse"
+                    />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Marriage Venue</label>
+                      <label className="form-label" htmlFor="marriageDate">Marriage Date</label>
+                      <input
+                        id="marriageDate"
+                        type="date"
+                        name="marriageDate"
+                        value={toDateInput(formData.marriageDate)}
+                        onChange={handleInputChange}
+                        disabled={!isEditing}
+                      />
+                  </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="marriageVenue">Marriage Venue</label>
                     <input
+                      id="marriageVenue"
                       type="text"
                       name="marriageVenue"
                       value={formData.marriageVenue}
@@ -577,14 +604,15 @@ const EnhancedProfile: React.FC = () => {
             <h3>Priestly Information</h3>
             
             <div className="form-group">
-              <label className="form-label">
+              <label className="form-label" htmlFor="ordinationDate">
                 <Calendar size={16} />
                 Ordination Date <span className="required">*</span>
               </label>
               <input
+                id="ordinationDate"
                 type="date"
                 name="ordinationDate"
-                value={formData.ordinationDate}
+                value={toDateInput(formData.ordinationDate)}
                 onChange={handleInputChange}
                 disabled={!isEditing}
                 required={user.role === 'priest'}
@@ -592,11 +620,12 @@ const EnhancedProfile: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">
+              <label className="form-label" htmlFor="ordinationVenue">
                 <Church size={16} />
                 Ordination Venue <span className="required">*</span>
               </label>
               <input
+                id="ordinationVenue"
                 type="text"
                 name="ordinationVenue"
                 value={formData.ordinationVenue}
@@ -608,11 +637,12 @@ const EnhancedProfile: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">
+              <label className="form-label" htmlFor="ordainedBy">
                 <Crown size={16} />
                 Ordained By <span className="required">*</span>
               </label>
               <input
+                id="ordainedBy"
                 type="text"
                 name="ordainedBy"
                 value={formData.ordainedBy}

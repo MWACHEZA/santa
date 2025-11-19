@@ -55,6 +55,12 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
     ordinationVenue: user?.ordinationVenue || '',
     ordainedBy: user?.ordainedBy || ''
   });
+  const toDateInput = (v?: string) => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return (v || '').slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  };
   
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -369,7 +375,7 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                 <input
                   type="date"
                   name="dateOfBirth"
-                  value={formData.dateOfBirth}
+                  value={toDateInput(formData.dateOfBirth)}
                   onChange={handleInputChange}
                   disabled={!isEditing || isReadOnly}
                 />
@@ -514,7 +520,7 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                       <input
                         type="date"
                         name="baptismDate"
-                        value={formData.baptismDate}
+                        value={toDateInput(formData.baptismDate)}
                         onChange={handleInputChange}
                         disabled={!isEditing || isReadOnly}
                         className="form-input"
@@ -550,14 +556,14 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Confirmation Date</label>
-                      <input
-                        type="date"
-                        name="confirmationDate"
-                        value={formData.confirmationDate}
-                        onChange={handleInputChange}
-                        disabled={!isEditing || isReadOnly}
-                        className="form-input"
-                      />
+                    <input
+                      type="date"
+                      name="confirmationDate"
+                      value={toDateInput(formData.confirmationDate)}
+                      onChange={handleInputChange}
+                      disabled={!isEditing || isReadOnly}
+                      className="form-input"
+                    />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Confirmation Venue</label>
@@ -591,7 +597,7 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                     <input
                       type="date"
                       name="firstCommunionDate"
-                      value={formData.firstCommunionDate}
+                      value={toDateInput(formData.firstCommunionDate)}
                       onChange={handleInputChange}
                       disabled={!isEditing || isReadOnly}
                       className="form-input"
@@ -614,14 +620,14 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                   <div className="form-row">
                     <div className="form-group">
                       <label className="form-label">Marriage Date</label>
-                      <input
-                        type="date"
-                        name="marriageDate"
-                        value={formData.marriageDate}
-                        onChange={handleInputChange}
-                        disabled={!isEditing || isReadOnly}
-                        className="form-input"
-                      />
+                    <input
+                      type="date"
+                      name="marriageDate"
+                      value={toDateInput(formData.marriageDate)}
+                      onChange={handleInputChange}
+                      disabled={!isEditing || isReadOnly}
+                      className="form-input"
+                    />
                     </div>
                     <div className="form-group">
                       <label className="form-label">Marriage Venue</label>
@@ -672,7 +678,7 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                 <input
                   type="date"
                   name="ordinationDate"
-                  value={formData.ordinationDate}
+                  value={toDateInput(formData.ordinationDate)}
                   onChange={handleInputChange}
                   disabled={!isEditing || isReadOnly}
                   required={user.role === 'priest'}

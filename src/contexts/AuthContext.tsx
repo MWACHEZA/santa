@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { api } from '../services/api';
+import { api, apiClient } from '../services/api';
 
 export type UserRole = 'admin' | 'secretary' | 'priest' | 'reporter' | 'parishioner' | 'vice_secretary';
 
@@ -12,6 +12,7 @@ export interface User {
   lastName?: string;
   role: UserRole;
   mustChangePassword?: boolean;
+  profilePictureUrl?: string;
   dateOfBirth?: string;
   gender?: 'male' | 'female';
   address?: string;
@@ -79,10 +80,10 @@ interface AuthContextType {
   saveProfile: (updates: Partial<User>) => Promise<{ success: boolean; message: string }>;
   // Admin user management helpers
   listUsers: () => User[];
-  createUser: (u: Omit<User, 'id'> & { password: string }) => { success: boolean; message: string };
-  updateUser: (id: string, updates: Partial<User>) => { success: boolean; message: string };
-  deleteUser: (id: string) => { success: boolean; message: string };
-  resetPassword: (id: string) => { success: boolean; message: string };
+  createUser: (u: Omit<User, 'id'> & { password: string }) => Promise<{ success: boolean; message: string }>;
+  updateUser: (id: string, updates: Partial<User>) => Promise<{ success: boolean; message: string }>;
+  deleteUser: (id: string) => Promise<{ success: boolean; message: string }>;
+  resetPassword: (id: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -197,7 +198,7 @@ const parseNullableBoolean = (value: any): boolean | null | undefined => {
 };
 
 const transformApiUser = (apiUser: any): User => ({
-  id: apiUser.id,
+  id: String(apiUser.id ?? apiUser.user_number ?? apiUser.userNumber ?? ''),
   username: apiUser.username,
   email: apiUser.email ?? apiUser.emailAddress ?? undefined,
   phone: apiUser.phone ?? apiUser.phoneNumber ?? undefined,
@@ -205,6 +206,7 @@ const transformApiUser = (apiUser: any): User => ({
   lastName: apiUser.lastName ?? apiUser.last_name ?? undefined,
   role: apiUser.role,
   mustChangePassword: apiUser.mustChangePassword ?? apiUser.must_change_password ?? undefined,
+  profilePictureUrl: apiUser.profilePictureUrl ?? apiUser.profile_picture_url ?? undefined,
   dateOfBirth: apiUser.dateOfBirth ?? apiUser.date_of_birth ?? undefined,
   gender: apiUser.gender ?? undefined,
   address: apiUser.address ?? undefined,
@@ -259,10 +261,8 @@ function findUserByIdentifier(users: StoredUser[], identifier: string): StoredUs
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<User | null>(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [adminUsers, setAdminUsers] = useState<User[]>([]);
 
   const persistUser = useCallback((rawUser: any | null) => {
     if (!rawUser) {
@@ -294,6 +294,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (token) {
           api.setAuthToken(token);
           await refreshProfile();
+        } else {
+          localStorage.removeItem('currentUser');
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -307,6 +310,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     initializeAuth();
   }, [persistUser, refreshProfile]);
 
+  useEffect(() => {
+    const loadUsersFromApi = async () => {
+      try {
+        const res = await api.users.getAll();
+        const arr: any[] = (res.data?.users) || (Array.isArray(res.data) ? res.data : []);
+        setAdminUsers(arr.map(transformApiUser));
+      } catch {}
+    };
+    if (user && (user.role === 'admin' || user.role === 'secretary' || user.role === 'priest' || user.role === 'reporter')) {
+      loadUsersFromApi();
+    } else {
+      setAdminUsers(loadUsers().map(({ password, ...u }) => u));
+    }
+  }, [user]);
+
   const login = async (identifier: string, password: string): Promise<{ success: boolean; role?: UserRole; message?: string; mustChangePassword?: boolean }> => {
     setIsLoading(true);
     const trimmedIdentifier = identifier.trim();
@@ -314,31 +332,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const trimmedPassword = password.trim();
 
     try {
-      try {
-        const response = await api.auth.login({
-          username: identifier,
-          password
-        });
-
-        if (response.success && response.data?.user) {
-          const { user: apiUser, token, refreshToken } = response.data as any;
-          if (token) {
-            api.setAuthToken(token);
-            localStorage.setItem('authToken', token);
+      // Try username, then email, then phone for identifier-based login
+      const attempts: Record<string, string>[] = [
+        { username: identifier },
+        { email: identifier },
+        { phone: identifier }
+      ];
+      for (const payload of attempts) {
+        try {
+          const response = await apiClient.post('/auth/login', { ...payload, password });
+          if (response.success && (response as any).data?.user) {
+            const { user: apiUser, token, refreshToken } = (response as any).data;
+            if (token) {
+              api.setAuthToken(token);
+              localStorage.setItem('authToken', token);
+            }
+            if (refreshToken) {
+              localStorage.setItem('refreshToken', refreshToken);
+            }
+            const mappedUser = persistUser(apiUser);
+            const mustChange = mappedUser?.mustChangePassword === true || trimmedPassword === 'Password';
+            if (mustChange && mappedUser) {
+              localStorage.setItem('pendingPasswordChangeUser', mappedUser.username);
+              return { success: true, role: mappedUser.role, message: 'Password change required', mustChangePassword: true };
+            }
+            return { success: true, role: mappedUser?.role, message: `Welcome ${mappedUser?.firstName || mappedUser?.username || 'back'}!` };
           }
-          if (refreshToken) {
-            localStorage.setItem('refreshToken', refreshToken);
-          }
-          const mappedUser = persistUser(apiUser);
-          const mustChange = mappedUser?.mustChangePassword === true || trimmedPassword === 'Password';
-          if (mustChange && mappedUser) {
-            localStorage.setItem('pendingPasswordChangeUser', mappedUser.username);
-            return { success: true, role: mappedUser.role, message: 'Password change required', mustChangePassword: true };
-          }
-          return { success: true, role: mappedUser?.role, message: `Welcome ${mappedUser?.firstName || mappedUser?.username || 'back'}!` };
+        } catch (err) {
+          // Continue to next attempt
         }
-      } catch (error) {
-        console.warn('API login failed, attempting local fallback', error);
       }
 
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -417,6 +439,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: 'parishioner',
           password: data.password,
           mustChangePassword: false,
+          profilePictureUrl: profilePictureUrl || undefined,
           dateOfBirth: data.dateOfBirth || undefined,
           address: data.address || undefined,
           emergencyContact: data.emergencyContact || undefined,
@@ -458,7 +481,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('adminUser');
     localStorage.removeItem('adminToken');
     // Force reload to clear all state and redirect to login
-    window.location.href = '/login';
+    globalThis.location.href = '/login';
   };
 
   const saveProfile = async (updates: Partial<User>) => {
@@ -478,54 +501,75 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // Admin user management (local-only implementation)
-  const listUsers = (): User[] => loadUsers().map(({ password, ...u }) => u);
-  const createUser = (u: Omit<User, 'id'> & { password: string }) => {
-    const users = loadUsers();
-    if (findUserByIdentifier(users, u.username) || (u.email && findUserByIdentifier(users, u.email)) || (u.phone && findUserByIdentifier(users, u.phone))) {
-      return { success: false, message: 'User with same identifier already exists' };
+  const listUsers = (): User[] => adminUsers;
+  const createUser = async (u: Omit<User, 'id'> & { password: string }): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await api.users.create({
+        username: u.username,
+        email: u.email,
+        phone: u.phone,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        role: u.role,
+        password: u.password
+      });
+      if (res.success) {
+        const list = await api.users.getAll();
+        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
+        setAdminUsers(arr.map(transformApiUser));
+        return { success: true, message: res.message || 'User created' };
+      }
+      return { success: false, message: res.message || 'Failed to create user' };
+    } catch (error) {
+      return { success: false, message: 'Failed to create user. Please try again.' };
     }
-    const now = new Date().toISOString();
-    const newUser: StoredUser = { 
-      ...u, 
-      id: (Date.now()).toString(),
-      createdAt: now,
-      updatedAt: now
-    } as StoredUser;
-    users.push(newUser);
-    saveUsers(users);
-    return { success: true, message: 'User created' };
   };
-  const updateUser = (id: string, updates: Partial<User>) => {
-    const users = loadUsers();
-    const idx = users.findIndex(u => u.id === id);
-    if (idx === -1) return { success: false, message: 'User not found' };
-    users[idx] = { ...users[idx], ...updates, updatedAt: new Date().toISOString() } as StoredUser;
-    saveUsers(users);
-    
-    // If updating current user, update the user state and localStorage
-    if (user && user.id === id) {
-      const updatedUser = { ...user, ...updates, updatedAt: new Date().toISOString() };
-      setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+  const updateUser = async (id: string, updates: Partial<User>): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await api.users.update(id, updates);
+      if (res.success) {
+        const list = await api.users.getAll();
+        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
+        setAdminUsers(arr.map(transformApiUser));
+        if (user && user.id === id) {
+          const updatedUser = { ...user, ...updates, updatedAt: new Date().toISOString() };
+          setUser(updatedUser);
+          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        }
+        return { success: true, message: res.message || 'User updated' };
+      }
+      return { success: false, message: res.message || 'Failed to update user' };
+    } catch (error) {
+      return { success: false, message: 'Failed to update user. Please try again.' };
     }
-    
-    return { success: true, message: 'User updated' };
   };
-  const deleteUser = (id: string) => {
-    const users = loadUsers();
-    const next = users.filter(u => u.id !== id);
-    saveUsers(next);
-    return { success: true, message: 'User deleted' };
+  const deleteUser = async (id: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await api.users.delete(id);
+      if (res.success) {
+        const list = await api.users.getAll();
+        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
+        setAdminUsers(arr.map(transformApiUser));
+        return { success: true, message: res.message || 'User deleted' };
+      }
+      return { success: false, message: res.message || 'Failed to delete user' };
+    } catch (error) {
+      return { success: false, message: 'Failed to delete user. Please try again.' };
+    }
   };
-  const resetPassword = (id: string) => {
-    const users = loadUsers();
-    const idx = users.findIndex(u => u.id === id);
-    if (idx === -1) return { success: false, message: 'User not found' };
-    users[idx].password = 'Password';
-    users[idx].mustChangePassword = true;
-    saveUsers(users);
-    return { success: true, message: "Password reset to 'Password' and must change on next login" };
+  const resetPassword = async (id: string): Promise<{ success: boolean; message: string }> => {
+    try {
+      const res = await api.users.resetPassword(id, 'Password');
+      if (res.success) {
+        const list = await api.users.getAll();
+        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
+        setAdminUsers(arr.map(transformApiUser));
+        return { success: true, message: res.message || "Password reset to 'Password' and must change on next login" };
+      }
+      return { success: false, message: res.message || 'Failed to reset password' };
+    } catch (error) {
+      return { success: false, message: 'Failed to reset password. Please try again.' };
+    }
   };
 
   const value = {

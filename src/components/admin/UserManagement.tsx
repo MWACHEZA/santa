@@ -23,6 +23,7 @@ const UserManagement: React.FC = () => {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [processing, setProcessing] = useState(false);
   
   const [createForm, setCreateForm] = useState<CreateUserForm>({
     username: '',
@@ -55,9 +56,10 @@ const UserManagement: React.FC = () => {
     user.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateUser = (e: React.FormEvent) => {
+  const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = createUser(createForm);
+    setProcessing(true);
+    const result = await createUser(createForm);
     if (result.success) {
       showMessage('success', result.message);
       setCreateForm({
@@ -74,13 +76,14 @@ const UserManagement: React.FC = () => {
     } else {
       showMessage('error', result.message);
     }
+    setProcessing(false);
   };
 
-  const handleUpdateUser = (e: React.FormEvent) => {
+  const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
-    
-    const result = updateUser(editingUser.id, {
+    setProcessing(true);
+    const result = await updateUser(editingUser.id, {
       username: editingUser.username,
       email: editingUser.email,
       phone: editingUser.phone,
@@ -88,7 +91,6 @@ const UserManagement: React.FC = () => {
       lastName: editingUser.lastName,
       role: editingUser.role
     });
-    
     if (result.success) {
       showMessage('success', result.message);
       setEditingUser(null);
@@ -96,29 +98,34 @@ const UserManagement: React.FC = () => {
     } else {
       showMessage('error', result.message);
     }
+    setProcessing(false);
   };
 
-  const handleDeleteUser = (userId: string, username: string) => {
+  const handleDeleteUser = async (userId: string, username: string) => {
     if (window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
-      const result = deleteUser(userId);
+      setProcessing(true);
+      const result = await deleteUser(userId);
       if (result.success) {
         showMessage('success', result.message);
         loadUsers();
       } else {
         showMessage('error', result.message);
       }
+      setProcessing(false);
     }
   };
 
-  const handleResetPassword = (userId: string, username: string) => {
+  const handleResetPassword = async (userId: string, username: string) => {
     if (window.confirm(`Reset password for "${username}" to "Password"? They will be required to change it on next login.`)) {
-      const result = resetPassword(userId);
+      setProcessing(true);
+      const result = await resetPassword(userId);
       if (result.success) {
         showMessage('success', result.message);
         loadUsers();
       } else {
         showMessage('error', result.message);
       }
+      setProcessing(false);
     }
   };
 
@@ -132,15 +139,17 @@ const UserManagement: React.FC = () => {
     setShowUserProfile(false);
   };
 
-  const handleUserUpdate = (updatedUser: User) => {
+  const handleUserUpdate = async (updatedUser: User) => {
     if (updateUser) {
-      const result = updateUser(updatedUser.id, updatedUser);
+      setProcessing(true);
+      const result = await updateUser(updatedUser.id, updatedUser);
       if (result.success) {
-        loadUsers(); // Refresh the user list
+        loadUsers();
         showMessage('success', 'User profile updated successfully!');
       } else {
         showMessage('error', result.message);
       }
+      setProcessing(false);
     }
   };
 
@@ -159,13 +168,14 @@ const UserManagement: React.FC = () => {
     <div className="user-management">
       <div className="user-management-header">
         <h2>User Management</h2>
-        <button 
-          className="btn btn-primary"
+          <button 
+            className="btn btn-primary"
           onClick={() => setShowCreateForm(true)}
-        >
-          <Plus size={18} />
-          Add User
-        </button>
+          disabled={processing}
+          >
+            <Plus size={18} />
+            Add User
+          </button>
       </div>
 
       {message && (
@@ -279,8 +289,8 @@ const UserManagement: React.FC = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setShowCreateForm(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Create User
+                <button type="submit" className="btn btn-primary" disabled={processing}>
+                  {processing ? 'Creating...' : 'Create User'}
                 </button>
               </div>
             </form>
@@ -345,6 +355,7 @@ const UserManagement: React.FC = () => {
                       handleViewProfile(user);
                     }}
                     title="View Profile"
+                    disabled={processing}
                   >
                     <Eye size={16} />
                   </button>
@@ -355,6 +366,7 @@ const UserManagement: React.FC = () => {
                       setEditingUser(user);
                     }}
                     title="Edit User"
+                    disabled={processing}
                   >
                     <Edit size={16} />
                   </button>
@@ -365,6 +377,7 @@ const UserManagement: React.FC = () => {
                       handleResetPassword(user.id, user.username);
                     }}
                     title="Reset Password"
+                    disabled={processing}
                   >
                     <RotateCcw size={16} />
                   </button>
@@ -375,6 +388,7 @@ const UserManagement: React.FC = () => {
                       handleDeleteUser(user.id, user.username);
                     }}
                     title="Delete User"
+                    disabled={processing}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -584,8 +598,8 @@ const UserManagement: React.FC = () => {
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Update User
+                <button type="submit" className="btn btn-primary" disabled={processing}>
+                  {processing ? 'Updating...' : 'Update User'}
                 </button>
               </div>
             </form>

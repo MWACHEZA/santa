@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Play, Calendar, Clock, Users, Video, Eye } from 'lucide-react';
 import './WatchMass.css';
+import { api } from '../services/api';
 
 interface LiveStream {
   id: string;
@@ -28,66 +29,53 @@ interface VideoArchive {
 const WatchMass: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'live' | 'archive'>('live');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Mock data - replace with actual API calls
-  const [liveStreams] = useState<LiveStream[]>([
-    {
-      id: '1',
-      title: 'Sunday Mass - Live',
-      description: 'Join us for our weekly Sunday Mass celebration',
-      streamUrl: 'https://www.youtube.com/embed/live_stream_id',
-      isLive: true,
-      scheduledTime: '2024-11-10T09:00:00',
-      viewers: 45,
-      thumbnail: '/api/placeholder/400/225'
-    },
-    {
-      id: '2',
-      title: 'Evening Prayer Service',
-      description: 'Daily evening prayer and reflection',
-      streamUrl: 'https://www.youtube.com/embed/evening_stream_id',
-      isLive: false,
-      scheduledTime: '2024-11-10T18:00:00',
-      viewers: 0,
-      thumbnail: '/api/placeholder/400/225'
-    }
-  ]);
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
 
-  const [videoArchive] = useState<VideoArchive[]>([
-    {
-      id: '1',
-      title: 'Sunday Mass - November 3, 2024',
-      description: 'Complete Sunday Mass service with homily',
-      videoUrl: 'https://www.youtube.com/embed/video_id_1',
-      thumbnail: '/api/placeholder/400/225',
-      duration: '1:15:30',
-      publishedDate: '2024-11-03',
-      views: 234,
-      category: 'mass'
-    },
-    {
-      id: '2',
-      title: 'All Saints Day Special Service',
-      description: 'Special celebration for All Saints Day',
-      videoUrl: 'https://www.youtube.com/embed/video_id_2',
-      thumbnail: '/api/placeholder/400/225',
-      duration: '45:20',
-      publishedDate: '2024-11-01',
-      views: 156,
-      category: 'special'
-    },
-    {
-      id: '3',
-      title: 'Youth Ministry Event',
-      description: 'Youth gathering and worship session',
-      videoUrl: 'https://www.youtube.com/embed/video_id_3',
-      thumbnail: '/api/placeholder/400/225',
-      duration: '32:15',
-      publishedDate: '2024-10-28',
-      views: 89,
-      category: 'event'
-    }
-  ]);
+  const [videoArchive, setVideoArchive] = useState<VideoArchive[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      setMessage(null);
+      try {
+        const [streamsRes, archiveRes] = await Promise.all([
+          api.videos.getStreams({ active: true }),
+          api.videos.getArchive({ published: true })
+        ]);
+        const streams: any[] = (streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []);
+        const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
+        setLiveStreams(streams.map(s => ({
+          id: String(s.id),
+          title: s.title,
+          description: s.description ?? '',
+          streamUrl: s.streamUrl ?? s.stream_url ?? '',
+          isLive: !!(s.isLive ?? s.is_live),
+          scheduledTime: s.scheduledTime ?? s.scheduled_time ?? new Date().toISOString(),
+          viewers: s.viewers ?? 0,
+          thumbnail: s.thumbnail ?? s.thumbnail_url ?? ''
+        })));
+        setVideoArchive(videos.map(v => ({
+          id: String(v.id),
+          title: v.title,
+          description: v.description ?? '',
+          videoUrl: v.videoUrl ?? v.video_url ?? '',
+          thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
+          duration: v.duration ?? '',
+          publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
+          views: v.views ?? 0,
+          category: (v.category ?? 'mass')
+        })));
+      } catch (err) {
+        setMessage({ type: 'error', text: 'Failed to load videos' });
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   const filteredVideos = videoArchive.filter(video => 
     selectedCategory === 'all' || video.category === selectedCategory
@@ -221,7 +209,12 @@ const WatchMass: React.FC = () => {
                 </div>
               </div>
 
-              {filteredVideos.length === 0 ? (
+              {loading ? (
+                <div className="no-videos">
+                  <Play size={48} />
+                  <h3>Loading videos…</h3>
+                </div>
+              ) : filteredVideos.length === 0 ? (
                 <div className="no-videos">
                   <Play size={48} />
                   <h3>No Videos Available</h3>
@@ -258,6 +251,14 @@ const WatchMass: React.FC = () => {
                           <span className={`category-badge ${video.category}`}>
                             {video.category.charAt(0).toUpperCase() + video.category.slice(1)}
                           </span>
+                        </div>
+                        <div className="video-actions" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                          <a href={video.videoUrl} target="_blank" rel="noreferrer" className="watch-button">
+                            Play
+                          </a>
+                          <a href={video.videoUrl} download target="_blank" rel="noreferrer" className="watch-button">
+                            Download
+                          </a>
                         </div>
                       </div>
                     </div>

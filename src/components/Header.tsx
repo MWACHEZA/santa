@@ -7,6 +7,7 @@ import { Menu, X, Globe, LogOut, User, Home, Heart, Camera, Users, Calendar, New
 import './Header.css';
 
 const Header: React.FC = () => {
+  const placeholderLogo = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%234a7c2a"/><stop offset="100%" stop-color="%232d5016"/></linearGradient></defs><circle cx="40" cy="40" r="38" fill="url(%23g)"/></svg>';
   const [isSideNavOpen, setIsSideNavOpen] = useState(false);
   const dropdownRef = useRef<HTMLLIElement>(null);
   const sideNavRef = useRef<HTMLDivElement>(null);
@@ -67,13 +68,17 @@ const Header: React.FC = () => {
           <div className="header-content">
             {/* Logo and Church Name */}
             <div className="logo-section">
-              <div className="logo" onClick={() => window.location.reload()}>
+              <button
+                type="button"
+                className="logo"
+                onClick={() => globalThis.location.reload()}
+              >
                 <img 
-                  src="/api/placeholder/80/80" 
+                  src={placeholderLogo}
                   alt="St. Patrick's Catholic Church Logo" 
                   className="logo-image"
                 />
-              </div>
+              </button>
               <div className="church-info">
                 <h1 className="church-name">St. Patrick's</h1>
                 <p className="church-location">Makokoba, Bulawayo</p>
@@ -138,7 +143,8 @@ const Header: React.FC = () => {
       </div>
 
       {/* Side Navigation Overlay */}
-      <div 
+      <button 
+        type="button"
         className={`side-nav-overlay ${isSideNavOpen ? 'open' : ''}`}
         onClick={() => setIsSideNavOpen(false)}
       />
@@ -158,7 +164,7 @@ const Header: React.FC = () => {
           <div className="side-nav-logo">
             <div className="logo">
               <img 
-                src="/api/placeholder/80/80" 
+                src={placeholderLogo}
                 alt="St. Patrick's Catholic Church Logo" 
                 className="logo-image"
               />
@@ -309,19 +315,19 @@ const Header: React.FC = () => {
           <div className="side-nav-user">
             <div className="side-nav-user-info">
               <div className="side-nav-user-avatar">
-                {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
+                {(((user?.firstName && user?.firstName[0]) || (user?.username || 'U')[0]).toUpperCase())}
               </div>
               <div className="side-nav-user-details">
                 <h4>
-                  {user.firstName && user.lastName 
-                    ? `${user.firstName} ${user.lastName}` 
-                    : user.username}
+                  {(user?.firstName && user?.lastName) 
+                    ? `${user?.firstName} ${user?.lastName}` 
+                    : (user?.username || '')}
                 </h4>
-                <p>{user.role}</p>
+                <p>{user?.role}</p>
               </div>
             </div>
             
-            {user.role === 'parishioner' && (
+            {user?.role === 'parishioner' && (
               <Link 
                 to="/profile" 
                 className={`nav-link ${isActive('/profile') ? 'active' : ''}`}

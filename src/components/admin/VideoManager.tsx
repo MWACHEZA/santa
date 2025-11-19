@@ -1,45 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, Eye, EyeOff, Video, Calendar, Clock, Users } from 'lucide-react';
 import { LiveStream, VideoArchive } from '../../contexts/AdminContext';
 import './VideoManager.css';
+import { api } from '../../services/api';
 
 const VideoManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'streams' | 'archive'>('streams');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingItem, setEditingItem] = useState<LiveStream | VideoArchive | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Mock data - replace with actual API calls
-  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([
-    {
-      id: '1',
-      title: 'Sunday Mass - Live',
-      description: 'Weekly Sunday Mass celebration',
-      streamUrl: 'https://www.youtube.com/embed/live_stream_id',
-      isLive: true,
-      scheduledTime: '2024-11-10T09:00:00',
-      viewers: 45,
-      thumbnail: '/api/placeholder/400/225',
-      createdBy: 'admin',
-      createdAt: '2024-11-01T10:00:00'
-    }
-  ]);
-
-  const [videoArchive, setVideoArchive] = useState<VideoArchive[]>([
-    {
-      id: '1',
-      title: 'Sunday Mass - November 3, 2024',
-      description: 'Complete Sunday Mass service with homily',
-      videoUrl: 'https://www.youtube.com/embed/video_id_1',
-      thumbnail: '/api/placeholder/400/225',
-      duration: '1:15:30',
-      publishedDate: '2024-11-03',
-      views: 234,
-      category: 'mass',
-      createdBy: 'admin',
-      createdAt: '2024-11-03T12:00:00',
-      isPublished: true
-    }
-  ]);
+  const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
+  const [videoArchive, setVideoArchive] = useState<VideoArchive[]>([]);
+  const [playerItem, setPlayerItem] = useState<VideoArchive | null>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -51,53 +25,174 @@ const VideoManager: React.FC = () => {
     duration: '',
     isLive: false
   });
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (activeTab === 'streams') {
-      const newStream: LiveStream = {
-        id: Date.now().toString(),
-        title: formData.title,
-        description: formData.description,
-        streamUrl: formData.url,
-        isLive: formData.isLive,
-        scheduledTime: formData.scheduledTime,
-        viewers: 0,
-        thumbnail: formData.thumbnail,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString()
-      };
-      
-      if (editingItem) {
-        setLiveStreams(streams => streams.map(s => s.id === editingItem.id ? { ...newStream, id: editingItem.id } : s));
-      } else {
-        setLiveStreams(streams => [...streams, newStream]);
+  const tryUpload = async (file: File, type?: 'image' | 'video') => {
+    try {
+      const up = await api.upload.uploadSingle(file, type);
+      return up;
+    } catch (err) {
+      const base = (process.env.REACT_APP_API_URL || '/api');
+      const fd = new FormData();
+      fd.append('file', file);
+      if (type) fd.append('type', type);
+      const token = localStorage.getItem('authToken');
+      const res = await fetch(`${base}/upload/single`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        body: fd,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Upload failed');
       }
-    } else {
-      const newVideo: VideoArchive = {
-        id: Date.now().toString(),
-        title: formData.title,
-        description: formData.description,
-        videoUrl: formData.url,
-        thumbnail: formData.thumbnail,
-        duration: formData.duration,
-        publishedDate: new Date().toISOString().split('T')[0],
-        views: 0,
-        category: formData.category,
-        createdBy: 'admin',
-        createdAt: new Date().toISOString(),
-        isPublished: true
-      };
-      
-      if (editingItem) {
-        setVideoArchive(videos => videos.map(v => v.id === editingItem.id ? { ...newVideo, id: editingItem.id } : v));
-      } else {
-        setVideoArchive(videos => [...videos, newVideo]);
-      }
+      const data = await res.json();
+      return data;
     }
-    
-    resetForm();
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) api.setAuthToken(token);
+        const [streamsRes, archiveRes] = await Promise.all([
+          api.videos.getStreams(),
+          api.videos.getArchive({ published: true })
+        ]);
+        const streams: any[] = (streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []);
+        const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
+        setLiveStreams(streams.map(s => ({
+          id: String(s.id),
+          title: s.title,
+          description: s.description ?? '',
+          streamUrl: s.streamUrl ?? s.stream_url ?? '',
+          isLive: !!(s.isLive ?? s.is_live),
+          scheduledTime: s.scheduledTime ?? s.scheduled_time ?? new Date().toISOString(),
+          viewers: s.viewers ?? 0,
+          thumbnail: s.thumbnail ?? s.thumbnail_url ?? '',
+          createdBy: s.createdBy ?? 'system',
+          createdAt: s.createdAt ?? s.created_at ?? new Date().toISOString()
+        })));
+        setVideoArchive(videos.map(v => ({
+          id: String(v.id),
+          title: v.title,
+          description: v.description ?? '',
+          videoUrl: v.videoUrl ?? v.video_url ?? '',
+          thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
+          duration: v.duration ?? '',
+          publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
+          views: v.views ?? 0,
+          category: (v.category ?? 'mass'),
+          createdBy: v.createdBy ?? 'system',
+          createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
+          isPublished: !!(v.isPublished ?? v.is_published ?? true)
+        })));
+      } catch (err) {}
+    };
+    loadData();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProcessing(true);
+    setMessage(null);
+    try {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        api.setAuthToken(token);
+      }
+      let thumbnailUrl = formData.thumbnail;
+      if (thumbnailFile) {
+        const up = await tryUpload(thumbnailFile, 'image');
+        thumbnailUrl = (up.data as any)?.url || (up.data as any)?.file?.url || (up.data as any)?.path || (up as any)?.url || thumbnailUrl;
+      }
+      if (activeTab === 'streams') {
+        const payload = {
+          title: formData.title,
+          description: formData.description,
+          streamUrl: formData.url,
+          scheduledTime: formData.scheduledTime,
+          thumbnail: thumbnailUrl,
+          isLive: formData.isLive,
+        };
+        if (editingItem && 'streamUrl' in editingItem) {
+          const res = await api.videos.updateStream(editingItem.id, payload);
+          if (res.success) {
+            setMessage({ type: 'success', text: 'Stream updated' });
+          } else {
+            throw new Error(res.message || 'Failed to update stream');
+          }
+        } else {
+          const res = await api.videos.createStream(payload);
+          if (!res.success) throw new Error(res.message || 'Failed to create stream');
+          setMessage({ type: 'success', text: 'Stream created' });
+        }
+        const streamsRes = await api.videos.getStreams();
+        const streams: any[] = (streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []);
+        setLiveStreams(streams.map(s => ({
+          id: String(s.id),
+          title: s.title,
+          description: s.description ?? '',
+          streamUrl: s.streamUrl ?? s.stream_url ?? '',
+          isLive: !!(s.isLive ?? s.is_live),
+          scheduledTime: s.scheduledTime ?? s.scheduled_time ?? new Date().toISOString(),
+          viewers: s.viewers ?? 0,
+          thumbnail: s.thumbnail ?? s.thumbnail_url ?? '',
+          createdBy: s.createdBy ?? 'system',
+          createdAt: s.createdAt ?? s.created_at ?? new Date().toISOString()
+        })));
+      } else {
+        let videoUrl = formData.url;
+        if (videoFile) {
+          const upv = await tryUpload(videoFile, 'video');
+          videoUrl = (upv.data as any)?.url || (upv.data as any)?.file?.url || (upv.data as any)?.path || (upv as any)?.url || videoUrl;
+        }
+        const payload = {
+          title: formData.title,
+          description: formData.description,
+          videoUrl,
+          category: formData.category,
+          duration: formData.duration || undefined,
+          thumbnail: thumbnailUrl || undefined,
+        };
+        if (editingItem && !('streamUrl' in editingItem)) {
+          const res = await api.videos.updateVideo(editingItem.id, payload);
+          if (res.success) {
+            setMessage({ type: 'success', text: 'Video updated' });
+          } else {
+            throw new Error(res.message || 'Failed to update video');
+          }
+        } else {
+          const res = await api.videos.createVideo(payload);
+          if (!res.success) throw new Error(res.message || 'Failed to create video');
+          setMessage({ type: 'success', text: 'Video added' });
+        }
+        const archiveRes = await api.videos.getArchive({ published: true });
+        const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
+        setVideoArchive(videos.map(v => ({
+          id: String(v.id),
+          title: v.title,
+          description: v.description ?? '',
+          videoUrl: v.videoUrl ?? v.video_url ?? '',
+          thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
+          duration: v.duration ?? '',
+          publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
+          views: v.views ?? 0,
+          category: (v.category ?? 'mass'),
+          createdBy: v.createdBy ?? 'system',
+          createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
+          isPublished: !!(v.isPublished ?? v.is_published ?? true)
+        })));
+      }
+      resetForm();
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const resetForm = () => {
@@ -113,6 +208,8 @@ const VideoManager: React.FC = () => {
     });
     setShowAddForm(false);
     setEditingItem(null);
+    setThumbnailFile(null);
+    setVideoFile(null);
   };
 
   const handleEdit = (item: LiveStream | VideoArchive) => {
@@ -145,22 +242,86 @@ const VideoManager: React.FC = () => {
     setShowAddForm(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      if (activeTab === 'streams') {
-        setLiveStreams(streams => streams.filter(s => s.id !== id));
-      } else {
-        setVideoArchive(videos => videos.filter(v => v.id !== id));
+      setProcessing(true);
+      setMessage(null);
+      try {
+        if (activeTab === 'streams') {
+          const res = await api.videos.deleteStream(id);
+          if (!res.success) throw new Error(res.message || 'Failed to delete stream');
+          const streamsRes = await api.videos.getStreams();
+          const streams: any[] = (streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []);
+          setLiveStreams(streams.map(s => ({
+            id: String(s.id),
+            title: s.title,
+            description: s.description ?? '',
+            streamUrl: s.streamUrl ?? s.stream_url ?? '',
+            isLive: !!(s.isLive ?? s.is_live),
+            scheduledTime: s.scheduledTime ?? s.scheduled_time ?? new Date().toISOString(),
+            viewers: s.viewers ?? 0,
+            thumbnail: s.thumbnail ?? s.thumbnail_url ?? '',
+            createdBy: s.createdBy ?? 'system',
+            createdAt: s.createdAt ?? s.created_at ?? new Date().toISOString()
+          })));
+        } else {
+          const res = await api.videos.deleteVideo(id);
+          if (!res.success) throw new Error(res.message || 'Failed to delete video');
+          const archiveRes = await api.videos.getArchive({ published: true });
+          const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
+          setVideoArchive(videos.map(v => ({
+            id: String(v.id),
+            title: v.title,
+            description: v.description ?? '',
+            videoUrl: v.videoUrl ?? v.video_url ?? '',
+            thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
+            duration: v.duration ?? '',
+            publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
+            views: v.views ?? 0,
+            category: (v.category ?? 'mass'),
+            createdBy: v.createdBy ?? 'system',
+            createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
+            isPublished: !!(v.isPublished ?? v.is_published ?? true)
+          })));
+        }
+        setMessage({ type: 'success', text: 'Deleted successfully' });
+      } catch (err) {
+        setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' });
+      } finally {
+        setProcessing(false);
       }
     }
   };
 
-  const togglePublished = (id: string) => {
-    setVideoArchive(videos => 
-      videos.map(v => 
-        v.id === id ? { ...v, isPublished: !v.isPublished } : v
-      )
-    );
+  const togglePublished = async (id: string) => {
+    setProcessing(true);
+    setMessage(null);
+    try {
+      const current = videoArchive.find(v => v.id === id);
+      const res = await api.videos.updateVideo(id, { isPublished: !(current?.isPublished ?? true) });
+      if (!res.success) throw new Error(res.message || 'Failed to update publish status');
+      const archiveRes = await api.videos.getArchive({ published: true });
+      const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
+      setVideoArchive(videos.map(v => ({
+        id: String(v.id),
+        title: v.title,
+        description: v.description ?? '',
+        videoUrl: v.videoUrl ?? v.video_url ?? '',
+        thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
+        duration: v.duration ?? '',
+        publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
+        views: v.views ?? 0,
+        category: (v.category ?? 'mass'),
+        createdBy: v.createdBy ?? 'system',
+        createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
+        isPublished: !!(v.isPublished ?? v.is_published ?? true)
+      })));
+      setMessage({ type: 'success', text: 'Publish status updated' });
+    } catch (err) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
+    } finally {
+      setProcessing(false);
+    }
   };
 
   return (
@@ -170,11 +331,17 @@ const VideoManager: React.FC = () => {
         <button 
           className="btn btn-primary"
           onClick={() => setShowAddForm(true)}
+          disabled={processing}
         >
           <Plus size={20} />
           Add {activeTab === 'streams' ? 'Stream' : 'Video'}
         </button>
       </div>
+      {message && (
+        <div className={`message ${message.type}`}>
+          {message.text}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="video-tabs">
@@ -213,12 +380,23 @@ const VideoManager: React.FC = () => {
                 </div>
                 
                 <div className="form-group">
-                  <label>Thumbnail URL</label>
+                  <label>Thumbnail (optional)</label>
+                  {formData.thumbnail && !thumbnailFile && (
+                    <img src={formData.thumbnail} alt="thumbnail" style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
+                  )}
                   <input
-                    type="url"
-                    value={formData.thumbnail}
-                    onChange={(e) => setFormData({...formData, thumbnail: e.target.value})}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
                   />
+                  <div className="url-input">
+                    <label>Or enter thumbnail URL:</label>
+                    <input
+                      type="url"
+                      value={formData.thumbnail}
+                      onChange={(e) => setFormData({...formData, thumbnail: e.target.value})}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -232,13 +410,23 @@ const VideoManager: React.FC = () => {
               </div>
 
               <div className="form-group">
-                <label>{activeTab === 'streams' ? 'Stream URL' : 'Video URL'}</label>
-                <input
-                  type="url"
-                  value={formData.url}
-                  onChange={(e) => setFormData({...formData, url: e.target.value})}
-                  required
-                />
+                <label>{activeTab === 'streams' ? 'Stream URL' : 'Video URL or Upload'}</label>
+                {activeTab === 'archive' && (
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                  />
+                )}
+                <div className="url-input">
+                  <input
+                    type="url"
+                    value={formData.url}
+                    onChange={(e) => setFormData({...formData, url: e.target.value})}
+                    placeholder={activeTab === 'archive' ? 'https://example.com/video.mp4 (optional if uploading)' : 'https://example.com/live'}
+                    required={activeTab === 'streams'}
+                  />
+                </div>
               </div>
 
               {activeTab === 'streams' ? (
@@ -295,8 +483,8 @@ const VideoManager: React.FC = () => {
                 <button type="button" onClick={resetForm} className="btn btn-secondary">
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingItem ? 'Update' : 'Add'} {activeTab === 'streams' ? 'Stream' : 'Video'}
+                <button type="submit" className="btn btn-primary" disabled={processing}>
+                  {processing ? (editingItem ? 'Updating...' : 'Saving...') : `${editingItem ? 'Update' : 'Add'} ${activeTab === 'streams' ? 'Stream' : 'Video'}`}
                 </button>
               </div>
             </form>
@@ -351,12 +539,14 @@ const VideoManager: React.FC = () => {
                         <button 
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleEdit(stream)}
+                          disabled={processing}
                         >
                           <Edit size={16} />
                         </button>
                         <button 
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDelete(stream.id)}
+                          disabled={processing}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -409,18 +599,38 @@ const VideoManager: React.FC = () => {
                         <button 
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleEdit(video)}
+                          disabled={processing}
                         >
                           <Edit size={16} />
                         </button>
                         <button 
+                          className="btn btn-sm btn-primary"
+                          onClick={() => setPlayerItem(video)}
+                          title="Play"
+                        >
+                          Play
+                        </button>
+                        <button 
                           className={`btn btn-sm ${video.isPublished ? 'btn-warning' : 'btn-success'}`}
                           onClick={() => togglePublished(video.id)}
+                          disabled={processing}
                         >
                           {video.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
+                        <a 
+                          className="btn btn-sm btn-primary"
+                          href={video.videoUrl}
+                          download
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Download Video"
+                        >
+                          Download
+                        </a>
                         <button 
                           className="btn btn-sm btn-danger"
                           onClick={() => handleDelete(video.id)}
+                          disabled={processing}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -433,6 +643,32 @@ const VideoManager: React.FC = () => {
           </div>
         )}
       </div>
+      {playerItem && (
+        <div className="video-form-modal" onClick={() => setPlayerItem(null)}>
+          <div className="video-form" onClick={(e) => e.stopPropagation()}>
+            <h3>Playing: {playerItem.title}</h3>
+            {/youtube|youtu\.be/.test(playerItem.videoUrl) ? (
+              <iframe
+                src={playerItem.videoUrl}
+                title={playerItem.title}
+                style={{ width: '100%', height: 360, border: 0, borderRadius: 8 }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <video
+                controls
+                src={playerItem.videoUrl}
+                style={{ width: '100%', borderRadius: 8 }}
+              />
+            )}
+            <div className="form-actions" style={{ marginTop: 12 }}>
+              <a href={playerItem.videoUrl} download target="_blank" rel="noreferrer" className="btn btn-primary">Download</a>
+              <button className="btn btn-secondary" onClick={() => setPlayerItem(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

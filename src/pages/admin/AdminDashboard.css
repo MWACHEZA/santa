@@ -75,6 +75,9 @@
   overflow-x: hidden !important;
   max-height: none !important; /* Remove height restriction */
   min-height: 0; /* Allow flex shrinking */
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
