@@ -115,6 +115,12 @@ select:focus {
   outline-offset: 2px;
 }
 
+/* Normalize dropdown/select spacing globally */
+select {
+  padding: 0.5rem;
+  line-height: 1.2;
+}
+
 /* Loading states */
 .loading {
   opacity: 0.6;

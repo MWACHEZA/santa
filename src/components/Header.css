@@ -702,9 +702,10 @@
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 180px;
+  margin-top: 4px;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px);
+  transform: translateY(-2px);
   transition: all 0.3s ease;
   z-index: 1000;
   display: none;

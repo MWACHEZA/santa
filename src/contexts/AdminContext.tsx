@@ -726,11 +726,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               if (itemBlocks && itemBlocks.length) {
                 const parsed = itemBlocks.map((block) => {
                   const get = (tag: string) => {
-                    const m = block.match(new RegExp(`<${tag}[^>]*>([\s\S]*?)<\/${tag}>`));
+                    const m = block.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`));
                     return m ? m[1] : '';
                   };
                   const getAttr = (tag: string, attr: string) => {
-                    const m = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]+)"[^>]*\/>`));
+                    const m = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]+)"[^>]*/>`));
                     return m ? m[1] : '';
                   };
                   return {

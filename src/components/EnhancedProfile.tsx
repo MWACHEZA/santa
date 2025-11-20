@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
 import { 
   User, Mail, Phone, Calendar, MapPin, UserCheck, Save, Edit, X, 
   Heart, Church, Users, Crown 
@@ -10,6 +11,9 @@ const EnhancedProfile: React.FC = () => {
   const { user, saveProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'parish' | 'sacraments' | 'priest'>('basic');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const toDateInput = (v?: string) => {
     if (!v) return '';
     const d = new Date(v);
@@ -188,6 +192,65 @@ const EnhancedProfile: React.FC = () => {
           ) : (
             <User size={48} />
           )}
+          <div className="profile-avatar-actions">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setAvatarUploading(true);
+                setAvatarMessage(null);
+                try {
+                  const up = await api.upload.uploadSingle(file, 'profile');
+                  const url = (up.data as any)?.url || (up.data as any)?.file?.url || (up.data as any)?.path || (up as any)?.url;
+                  if (!url) throw new Error('Upload failed');
+                  const res = await saveProfile({ profilePictureUrl: url });
+                  if (res.success) {
+                    setAvatarMessage({ type: 'success', text: 'Profile picture updated' });
+                  } else {
+                    throw new Error(res.message || 'Failed to update profile picture');
+                  }
+                } catch (err) {
+                  setAvatarMessage({ type: 'error', text: err instanceof Error ? err.message : 'Upload failed' });
+                } finally {
+                  setAvatarUploading(false);
+                  if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+              }}
+            />
+            <button 
+              className="avatar-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={avatarUploading}
+              title="Change profile picture"
+            >Change</button>
+            {user.profilePictureUrl && (
+              <button 
+                className="avatar-btn remove"
+                onClick={async () => {
+                  setAvatarUploading(true);
+                  setAvatarMessage(null);
+                  try {
+                    const res = await saveProfile({ profilePictureUrl: '' });
+                    if (res.success) {
+                      setAvatarMessage({ type: 'success', text: 'Profile picture removed' });
+                    } else {
+                      throw new Error(res.message || 'Failed to remove profile picture');
+                    }
+                  } catch (err) {
+                    setAvatarMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
+                  } finally {
+                    setAvatarUploading(false);
+                  }
+                }}
+                disabled={avatarUploading}
+                title="Remove profile picture"
+              >Remove</button>
+            )}
+          </div>
         </div>
         <h1 className="profile-name">{user.firstName} {user.lastName}</h1>
         <p className="profile-role">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
@@ -225,6 +288,11 @@ const EnhancedProfile: React.FC = () => {
       </div>
 
       <div className="profile-content">
+        {avatarMessage && (
+          <div className={`${avatarMessage.type === 'success' ? 'success-message' : 'error-message'}`}>
+            {avatarMessage.text}
+          </div>
+        )}
         {message && (
           <div className={`${message.type === 'success' ? 'success-message' : 'error-message'}`}>
             {message.text}

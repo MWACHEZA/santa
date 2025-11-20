@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { api } from '../../services/api';
 import { User } from '../../contexts/AuthContext';
 import { 
   User as UserIcon, Mail, Phone, Calendar, MapPin, UserCheck, Save, Edit, X, 
@@ -19,6 +20,9 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<'basic' | 'parish' | 'sacraments' | 'priest'>('basic');
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   
   const [formData, setFormData] = useState({
     // Basic Information
@@ -213,7 +217,61 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
     <div className="enhanced-profile">
       <div className="profile-header">
         <div className="profile-avatar">
-          <UserIcon size={48} />
+          {user.profilePictureUrl ? (
+            <img
+              src={user.profilePictureUrl}
+              alt={`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Profile picture'}
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            <UserIcon size={48} />
+          )}
+          {!isReadOnly && (
+            <div className="profile-avatar-actions">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !onUserUpdate) return;
+                  setAvatarUploading(true);
+                  setAvatarMessage(null);
+                  try {
+                    const up = await api.upload.uploadSingle(file, 'profile');
+                    const url = (up.data as any)?.url || (up.data as any)?.file?.url || (up.data as any)?.path || (up as any)?.url;
+                    if (!url) throw new Error('Upload failed');
+                    onUserUpdate({ ...user, profilePictureUrl: url });
+                    setAvatarMessage({ type: 'success', text: 'Profile picture updated' });
+                  } catch (err) {
+                    setAvatarMessage({ type: 'error', text: err instanceof Error ? err.message : 'Upload failed' });
+                  } finally {
+                    setAvatarUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }
+                }}
+              />
+              <button 
+                className="avatar-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                title="Change profile picture"
+              >Change</button>
+              {user.profilePictureUrl && (
+                <button 
+                  className="avatar-btn remove"
+                  onClick={() => {
+                    if (!onUserUpdate) return;
+                    onUserUpdate({ ...user, profilePictureUrl: '' });
+                    setAvatarMessage({ type: 'success', text: 'Profile picture removed' });
+                  }}
+                  disabled={avatarUploading}
+                  title="Remove profile picture"
+                >Remove</button>
+              )}
+            </div>
+          )}
         </div>
         <h1 className="profile-name">{user.firstName} {user.lastName}</h1>
         <p className="profile-role">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
@@ -253,6 +311,11 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
       </div>
 
       <div className="profile-content">
+        {avatarMessage && (
+          <div className={`${avatarMessage.type === 'success' ? 'success-message' : 'error-message'}`}>
+            {avatarMessage.text}
+          </div>
+        )}
         {message && (
           <div className={`${message.type === 'success' ? 'success-message' : 'error-message'}`}>
             {message.text}

@@ -40,7 +40,7 @@ const VideoManager: React.FC = () => {
       const token = localStorage.getItem('authToken');
       const res = await fetch(`${base}/upload/single`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: token ? { Authorization: `Bearer ${token}`, 'x-access-token': token } : undefined,
         body: fd,
         credentials: 'include',
       });

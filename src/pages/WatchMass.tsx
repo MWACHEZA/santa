@@ -30,7 +30,6 @@ const WatchMass: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'live' | 'archive'>('live');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
 
@@ -39,7 +38,6 @@ const WatchMass: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      setMessage(null);
       try {
         const [streamsRes, archiveRes] = await Promise.all([
           api.videos.getStreams({ active: true }),
@@ -69,7 +67,6 @@ const WatchMass: React.FC = () => {
           category: (v.category ?? 'mass')
         })));
       } catch (err) {
-        setMessage({ type: 'error', text: 'Failed to load videos' });
       } finally {
         setLoading(false);
       }

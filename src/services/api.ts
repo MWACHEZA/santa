@@ -49,6 +49,7 @@ class ApiClient {
     const token = this.token || localStorage.getItem('authToken');
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      headers['x-access-token'] = token;
     }
 
     return headers;
@@ -139,6 +140,7 @@ class ApiClient {
       const token = this.token || localStorage.getItem('authToken');
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
+        headers['x-access-token'] = token;
       }
 
       const response = await fetch(url, {
@@ -394,21 +396,100 @@ export const usersApi = {
         }
       });
     }
-    return apiClient.get(`/admin/users?${queryParams.toString()}`);
+    const qs = `?${queryParams.toString()}`;
+    return (async () => {
+      const endpoints = [`/admin/users${qs}`, `/users${qs}`];
+      for (const ep of endpoints) {
+        try {
+          const res = await apiClient.get(ep);
+          if (res && res.success) return res;
+        } catch {}
+      }
+      return { success: false, data: { users: [] } } as ApiResponse<any>;
+    })();
   },
+
+  getById: (id: string) => (async () => {
+    const endpoints = [`/admin/users/${id}`, `/users/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.get(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false } as ApiResponse<any>;
+  })(),
   
-  getById: (id: string) => apiClient.get(`/admin/users/${id}`),
+  create: (userData: any) => (async () => {
+    const attempts = [
+      { ep: '/admin/users', payload: userData },
+      { ep: '/users', payload: userData },
+      // Fallback to auth/register when admin routes are unavailable
+      { ep: '/auth/register', payload: {
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+        role: userData.role,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phone: userData.phone,
+      } }
+    ];
+    for (const { ep, payload } of attempts) {
+      try {
+        const res = await apiClient.post(ep, payload);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to create user' } as ApiResponse<any>;
+  })(),
   
-  create: (userData: any) => apiClient.post('/admin/users', userData),
+  update: (id: string, userData: any) => (async () => {
+    const endpoints = [`/admin/users/${id}`, `/users/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.put(ep, userData);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to update user' } as ApiResponse<any>;
+  })(),
   
-  update: (id: string, userData: any) => apiClient.put(`/admin/users/${id}`, userData),
+  delete: (id: string) => (async () => {
+    const endpoints = [`/admin/users/${id}`, `/users/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.delete(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to delete user' } as ApiResponse<any>;
+  })(),
   
-  delete: (id: string) => apiClient.delete(`/admin/users/${id}`),
+  resetPassword: (id: string, newPassword: string) => (async () => {
+    const attempts = [
+      { ep: `/admin/users/${id}/reset-password`, payload: { newPassword, password: newPassword } },
+      { ep: `/users/${id}/reset-password`, payload: { newPassword, password: newPassword } },
+    ];
+    for (const { ep, payload } of attempts) {
+      try {
+        const res = await apiClient.patch(ep, payload);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to reset password' } as ApiResponse<any>;
+  })(),
   
-  resetPassword: (id: string, newPassword: string) => 
-    apiClient.patch(`/admin/users/${id}/reset-password`, { newPassword, password: newPassword }),
-  
-  toggle: (id: string) => apiClient.patch(`/admin/users/${id}/toggle`),
+  toggle: (id: string) => (async () => {
+    const endpoints = [`/admin/users/${id}/toggle`, `/users/${id}/toggle`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.patch(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false } as ApiResponse<any>;
+  })(),
   
   getStats: () => apiClient.get('/admin/users/stats'),
 };
@@ -616,7 +697,17 @@ export const videoApi = {
         }
       });
     }
-    return apiClient.get(`/videos/streams?${queryParams.toString()}`);
+    const qs = `?${queryParams.toString()}`;
+    return (async () => {
+      const endpoints = [`/videos/streams${qs}`, `/streams${qs}`, `/live-streams${qs}`];
+      for (const ep of endpoints) {
+        try {
+          const res = await apiClient.get(ep);
+          if (res && res.success) return res;
+        } catch {}
+      }
+      return { success: false, data: { items: [] } } as ApiResponse<any>;
+    })();
   },
   
   createStream: (data: {
@@ -625,7 +716,16 @@ export const videoApi = {
     streamUrl: string;
     scheduledTime: string;
     thumbnail?: string;
-  }) => apiClient.post('/videos/streams', data),
+  }) => (async () => {
+    const endpoints = ['/videos/streams', '/streams', '/live-streams'];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.post(ep, data);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'API endpoint not found for creating stream' } as ApiResponse<any>;
+  })(),
   
   updateStream: (id: string, data: Partial<{
     title: string;
@@ -634,9 +734,27 @@ export const videoApi = {
     scheduledTime: string;
     thumbnail: string;
     isLive: boolean;
-  }>) => apiClient.put(`/videos/streams/${id}`, data),
+  }>) => (async () => {
+    const endpoints = [`/videos/streams/${id}`, `/streams/${id}`, `/live-streams/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.put(ep, data);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to update stream' } as ApiResponse<any>;
+  })(),
   
-  deleteStream: (id: string) => apiClient.delete(`/videos/streams/${id}`),
+  deleteStream: (id: string) => (async () => {
+    const endpoints = [`/videos/streams/${id}`, `/streams/${id}`, `/live-streams/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.delete(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to delete stream' } as ApiResponse<any>;
+  })(),
   
   // Video Archive
   getArchive: (params?: { 
@@ -654,7 +772,17 @@ export const videoApi = {
         }
       });
     }
-    return apiClient.get(`/videos/archive?${queryParams.toString()}`);
+    const qs = `?${queryParams.toString()}`;
+    return (async () => {
+      const endpoints = [`/videos/archive${qs}`, `/video-archive${qs}`, `/videos${qs}`];
+      for (const ep of endpoints) {
+        try {
+          const res = await apiClient.get(ep);
+          if (res && res.success) return res;
+        } catch {}
+      }
+      return { success: false, data: { items: [] } } as ApiResponse<any>;
+    })();
   },
   
   createVideo: (data: {
@@ -664,7 +792,16 @@ export const videoApi = {
     category: string;
     duration?: string;
     thumbnail?: string;
-  }) => apiClient.post('/videos/archive', data),
+  }) => (async () => {
+    const endpoints = ['/videos/archive', '/video-archive', '/videos'];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.post(ep, data);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'API endpoint not found for adding video' } as ApiResponse<any>;
+  })(),
   
   updateVideo: (id: string, data: Partial<{
     title: string;
@@ -674,9 +811,27 @@ export const videoApi = {
     duration: string;
     thumbnail: string;
     isPublished: boolean;
-  }>) => apiClient.put(`/videos/archive/${id}`, data),
+  }>) => (async () => {
+    const endpoints = [`/videos/archive/${id}`, `/video-archive/${id}`, `/videos/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.put(ep, data);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to update video' } as ApiResponse<any>;
+  })(),
   
-  deleteVideo: (id: string) => apiClient.delete(`/videos/archive/${id}`),
+  deleteVideo: (id: string) => (async () => {
+    const endpoints = [`/videos/archive/${id}`, `/video-archive/${id}`, `/videos/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.delete(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to delete video' } as ApiResponse<any>;
+  })(),
   
   // Analytics
   getVideoAnalytics: (params?: { 
