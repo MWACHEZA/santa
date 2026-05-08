@@ -1,17 +1,27 @@
 const { Pool, Client } = require('pg');
 require('dotenv').config();
 
+const useConnectionString = !!process.env.DATABASE_URL;
+
 // Database configuration
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'st_patricks_db',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-};
+const dbConfig = useConnectionString
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+      database: process.env.DB_NAME || 'st_patricks_db',
+      max: 20,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 5000,
+    };
 
 // Create connection pool
 const pool = new Pool(dbConfig);
@@ -37,29 +47,37 @@ const testConnection = async () => {
 
 // Initialize database tables
 const initializeDatabase = async () => {
-  const client = new Client({
-    host: dbConfig.host,
-    port: dbConfig.port,
-    user: dbConfig.user,
-    password: dbConfig.password,
-    database: 'postgres' // Connect to default postgres db first
-  });
-
+  let client;
+  let dbClient;
   try {
     console.log('Initializing database...');
-    await client.connect();
 
-    // Create database if it doesn't exist
-    const res = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${dbConfig.database}'`);
-    if (res.rowCount === 0) {
-      console.log(`Creating database ${dbConfig.database}...`);
-      await client.query(`CREATE DATABASE ${dbConfig.database}`);
+    if (useConnectionString) {
+      console.log('Using connection string for initialization...');
+      dbClient = new Client(dbConfig);
+      await dbClient.connect();
+    } else {
+      client = new Client({
+        host: dbConfig.host,
+        port: dbConfig.port,
+        user: dbConfig.user,
+        password: dbConfig.password,
+        database: 'postgres' // Connect to default postgres db first
+      });
+      await client.connect();
+
+      // Create database if it doesn't exist
+      const res = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${dbConfig.database || 'st_patricks_db'}'`);
+      if (res.rowCount === 0) {
+        console.log(`Creating database ${dbConfig.database || 'st_patricks_db'}...`);
+        await client.query(`CREATE DATABASE ${dbConfig.database || 'st_patricks_db'}`);
+      }
+      await client.end();
+
+      // Connect to the actual database
+      dbClient = new Client(dbConfig);
+      await dbClient.connect();
     }
-    await client.end();
-
-    // Connect to the actual database
-    const dbClient = new Client(dbConfig);
-    await dbClient.connect();
 
     console.log('Creating tables and types...');
 
