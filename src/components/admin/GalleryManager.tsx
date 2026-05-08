@@ -3,7 +3,7 @@ import { useAdmin, GalleryImage } from '../../contexts/AdminContext';
 import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Image as ImageIcon, Tag, FileText } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import GalleryCategoryManager from './GalleryCategoryManager';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import './GalleryManager.css';
 
 const GalleryManager: React.FC = () => {

@@ -584,7 +584,7 @@ const VideoManager: React.FC = () => {
                       <div className="video-meta">
                         <div className="meta-item">
                           <Calendar size={16} />
-                          {new Date(video.publishedDate).toLocaleDateString()}
+                          {new Date(video.publishedAt || video.createdAt).toLocaleDateString()}
                         </div>
                         <div className="meta-item">
                           <Eye size={16} />

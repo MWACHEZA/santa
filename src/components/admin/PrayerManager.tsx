@@ -3,7 +3,7 @@ import { Plus, Edit, Trash2, Save, X, Calendar, BookOpen, Heart } from 'lucide-r
 import { useAdmin, type Prayer } from '../../contexts/AdminContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useToast } from '../../contexts/ToastContext';
-import api from '../../services/api';
+import { api } from '../../services/api';
 import './PrayerManager.css';
 
 interface DailyReading {

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api, apiClient } from '../services/api';
 
-export type UserRole = 'admin' | 'secretary' | 'priest' | 'reporter' | 'parishioner' | 'vice_secretary';
+export type UserRole = 'admin' | 'secretary' | 'priest' | 'reporter' | 'parishioner' | 'vice_secretary' | 'treasurer' | 'committee_member' | 'council_member';
 
 export interface User {
   id: string;
@@ -14,7 +14,7 @@ export interface User {
   mustChangePassword?: boolean;
   profilePictureUrl?: string;
   dateOfBirth?: string;
-  gender?: 'male' | 'female';
+  gender?: 'male' | 'female' | null;
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
@@ -47,6 +47,8 @@ export interface User {
   
   createdAt?: string;
   updatedAt?: string;
+  committeePosition?: string;
+  isCommitteeMember?: boolean;
 }
 
 interface RegistrationData {

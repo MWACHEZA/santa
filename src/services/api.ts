@@ -501,6 +501,8 @@ export const contactApi = {
   update: (contactData: any) => apiClient.put('/contact', contactData),
   
   getHistory: () => apiClient.get('/contact/history'),
+
+  submitReporterApplication: (data: any) => apiClient.post('/contact/reporter-application', data),
 };
 
 // Schedule API
@@ -854,6 +856,68 @@ export const videoApi = {
     apiClient.post(`/videos/${type}/${id}/view`),
 };
 
+// Audit Logs API
+const auditLogsApi = {
+  getAll: (params?: any) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) queryParams.append(key, value.toString());
+      });
+    }
+    return apiClient.get(`/audit-logs?${queryParams.toString()}`);
+  },
+  create: (data: any) => apiClient.post('/audit-logs', data),
+};
+
+// Finances API
+const financesApi = {
+  getAll: (params?: { entityId?: string; entityType?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) queryParams.append(key, value.toString());
+      });
+    }
+    return apiClient.get(`/finances?${queryParams.toString()}`);
+  },
+  create: (data: any) => apiClient.post('/finances', data),
+  updateStatus: (id: string, status: string) => apiClient.patch(`/finances/${id}/status`, { status }),
+};
+
+// Priest Desk API
+const priestDeskApi = {
+  getAll: () => apiClient.get('/priest-desk'),
+  create: (data: any) => apiClient.post('/priest-desk', data),
+  update: (id: string, data: any) => apiClient.put(`/priest-desk/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/priest-desk/${id}`),
+};
+
+// Liturgical Prayers API
+const liturgicalPrayersApi = {
+  getAll: (params?: any) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) queryParams.append(key, value.toString());
+      });
+    }
+    return apiClient.get(`/liturgical-prayers?${queryParams.toString()}`);
+  },
+  create: (data: any) => apiClient.post('/liturgical-prayers', data),
+  update: (id: string, data: any) => apiClient.put(`/liturgical-prayers/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/liturgical-prayers/${id}`),
+};
+
+// Themes API
+const themesApi = {
+  getAll: () => apiClient.get('/themes'),
+  getActive: () => apiClient.get('/themes/active'),
+  create: (data: any) => apiClient.post('/themes', data),
+  update: (id: string, data: any) => apiClient.put(`/themes/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/themes/${id}`),
+};
+
 // Health check
 export const healthCheck = () => apiClient.get('/health');
 
@@ -874,6 +938,11 @@ export const api = {
   categories: categoriesApi,
   users: usersApi,
   upload: uploadApi,
+  auditLogs: auditLogsApi,
+  finances: financesApi,
+  priestDesk: priestDeskApi,
+  liturgicalPrayers: liturgicalPrayersApi,
+  themes: themesApi,
   healthCheck,
   setAuthToken,
 };

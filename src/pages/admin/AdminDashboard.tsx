@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth, type UserRole } from '../../contexts/AuthContext';
 import AnnouncementManager from '../../components/admin/AnnouncementManager';
 import GalleryManager from '../../components/admin/GalleryManager';
 import EventManager from '../../components/admin/EventManager';
@@ -117,13 +117,16 @@ const AdminDashboard: React.FC = () => {
 
   // Get role display name
   const getRoleDisplayName = () => {
-    const roleNames = {
+    const roleNames: Record<UserRole, string> = {
       admin: 'Admin',
       secretary: 'Secretary',
       priest: 'Priest',
       reporter: 'Reporter',
       vice_secretary: 'Vice Secretary',
-      parishioner: 'Parishioner'
+      parishioner: 'Parishioner',
+      treasurer: 'Parish Treasurer',
+      committee_member: 'Committee Member',
+      council_member: 'Parish Council Member'
     };
     return user?.role ? roleNames[user.role] : 'User';
   };
@@ -1888,6 +1891,7 @@ const MinistryManagementSection: React.FC = () => {
   const [newMinistry, setNewMinistry] = useState({
     name: '',
     description: '',
+    category: 'General',
     imageUrl: '/api/placeholder/300/200',
     contactPerson: '',
     meetingTime: '',
@@ -1915,6 +1919,7 @@ const MinistryManagementSection: React.FC = () => {
       setNewMinistry({
         name: '',
         description: '',
+        category: 'General',
         imageUrl: '/api/placeholder/300/200',
         contactPerson: '',
         meetingTime: '',

@@ -4,7 +4,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { MapPin, Phone, Mail, Clock, Send, User, MessageSquare } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import api from '../services/api';
+import { api } from '../services/api';
 import './Contact.css';
 
 // Fix for default markers in react-leaflet

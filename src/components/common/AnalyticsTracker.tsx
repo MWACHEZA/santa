@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import api from '../../services/api';
+import { api } from '../../services/api';
 
 /**
  * Component that tracks page visits automatically on route changes
