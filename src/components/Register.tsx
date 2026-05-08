@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { api } from '../services/api';
 import './Register.css';
 
 interface RegisterFormData {
-  username: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -20,23 +18,7 @@ interface RegisterFormData {
   section: string;
   association: string;
   agreeToTerms: boolean;
-<<<<<<< HEAD
-  profilePicture?: File | null;
-  isBaptized?: boolean;
-  baptismDate?: string;
-  baptismVenue?: string;
-  isConfirmed?: boolean;
-  confirmationDate?: string;
-  confirmationVenue?: string;
-  receivesCommunion?: boolean;
-  firstCommunionDate?: string;
-  isMarried?: boolean;
-  marriageDate?: string;
-  marriageVenue?: string;
-  spouseName?: string;
-=======
   profilePicture?: File;
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 }
 
 interface RegisterProps {
@@ -48,7 +30,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
   const { register } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState<RegisterFormData>({
-    username: '',
     firstName: '',
     lastName: '',
     email: '',
@@ -65,28 +46,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     agreeToTerms: false
   });
   
-  
-  const [sectionsList, setSectionsList] = useState<any[]>([]);
-  const [associationsList, setAssociationsList] = useState<any[]>([]);
-
-  React.useEffect(() => {
-    const fetchDropdowns = async () => {
-      try {
-        const secRes = await api.sections.getAll();
-        if (secRes.success && secRes.data) {
-          setSectionsList(secRes.data.sections || []);
-        }
-        const assocRes = await api.associations.getAll();
-        if (assocRes.success && assocRes.data) {
-          setAssociationsList(assocRes.data.associations || []);
-        }
-      } catch (e) {
-        console.error('Failed to fetch dropdowns', e);
-      }
-    };
-    fetchDropdowns();
-  }, []);
-
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -96,7 +55,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     const newErrors: Partial<RegisterFormData> = {};
 
     // Required fields validation
-    if (!formData.username.trim()) newErrors.username = 'Username is required';
     if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
@@ -141,15 +99,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({
-        ...prev,
-        profilePicture: e.target.files![0]
-      }));
-    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -212,45 +161,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     setMessage(null);
 
     try {
-<<<<<<< HEAD
-      const formDataToSend = new FormData();
-      formDataToSend.append('username', formData.username.trim());
-      formDataToSend.append('firstName', formData.firstName.trim());
-      formDataToSend.append('lastName', formData.lastName.trim());
-      formDataToSend.append('email', formData.email.trim().toLowerCase());
-      formDataToSend.append('phone', formData.phone.replace(/\s/g, ''));
-      formDataToSend.append('password', formData.password);
-      if (formData.dateOfBirth) formDataToSend.append('dateOfBirth', formData.dateOfBirth);
-      if (formData.gender) formDataToSend.append('gender', formData.gender);
-      if (formData.address) formDataToSend.append('address', formData.address.trim());
-      if (formData.emergencyContact) formDataToSend.append('emergencyContact', formData.emergencyContact.trim());
-      if (formData.emergencyPhone) formDataToSend.append('emergencyPhone', formData.emergencyPhone.replace(/\s/g, ''));
-      if (formData.section) formDataToSend.append('section', formData.section);
-      if (formData.association) formDataToSend.append('association', formData.association);
-      formDataToSend.append('role', 'parishioner');
-      
-      if (formData.profilePicture) {
-        formDataToSend.append('profilePicture', formData.profilePicture);
-      }
-      
-      formDataToSend.append('isBaptized', String(formData.isBaptized));
-      if (formData.baptismDate) formDataToSend.append('baptismDate', formData.baptismDate);
-      if (formData.baptismVenue) formDataToSend.append('baptismVenue', formData.baptismVenue);
-      
-      formDataToSend.append('isConfirmed', String(formData.isConfirmed));
-      if (formData.confirmationDate) formDataToSend.append('confirmationDate', formData.confirmationDate);
-      if (formData.confirmationVenue) formDataToSend.append('confirmationVenue', formData.confirmationVenue);
-      
-      formDataToSend.append('receivesCommunion', String(formData.receivesCommunion));
-      if (formData.firstCommunionDate) formDataToSend.append('firstCommunionDate', formData.firstCommunionDate);
-      
-      formDataToSend.append('isMarried', String(formData.isMarried));
-      if (formData.marriageDate) formDataToSend.append('marriageDate', formData.marriageDate);
-      if (formData.marriageVenue) formDataToSend.append('marriageVenue', formData.marriageVenue);
-      if (formData.spouseName) formDataToSend.append('spouseName', formData.spouseName);
-
-      const result = await register(formDataToSend);
-=======
       // Prepare registration data
       const registrationData: any = {
         username: (formData.email.trim().toLowerCase().split('@')[0] || formData.phone.replace(/\s/g, '') || `${formData.firstName}${formData.lastName}`).toLowerCase(),
@@ -275,7 +185,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
       }
 
       const result = await register(registrationData);
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
       if (result.success) {
         setMessage({ 
@@ -285,7 +194,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
         
         // Clear form
         setFormData({
-          username: '',
           firstName: '',
           lastName: '',
           email: '',
@@ -350,28 +258,6 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
         <form onSubmit={handleSubmit} className="register-form">
           {/* Personal Information */}
           <div className="form-section">
-            <h3>Account Information</h3>
-            
-            <div className="form-group">
-              <label htmlFor="username">Username *</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                className={errors.username ? 'error' : ''}
-                placeholder="Choose a unique username"
-              />
-              {errors.username && <span className="error-text">{errors.username}</span>}
-            </div>
-
-            <h3>Profile Photo</h3>
-            <div className="form-group">
-              <label htmlFor="profilePicture">Upload Photo</label>
-              <input type="file" id="profilePicture" name="profilePicture" accept="image/*" onChange={handleFileChange} />
-            </div>
-
             <h3>Personal Information</h3>
 
             {/* Profile Picture Upload */}
@@ -527,7 +413,23 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
                   className={errors.section ? 'error' : ''}
                 >
                   <option value="">Select Section</option>
-                  {sectionsList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  <option value="St Gabriel">St Gabriel</option>
+                  <option value="St Augustine">St Augustine</option>
+                  <option value="St Mary Magdalena">St Mary Magdalena</option>
+                  <option value="St Michael">St Michael</option>
+                  <option value="St Stephen">St Stephen</option>
+                  <option value="St Francis of Assisi">St Francis of Assisi</option>
+                  <option value="St Monica">St Monica</option>
+                  <option value="St Theresa">St Theresa</option>
+                  <option value="St Bernadette">St Bernadette</option>
+                  <option value="St Philomina">St Philomina</option>
+                  <option value="St Peter">St Peter</option>
+                  <option value="St Bernard">St Bernard</option>
+                  <option value="St Veronica">St Veronica</option>
+                  <option value="St Paul">St Paul</option>
+                  <option value="St Luke">St Luke</option>
+                  <option value="St Basil">St Basil</option>
+                  <option value="St Anthony">St Anthony</option>
                 </select>
                 {errors.section && <span className="error-text">{errors.section}</span>}
               </div>
@@ -542,108 +444,22 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
                   className={errors.association ? 'error' : ''}
                 >
                   <option value="">Select Association</option>
-                  {associationsList.map(a => <option key={a.id} value={a.name}>{a.name}</option>)}
+                  <option value="Missionary Childhood (MCA)">Missionary Childhood (MCA)</option>
+                  <option value="Catholic Junior Youth Association (CJA)">Catholic Junior Youth Association (CJA)</option>
+                  <option value="Catholic Senior Youth Association (CYA)">Catholic Senior Youth Association (CYA)</option>
+                  <option value="Catholic Young Adults Association (CYAA)">Catholic Young Adults Association (CYAA)</option>
+                  <option value="Most Sacred Heart of Jesus">Most Sacred Heart of Jesus</option>
+                  <option value="Sodality of Our Lady">Sodality of Our Lady</option>
+                  <option value="St Anne">St Anne</option>
+                  <option value="St Joseph">St Joseph</option>
+                  <option value="Couples Association">Couples Association</option>
+                  <option value="Focolare">Focolare</option>
+                  <option value="Women's Forum">Women's Forum</option>
+                  <option value="Association of Altar Servers">Association of Altar Servers</option>
                 </select>
                 {errors.association && <span className="error-text">{errors.association}</span>}
               </div>
             </div>
-          </div>
-
-          {/* Sacramental Information */}
-          <div className="form-section">
-            <h3>Sacramental Information (Optional)</h3>
-            
-            <div className="form-row">
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="isBaptized" checked={formData.isBaptized} onChange={handleInputChange} />
-                  <span className="checkmark"></span>
-                  Baptized?
-                </label>
-              </div>
-            </div>
-            {formData.isBaptized && (
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Baptism Date</label>
-                  <input type="date" name="baptismDate" value={formData.baptismDate} onChange={handleInputChange} />
-                </div>
-                <div className="form-group">
-                  <label>Baptism Venue</label>
-                  <input type="text" name="baptismVenue" value={formData.baptismVenue} onChange={handleInputChange} placeholder="Parish Name" />
-                </div>
-              </div>
-            )}
-            
-            <div className="form-row">
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="isConfirmed" checked={formData.isConfirmed} onChange={handleInputChange} />
-                  <span className="checkmark"></span>
-                  Confirmed?
-                </label>
-              </div>
-            </div>
-            {formData.isConfirmed && (
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Confirmation Date</label>
-                  <input type="date" name="confirmationDate" value={formData.confirmationDate} onChange={handleInputChange} />
-                </div>
-                <div className="form-group">
-                  <label>Confirmation Venue</label>
-                  <input type="text" name="confirmationVenue" value={formData.confirmationVenue} onChange={handleInputChange} />
-                </div>
-              </div>
-            )}
-            
-            <div className="form-row">
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="receivesCommunion" checked={formData.receivesCommunion} onChange={handleInputChange} />
-                  <span className="checkmark"></span>
-                  Receives Holy Communion?
-                </label>
-              </div>
-            </div>
-            {formData.receivesCommunion && (
-              <div className="form-row">
-                <div className="form-group">
-                  <label>First Communion Date</label>
-                  <input type="date" name="firstCommunionDate" value={formData.firstCommunionDate} onChange={handleInputChange} />
-                </div>
-              </div>
-            )}
-            
-            <div className="form-row">
-              <div className="form-group checkbox-group">
-                <label className="checkbox-label">
-                  <input type="checkbox" name="isMarried" checked={formData.isMarried} onChange={handleInputChange} />
-                  <span className="checkmark"></span>
-                  Married?
-                </label>
-              </div>
-            </div>
-            {formData.isMarried && (
-              <>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Marriage Date</label>
-                    <input type="date" name="marriageDate" value={formData.marriageDate} onChange={handleInputChange} />
-                  </div>
-                  <div className="form-group">
-                    <label>Marriage Venue</label>
-                    <input type="text" name="marriageVenue" value={formData.marriageVenue} onChange={handleInputChange} />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Spouse Name</label>
-                    <input type="text" name="spouseName" value={formData.spouseName} onChange={handleInputChange} />
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           {/* Emergency Contact */}

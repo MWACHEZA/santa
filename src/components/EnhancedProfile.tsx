@@ -3,11 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { api } from '../services/api';
 import { 
   User, Mail, Phone, Calendar, MapPin, UserCheck, Save, Edit, X, 
-<<<<<<< HEAD
-  Heart, Church, Users, Crown, Award 
-=======
   Heart, Church, Users, Crown 
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 } from 'lucide-react';
 import './EnhancedProfile.css';
 
@@ -25,49 +21,6 @@ const EnhancedProfile: React.FC = () => {
     return d.toISOString().slice(0, 10);
   };
   
-<<<<<<< HEAD
-  const [formData, setFormData] = useState({
-    // Basic Information
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    profilePicture: null as File | null,
-    email: user?.email || '',
-    phone: user?.phone || '',
-    dateOfBirth: user?.dateOfBirth || '',
-    gender: user?.gender || '',
-    address: user?.address || '',
-    emergencyContact: user?.emergencyContact || '',
-    emergencyPhone: user?.emergencyPhone || '',
-    
-    // Parish Membership (optional for parishioners)
-    association: user?.association || '',
-    section: user?.section || '',
-    committeePosition: user?.committeePosition || '',
-    role: user?.role || 'parishioner',
-    
-    // Sacramental Information (for parishioners)
-    isBaptized: user?.isBaptized ?? null,
-    baptismDate: user?.baptismDate || '',
-    baptismVenue: user?.baptismVenue || '',
-    
-    isConfirmed: user?.isConfirmed ?? null,
-    confirmationDate: user?.confirmationDate || '',
-    confirmationVenue: user?.confirmationVenue || '',
-    
-    receivesCommunion: user?.receivesCommunion ?? null,
-    firstCommunionDate: user?.firstCommunionDate || '',
-    
-    isMarried: user?.isMarried ?? null,
-    marriageDate: user?.marriageDate || '',
-    marriageVenue: user?.marriageVenue || '',
-    spouseName: user?.spouseName || '',
-    
-    // Priest-specific Information (for priests only)
-    ordinationDate: user?.ordinationDate || '',
-    ordinationVenue: user?.ordinationVenue || '',
-    ordainedBy: user?.ordainedBy || ''
-  });
-=======
   const mapUserToForm = useCallback((currentUser: typeof user) => ({
     firstName: currentUser?.firstName || '',
     lastName: currentUser?.lastName || '',
@@ -98,30 +51,8 @@ const EnhancedProfile: React.FC = () => {
   }), []);
 
   const [formData, setFormData] = useState(() => mapUserToForm(user));
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   
   const [loading, setLoading] = useState(false);
-  const [sectionsList, setSectionsList] = useState<any[]>([]);
-  const [associationsList, setAssociationsList] = useState<any[]>([]);
-
-  React.useEffect(() => {
-    const fetchDropdowns = async () => {
-      try {
-        const secRes = await api.sections.getAll();
-        if (secRes.success && secRes.data) {
-          setSectionsList(secRes.data.sections || []);
-        }
-        const assocRes = await api.associations.getAll();
-        if (assocRes.success && assocRes.data) {
-          setAssociationsList(assocRes.data.associations || []);
-        }
-      } catch (e) {
-        console.error('Failed to fetch dropdowns', e);
-      }
-    };
-    fetchDropdowns();
-  }, []);
-
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -141,15 +72,6 @@ const EnhancedProfile: React.FC = () => {
     }
     
     return age >= 0 ? age : null;
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({
-        ...prev,
-        profilePicture: e.target.files![0]
-      }));
-    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -181,39 +103,17 @@ const EnhancedProfile: React.FC = () => {
         throw new Error('Save function not available');
       }
 
-<<<<<<< HEAD
-      let updatedRole = formData.role;
-      if (formData.committeePosition === 'Treasurer') updatedRole = 'treasurer';
-      else if (formData.committeePosition === 'Secretary') updatedRole = 'secretary';
-      else if (formData.committeePosition === 'Vice Secretary') updatedRole = 'vice_secretary';
-      else if (formData.committeePosition === 'Chairperson' || formData.committeePosition === 'Vice Chairperson') updatedRole = 'admin';
-      else if (!formData.committeePosition) updatedRole = 'parishioner';
-
-      const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, val]) => {
-        if (key === 'profilePicture') {
-          if (val) formDataToSend.append('profilePicture', val as File);
-        } else if (val !== null && val !== undefined && val !== '') {
-          formDataToSend.append(key, String(val));
-        }
-=======
       const result = await saveProfile({
         ...formData,
         gender: (formData.gender || undefined) as 'male' | 'female' | undefined,
         updatedAt: new Date().toISOString()
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       });
-      formDataToSend.append('isCommitteeMember', String(!!formData.committeePosition && formData.committeePosition !== ''));
-      formDataToSend.append('role', updatedRole as string);
-      if (formData.gender) formDataToSend.append('gender', formData.gender);
-      formDataToSend.append('updatedAt', new Date().toISOString());
-
-      const result = await updateUser(user.id, formDataToSend);
 
       if (result && result.success) {
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
         setIsEditing(false);
         
+        // Clear success message after 3 seconds
         setTimeout(() => {
           setMessage(null);
         }, 3000);
@@ -233,41 +133,7 @@ const EnhancedProfile: React.FC = () => {
 
   const handleCancel = () => {
     // Reset form data to original user data
-<<<<<<< HEAD
-    setFormData({
-      firstName: user?.firstName || '',
-      lastName: user?.lastName || '',
-      profilePicture: null as File | null,
-      email: user?.email || '',
-      phone: user?.phone || '',
-      dateOfBirth: user?.dateOfBirth || '',
-      gender: user?.gender || '',
-      address: user?.address || '',
-      emergencyContact: user?.emergencyContact || '',
-      emergencyPhone: user?.emergencyPhone || '',
-      association: user?.association || '',
-      section: user?.section || '',
-      committeePosition: user?.committeePosition || '',
-      role: user?.role || 'parishioner',
-      isBaptized: user?.isBaptized ?? null,
-      baptismDate: user?.baptismDate || '',
-      baptismVenue: user?.baptismVenue || '',
-      isConfirmed: user?.isConfirmed ?? null,
-      confirmationDate: user?.confirmationDate || '',
-      confirmationVenue: user?.confirmationVenue || '',
-      receivesCommunion: user?.receivesCommunion ?? null,
-      firstCommunionDate: user?.firstCommunionDate || '',
-      isMarried: user?.isMarried ?? null,
-      marriageDate: user?.marriageDate || '',
-      marriageVenue: user?.marriageVenue || '',
-      spouseName: user?.spouseName || '',
-      ordinationDate: user?.ordinationDate || '',
-      ordinationVenue: user?.ordinationVenue || '',
-      ordainedBy: user?.ordainedBy || ''
-    });
-=======
     setFormData(mapUserToForm(user));
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     setIsEditing(false);
     setMessage(null);
   };
@@ -622,7 +488,7 @@ const EnhancedProfile: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'parish' && (
+        {activeTab === 'parish' && user.role === 'parishioner' && (
           <div className="tab-content">
             <h3>Parish Membership</h3>
             
@@ -659,62 +525,10 @@ const EnhancedProfile: React.FC = () => {
                 />
               </div>
             </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">
-                  <Award size={16} />
-                  Committee Position
-                </label>
-                <select
-                  name="committeePosition"
-                  value={formData.committeePosition}
-                  onChange={handleInputChange}
-                  disabled={!isEditing}
-                  className="form-input"
-                >
-                  <option value="">Member / Parishioner</option>
-                  <option value="Chairperson">Chairperson</option>
-                  <option value="Vice Chairperson">Vice Chairperson</option>
-                  <option value="Secretary">Secretary</option>
-                  <option value="Vice Secretary">Vice Secretary</option>
-                  <option value="Treasurer">Treasurer</option>
-                  <option value="Organizing Secretary">Organizing Secretary</option>
-                  <option value="Committee Member">Committee Member</option>
-                  <option value="Advisor">Advisor</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <UserCheck size={16} />
-                  System Role
-                </label>
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  disabled={!isEditing || user.role !== 'admin'}
-                  className="form-input"
-                  title={user?.role !== 'admin' ? "Only administrators can manually change system roles" : ""}
-                >
-                  <option value="parishioner">Parishioner</option>
-                  <option value="treasurer">Treasurer</option>
-                  <option value="secretary">Secretary</option>
-                  <option value="reporter">Reporter</option>
-                  {user?.role === 'admin' && <option value="admin">Administrator</option>}
-                </select>
-                <small style={{ color: '#6c757d', display: 'block', marginTop: '4px' }}>
-                  {user?.role === 'admin' 
-                    ? "System role determines dashboard access levels." 
-                    : "System role is automatically managed based on your position."}
-                </small>
-              </div>
-            </div>
           </div>
         )}
 
-        {activeTab === 'sacraments' && (
+        {activeTab === 'sacraments' && user.role === 'parishioner' && (
           <div className="tab-content">
             <h3>Sacramental Life</h3>
             

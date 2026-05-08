@@ -62,7 +62,6 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
-      console.log(`🚀 API Request: ${options.method || 'GET'} ${url}`);
       const config: RequestInit = {
         ...options,
         headers: {
@@ -173,14 +172,6 @@ export const authApi = {
   login: (credentials: { username: string; password: string }) =>
     apiClient.post('/auth/login', credentials),
   
-<<<<<<< HEAD
-  register: (userData: any | FormData) => {
-    if (userData instanceof FormData) {
-      return apiClient.uploadFile('/auth/register', userData);
-    }
-    return apiClient.post('/auth/register', userData);
-  },
-=======
   register: (userData: { 
     username: string; 
     email: string; 
@@ -200,23 +191,13 @@ export const authApi = {
     profilePicture?: File | null;
   }) =>
     apiClient.post('/auth/register', userData),
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   
   logout: () => apiClient.post('/auth/logout'),
   
   getProfile: () => apiClient.get('/auth/profile'),
   
-<<<<<<< HEAD
-  updateProfile: (data: any | FormData) => {
-    if (data instanceof FormData) {
-      return apiClient.uploadFile('/auth/profile', data);
-    }
-    return apiClient.put('/auth/profile', data);
-  },
-=======
   updateProfile: (data: Record<string, any>) =>
     apiClient.put('/auth/profile', data),
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   
   changePassword: (data: { currentPassword: string; newPassword: string }) =>
     apiClient.put('/auth/change-password', data),
@@ -310,15 +291,15 @@ export const categoriesApi = {
 export const uploadApi = {
   uploadSingle: (file: File, type?: string) => {
     const formData = new FormData();
-    if (type) formData.append('type', type);
     formData.append('file', file);
+    if (type) formData.append('type', type);
     return apiClient.uploadFile('/upload/single', formData);
   },
   
   uploadMultiple: (files: File[], type?: string) => {
     const formData = new FormData();
-    if (type) formData.append('type', type);
     files.forEach(file => formData.append('files', file));
+    if (type) formData.append('type', type);
     return apiClient.uploadFile('/upload/multiple', formData);
   },
   
@@ -516,20 +497,42 @@ export const usersApi = {
 // Contact API
 export const contactApi = {
   get: () => apiClient.get('/contact'),
-  update: (data: any) => apiClient.put('/contact', data),
-  submitReporterApplication: (data: { name: string; surname: string; email: string; message: string }) =>
-    apiClient.post('/contact/reporter-application', data),
+  
+  update: (contactData: any) => apiClient.put('/contact', contactData),
+  
+  getHistory: () => apiClient.get('/contact/history'),
 };
 
 // Schedule API
 export const scheduleApi = {
-  getAll: () => apiClient.get('/schedule'),
+  getAll: (params?: { day?: string; type?: string; active?: boolean }) => {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, value.toString());
+        }
+      });
+    }
+    return apiClient.get(`/schedule?${queryParams.toString()}`);
+  },
+  
+  getByDay: (day: string) => apiClient.get(`/schedule/day/${day}`),
+  
   getById: (id: string) => apiClient.get(`/schedule/${id}`),
+  
   create: (scheduleData: any) => apiClient.post('/schedule', scheduleData),
+  
   update: (id: string, scheduleData: any) => apiClient.put(`/schedule/${id}`, scheduleData),
+  
   delete: (id: string) => apiClient.delete(`/schedule/${id}`),
-  updateBulk: (schedules: any[]) => apiClient.put('/schedule/bulk', { schedules }),
-  bulkUpdateDay: (day: string, schedules: any[]) => apiClient.put(`/schedule/day/${day}`, { schedules }),
+  
+  toggle: (id: string) => apiClient.patch(`/schedule/${id}/toggle`),
+  
+  bulkUpdateDay: (day: string, schedule: any[]) => 
+    apiClient.put(`/schedule/day/${day}/bulk`, { schedule }),
+  
+  getStats: () => apiClient.get('/schedule/stats/overview'),
 };
 
 // Analytics API
@@ -590,28 +593,6 @@ export const prayersApi = {
   getPending: () => apiClient.get('/prayers/pending'),
   
   getStats: () => apiClient.get('/prayers/stats/overview'),
-};
-
-export const liturgicalPrayersApi = {
-  getAll: (params?: { page?: number; limit?: number; active?: boolean; category?: string }) => {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-    return apiClient.get(`/liturgical-prayers?${queryParams.toString()}`);
-  },
-  
-  create: (prayerData: any) => apiClient.post('/liturgical-prayers', prayerData),
-  
-  update: (id: string, prayerData: any) => apiClient.put(`/liturgical-prayers/${id}`, prayerData),
-  
-  delete: (id: string) => apiClient.delete(`/liturgical-prayers/${id}`),
-  
-  getDailyReadings: (date: string) => apiClient.get(`/liturgical-prayers/readings/${date}`),
 };
 
 // Gallery API
@@ -694,6 +675,14 @@ export const sacramentsApi = {
   delete: (id: string) => apiClient.delete(`/sacraments/${id}`),
   
   toggle: (id: string) => apiClient.patch(`/sacraments/${id}/toggle`),
+};
+
+// Export the API client for direct use if needed
+export { apiClient };
+
+// Set token method for authentication
+export const setAuthToken = (token: string | null) => {
+  apiClient.setToken(token);
 };
 
 // Video API
@@ -863,82 +852,10 @@ export const videoApi = {
   
   incrementViews: (id: string, type: 'stream' | 'archive') => 
     apiClient.post(`/videos/${type}/${id}/view`),
-    
-  startViewer: (id: string) => apiClient.post(`/videos/streams/${id}/viewer/start`),
-  stopViewer: (id: string) => apiClient.post(`/videos/streams/${id}/viewer/stop`),
-};
-
-// Themes API
-export const themesApi = {
-  getAll: () => apiClient.get('/themes'),
-  getActive: () => apiClient.get('/themes/active'),
-  create: (data: any) => apiClient.post('/themes', data),
-  update: (id: string, data: any) => apiClient.put(`/themes/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/themes/${id}`),
-};
-
-// Associations & Sections
-export const associationsApi = {
-  getAll: () => apiClient.get('/associations'),
-};
-
-export const sectionsApi = {
-  getAll: () => apiClient.get('/sections'),
-};
-
-// Priest's Desk API
-export const priestDeskApi = {
-  getAll: () => apiClient.get('/priest-desk'),
-  create: (data: any) => apiClient.post('/priest-desk', data),
-  update: (id: string, data: any) => apiClient.put(`/priest-desk/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/priest-desk/${id}`),
-};
-
-// Finances API
-export const financesApi = {
-  getAll: (params?: { entityId?: string; entityType?: string }) => {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-    return apiClient.get(`/finances?${queryParams.toString()}`);
-  },
-  create: (data: any) => apiClient.post('/finances', data),
-  updateStatus: (id: string, status: string) => 
-    apiClient.patch(`/finances/${id}/status`, { status }),
-};
-
-// Audit Logs API
-export const auditLogApi = {
-  getAll: (params?: { page?: number; limit?: number; userId?: string; entityType?: string; action?: string }) => {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-    return apiClient.get(`/audit-logs?${queryParams.toString()}`);
-  },
-  create: (data: any) => apiClient.post('/audit-logs', data),
-  getStats: () => apiClient.get('/audit-logs/stats/overview'),
 };
 
 // Health check
 export const healthCheck = () => apiClient.get('/health');
-
-// Export the API client for direct use if needed
-export { apiClient };
-
-// Set token method for authentication
-export const setAuthToken = (token: string | null) => {
-  apiClient.setToken(token);
-};
 
 // Main API object
 export const api = {
@@ -950,7 +867,6 @@ export const api = {
   schedule: scheduleApi,
   analytics: analyticsApi,
   prayers: prayersApi,
-  liturgicalPrayers: liturgicalPrayersApi,
   gallery: galleryApi,
   ministries: ministriesApi,
   sacraments: sacramentsApi,
@@ -958,19 +874,6 @@ export const api = {
   categories: categoriesApi,
   users: usersApi,
   upload: uploadApi,
-  priestDesk: priestDeskApi,
-  finances: financesApi,
-  auditLogs: auditLogApi,
-  themes: themesApi,
-  associations: associationsApi,
-  sections: sectionsApi,
   healthCheck,
-  liturgical: {
-    getToday: () => fetch('http://calapi.romcal.net/api/v1/day').then(res => res.json()),
-    getDate: (year: number, month: number, day: number) => 
-      fetch(`http://calapi.romcal.net/api/v1/dates/${year}/${month}/${day}`).then(res => res.json()),
-  },
   setAuthToken,
 };
-
-export default api;

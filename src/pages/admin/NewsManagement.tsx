@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { useAdmin, ParishNews } from '../../contexts/AdminContext';
+import { useAdmin } from '../../contexts/AdminContext';
 import { 
   Plus, 
   Edit, 
@@ -15,9 +15,6 @@ import {
   Save,
   X
 } from 'lucide-react';
-import { useToast } from '../../contexts/ToastContext';
-import { useAuth } from '../../contexts/AuthContext';
-import api from '../../services/api';
 import './NewsManagement.css';
 
 interface NewsFormData {
@@ -26,6 +23,8 @@ interface NewsFormData {
   content: string;
   category: string;
   imageUrl: string;
+  author: string;
+  authorRole: 'priest' | 'secretary' | 'reporter' | 'vice_secretary';
   isPublished: boolean;
 }
 
@@ -35,22 +34,15 @@ const NewsManagement: React.FC = () => {
     addParishNews,
     updateParishNews,
     deleteParishNews,
-<<<<<<< HEAD
-    archiveParishNews,
-    newsCategories,
-    fullNewsCategories,
-    addCategory,
-    logAdminAction
-=======
     archiveParishNews
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   } = useAdmin();
-  const { success: toastSuccess, error: toastError } = useToast();
-  const { user } = useAuth();
 
   const [showForm, setShowForm] = useState(false);
   const [editingNews, setEditingNews] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'published' | 'drafts' | 'archived'>('all');
+  const [categories, setCategories] = useState<string[]>([
+    'Liturgy', 'Community', 'Education', 'Youth', 'Charity', 'Events', 'Announcements'
+  ]);
   const [newCategory, setNewCategory] = useState('');
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   
@@ -60,22 +52,13 @@ const NewsManagement: React.FC = () => {
     content: '',
     category: '',
     imageUrl: '',
+    author: '',
+    authorRole: 'secretary',
     isPublished: false
   });
 
   const [uploadPreview, setUploadPreview] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (showForm || showCategoryForm) {
-      document.body.classList.add('news-modal-open');
-    } else {
-      document.body.classList.remove('news-modal-open');
-    }
-    return () => {
-      document.body.classList.remove('news-modal-open');
-    };
-  }, [showForm, showCategoryForm]);
 
   // Filter news based on active tab
   const getFilteredNews = () => {
@@ -101,7 +84,7 @@ const NewsManagement: React.FC = () => {
         reader.onload = (e) => {
           const result = e.target?.result as string;
           setUploadPreview(result);
-          // Don't put Base64 into formData to avoid sending massive strings to the DB
+          setFormData(prev => ({ ...prev, imageUrl: result }));
         };
         reader.readAsDataURL(file);
       } else {
@@ -112,70 +95,27 @@ const NewsManagement: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.title || !formData.summary || !formData.content) {
-      toastError('Please fill in all required fields', 'Validation Error');
+      alert('Please fill in all required fields');
       return;
     }
-    
-    let finalImageUrl = editingNews ? formData.imageUrl : '';
 
-    try {
-      // 1. Upload image if a new file was selected
-      if (uploadedFile) {
-        try {
-          const uploadRes = await api.upload.uploadSingle(uploadedFile, 'news');
-          if (uploadRes.success && uploadRes.data) {
-            finalImageUrl = uploadRes.data.url || uploadRes.data.fileUrl || uploadRes.data.path;
-          } else {
-            throw new Error(uploadRes.message || 'Image upload failed');
-          }
-        } catch (uploadErr: any) {
-          console.error('Upload error:', uploadErr);
-          toastError(uploadErr.message || 'Failed to upload featured image', 'Upload Error');
-          return;
-        }
-      }
+    const newsData = {
+      ...formData,
+      publishedAt: formData.isPublished ? new Date().toISOString() : '',
+      isArchived: false,
+    };
 
-      if (!finalImageUrl && !editingNews) {
-        toastError('Please select a featured image', 'Validation Error');
-        return;
-      }
-
-      const newsData = {
-        ...formData,
-        imageUrl: finalImageUrl,
-        author: user ? (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username) : 'Anonymous',
-        authorRole: (['priest', 'secretary', 'reporter', 'vice_secretary'].includes(user?.role || '') 
-          ? user?.role 
-          : 'reporter') as any,
-        publishedAt: formData.isPublished ? new Date().toISOString() : '',
-        isArchived: false,
-      };
-      
-      if (editingNews) {
-        await updateParishNews(editingNews, newsData);
-        logAdminAction('UPDATE_NEWS', 'news', editingNews, `Updated news article: ${formData.title}`);
-        toastSuccess('News article updated', 'Parish News');
-      } else {
-        await addParishNews(newsData);
-        logAdminAction('CREATE_NEWS', 'news', 'new', `Published ${formData.isPublished ? 'article' : 'draft'}: ${formData.title}`);
-        toastSuccess(formData.isPublished ? 'New news article published' : 'News article saved as draft', 'Parish News');
-        
-        // Switch to appropriate tab to show the new article
-        if (formData.isPublished) {
-          setActiveTab('published');
-        } else {
-          setActiveTab('drafts');
-        }
-      }
-      resetForm();
-    } catch (err: any) {
-      console.error('Submit error:', err);
-      toastError(err.message || 'Failed to save news article. Please check your connection.', 'Error');
+    if (editingNews) {
+      updateParishNews(editingNews, newsData);
+    } else {
+      addParishNews(newsData);
     }
+
+    resetForm();
   };
 
   const resetForm = () => {
@@ -185,6 +125,8 @@ const NewsManagement: React.FC = () => {
       content: '',
       category: '',
       imageUrl: '',
+      author: '',
+      authorRole: 'secretary',
       isPublished: false
     });
     setUploadPreview('');
@@ -192,13 +134,15 @@ const NewsManagement: React.FC = () => {
     setEditingNews(null);
   };
 
-  const handleEdit = (news: ParishNews) => {
+  const handleEdit = (news: any) => {
     setFormData({
       title: news.title,
       summary: news.summary,
       content: news.content,
-      category: news.category_id || news.category || '',
+      category: news.category || '',
       imageUrl: news.imageUrl || '',
+      author: news.author,
+      authorRole: news.authorRole,
       isPublished: news.isPublished
     });
     setUploadPreview(news.imageUrl || '');
@@ -206,45 +150,52 @@ const NewsManagement: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this news article?')) {
-      try {
-        await deleteParishNews(id);
-        logAdminAction('DELETE_NEWS', 'news', id, 'Deleted a news article');
-        toastSuccess('News article deleted successfully', 'Parish News');
-      } catch (err) {
-        toastError('Failed to delete news article', 'Error');
-      }
+      deleteParishNews(id);
     }
   };
 
-  const handleArchive = async (id: string) => {
-    try {
-      await archiveParishNews(id);
-      toastSuccess('News article moved to archive', 'Parish News');
-    } catch (err) {
-      toastError('Failed to archive article', 'Error');
+  const handleArchive = (id: string) => {
+    if (window.confirm('Are you sure you want to archive this news article?')) {
+      archiveParishNews(id);
     }
   };
 
-  const handleAddCategory = async () => {
-    if (newCategory.trim() && !newsCategories.includes(newCategory.trim())) {
-      try {
-        await addCategory(newCategory.trim(), 'news');
-        setNewCategory('');
-        setShowCategoryForm(false);
-      } catch (err) {
-        toastError('Failed to add category', 'Error');
-      }
+  const addCategory = () => {
+    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+      const updatedCategories = [...categories, newCategory.trim()];
+      setCategories(updatedCategories);
+      // Save to localStorage
+      localStorage.setItem('newsCategories', JSON.stringify(updatedCategories));
+      setNewCategory('');
+      setShowCategoryForm(false);
     }
   };
 
   const removeCategory = (categoryToRemove: string) => {
-    // Note: Deleting categories might need a backend endpoint, 
-    // for now we'll just show a message or keep it as is if not implemented
-    toastError('Category deletion not implemented yet', 'System');
+    if (window.confirm(`Are you sure you want to remove the "${categoryToRemove}" category?`)) {
+      const updatedCategories = categories.filter(cat => cat !== categoryToRemove);
+      setCategories(updatedCategories);
+      // Save to localStorage
+      localStorage.setItem('newsCategories', JSON.stringify(updatedCategories));
+    }
   };
 
+  // Load categories from localStorage on component mount
+  React.useEffect(() => {
+    const savedCategories = localStorage.getItem('newsCategories');
+    if (savedCategories) {
+      try {
+        const parsedCategories = JSON.parse(savedCategories);
+        if (Array.isArray(parsedCategories)) {
+          setCategories(parsedCategories);
+        }
+      } catch (error) {
+        console.error('Error loading news categories:', error);
+      }
+    }
+  }, []);
 
   const filteredNews = getFilteredNews();
 
@@ -278,8 +229,8 @@ const NewsManagement: React.FC = () => {
 
       {/* Category Management Modal */}
       {showCategoryForm && (
-        <div className="news-modal-overlay" onClick={() => setShowCategoryForm(false)}>
-          <div className="news-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => setShowCategoryForm(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Manage Categories</h2>
               <button className="modal-close" onClick={() => setShowCategoryForm(false)}>
@@ -296,9 +247,9 @@ const NewsManagement: React.FC = () => {
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value)}
                       placeholder="Enter category name"
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
+                      onKeyPress={(e) => e.key === 'Enter' && addCategory()}
                     />
-                    <button className="btn btn-primary" onClick={handleAddCategory}>
+                    <button className="btn btn-primary" onClick={addCategory}>
                       <Plus size={16} />
                       Add
                     </button>
@@ -309,7 +260,7 @@ const NewsManagement: React.FC = () => {
               <div className="categories-list">
                 <h3>Existing Categories</h3>
                 <div className="category-tags">
-                  {newsCategories.map((category: string) => (
+                  {categories.map((category) => (
                     <div key={category} className="category-tag">
                       <span>{category}</span>
                       <button 
@@ -329,8 +280,8 @@ const NewsManagement: React.FC = () => {
 
       {/* News Form Modal */}
       {showForm && (
-        <div className="news-modal-overlay" onClick={() => !editingNews && resetForm()}>
-          <div className="news-modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" onClick={() => !editingNews && resetForm()}>
+          <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingNews ? 'Edit News Article' : 'Add New News Article'}</h2>
               <button className="modal-close" onClick={resetForm}>
@@ -341,53 +292,53 @@ const NewsManagement: React.FC = () => {
               <form onSubmit={handleSubmit} className="news-form">
                 <div className="form-row">
                   <div className="form-group">
-                    <label><FileText size={16} /> Title *</label>
+                    <label>Title *</label>
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="e.g. Annual Parish Bazaar 2024"
+                      placeholder="Enter news title"
                       required
                     />
                   </div>
                   <div className="form-group">
-                    <label><Tag size={16} /> Category</label>
+                    <label>Category</label>
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
                     >
-                      <option value="">Select a category</option>
-                      {fullNewsCategories.map((category: any) => (
-                        <option key={category.id} value={category.id}>{category.name}</option>
+                      <option value="">Select category</option>
+                      {categories.map(category => (
+                        <option key={category} value={category}>{category}</option>
                       ))}
                     </select>
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label><FileText size={16} /> Summary *</label>
+                  <label>Summary *</label>
                   <textarea
                     value={formData.summary}
                     onChange={(e) => setFormData(prev => ({ ...prev, summary: e.target.value }))}
-                    placeholder="Provide a catchy summary for the news feed..."
-                    rows={2}
+                    placeholder="Enter a brief summary"
+                    rows={3}
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label><FileText size={16} /> Content *</label>
+                  <label>Content *</label>
                   <textarea
                     value={formData.content}
                     onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                    placeholder="Write the full article details here..."
-                    rows={4}
+                    placeholder="Enter the full article content"
+                    rows={8}
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label><Image size={16} /> Featured Image / Attachment</label>
+                  <label>Upload Image/File</label>
                   <div className="file-upload-area">
                     <input
                       type="file"
@@ -399,46 +350,50 @@ const NewsManagement: React.FC = () => {
                     <div 
                       className="upload-zone"
                       onClick={() => fileInputRef.current?.click()}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.currentTarget.classList.add('drag-over');
-                      }}
-                      onDragLeave={(e) => {
-                        e.preventDefault();
-                        e.currentTarget.classList.remove('drag-over');
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.currentTarget.classList.remove('drag-over');
-                        const file = e.dataTransfer.files?.[0];
-                        if (file) {
-                          const event = { target: { files: [file] } } as any;
-                          handleFileUpload(event);
-                        }
-                      }}
                     >
                       {uploadPreview ? (
                         <div className="upload-preview">
                           <img src={uploadPreview} alt="Preview" />
                           <div className="upload-overlay">
                             <Upload size={24} />
-                            <span>Click to change image</span>
+                            <span>Click to change</span>
                           </div>
                         </div>
                       ) : (
                         <div className="upload-placeholder">
-                          <div className="upload-icon-wrapper">
-                            <Upload size={48} />
-                          </div>
-                          <span>Drop your image here or click to browse</span>
-                          <small>Supports high-quality JPG, PNG, PDF or DOCX (Max 10MB)</small>
+                          <Image size={48} />
+                          <span>Click to upload image or file</span>
+                          <small>Supports: JPG, PNG, PDF, DOC, DOCX</small>
                         </div>
                       )}
                     </div>
                   </div>
                 </div>
-                
-                {/* Author fields removed as they are now automatic */}
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Author *</label>
+                    <input
+                      type="text"
+                      value={formData.author}
+                      onChange={(e) => setFormData(prev => ({ ...prev, author: e.target.value }))}
+                      placeholder="Enter author name"
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Author Role</label>
+                    <select
+                      value={formData.authorRole}
+                      onChange={(e) => setFormData(prev => ({ ...prev, authorRole: e.target.value as any }))}
+                    >
+                      <option value="priest">Priest</option>
+                      <option value="secretary">Secretary</option>
+                      <option value="reporter">Reporter</option>
+                      <option value="vice_secretary">Vice Secretary</option>
+                    </select>
+                  </div>
+                </div>
 
                 <div className="form-group">
                   <label className="checkbox-label">
@@ -458,9 +413,7 @@ const NewsManagement: React.FC = () => {
                   </button>
                   <button type="submit" className="btn btn-primary">
                     <Save size={20} />
-                    {editingNews 
-                      ? (formData.isPublished ? 'Update & Publish' : 'Update Draft') 
-                      : (formData.isPublished ? 'Publish Article' : 'Save as Draft')}
+                    {editingNews ? 'Update Article' : 'Save Article'}
                   </button>
                 </div>
               </form>
@@ -581,16 +534,15 @@ const NewsManagement: React.FC = () => {
                   <div className="news-footer">
                     <div className="author-info">
                       <User size={16} />
-                      <span>{news.author} {news.authorRole ? `(${news.authorRole.replace('_', ' ')})` : ''}</span>
+                      <span>{news.author} ({news.authorRole?.replace('_', ' ')})</span>
                     </div>
                     <div className="news-date">
                       <Calendar size={16} />
                       <span>
-                        {news.publishedAt && news.publishedAt !== '' && !isNaN(new Date(news.publishedAt).getTime())
+                        {news.publishedAt 
                           ? new Date(news.publishedAt).toLocaleDateString()
-                          : (news.createdAt && !isNaN(new Date(news.createdAt).getTime()) 
-                              ? new Date(news.createdAt).toLocaleDateString() 
-                              : 'Recently')}
+                          : new Date(news.createdAt).toLocaleDateString()
+                        }
                       </span>
                     </div>
                   </div>

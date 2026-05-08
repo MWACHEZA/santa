@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, Globe, LogOut, User, Home, Heart, Camera, Users, Calendar, Newspaper, Phone, DollarSign, Church, BookOpen, Shield } from 'lucide-react';
+import { Menu, X, Globe, LogOut, User, Home, Heart, Camera, Users, Calendar, Newspaper, Phone, DollarSign, Church, BookOpen } from 'lucide-react';
 import './Header.css';
 
 const Header: React.FC = () => {
@@ -31,18 +31,6 @@ const Header: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  // Prevent body scrolling when side nav is open
-  useEffect(() => {
-    if (isSideNavOpen) {
-      document.body.classList.add('no-scroll');
-    } else {
-      document.body.classList.remove('no-scroll');
-    }
-    return () => {
-      document.body.classList.remove('no-scroll');
-    };
-  }, [isSideNavOpen]);
 
   const toggleSideNav = () => {
     setIsSideNavOpen(!isSideNavOpen);
@@ -86,11 +74,7 @@ const Header: React.FC = () => {
                 onClick={() => globalThis.location.reload()}
               >
                 <img 
-<<<<<<< HEAD
-                  src="/images/logo.png" 
-=======
                   src={placeholderLogo}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
                   alt="St. Patrick's Catholic Church Logo" 
                   className="logo-image"
                 />
@@ -123,25 +107,13 @@ const Header: React.FC = () => {
               {user && (
                 <div className="user-info">
                   <div className="user-details">
-                    {user.profilePicture ? (
-                      <img src={user.profilePicture} alt="Avatar" style={{ width: 24, height: 24, borderRadius: '50%', objectFit: 'cover' }} />
-                    ) : (
-                      <User size={16} />
-                    )}
+                    <User size={16} />
                     <span className="username">
                       {user.firstName && user.lastName 
                         ? `${user.firstName} ${user.lastName}` 
                         : user.username}
                     </span>
-                    <span className="user-type">
-                      ({
-                        user.role === 'admin' ? 'Administrator' :
-                        user.role === 'priest' ? 'Parish Priest' :
-                        (user.role === 'treasurer' && user.committeePosition === 'Treasurer') ? 'Association Treasurer' :
-                        (user.role === 'secretary' && user.committeePosition === 'Secretary') ? 'Association Secretary' :
-                        user.committeePosition || user.role
-                      })
-                    </span>
+                    <span className="user-type">({user.role})</span>
                   </div>
                   <button 
                     onClick={logout}
@@ -192,11 +164,7 @@ const Header: React.FC = () => {
           <div className="side-nav-logo">
             <div className="logo">
               <img 
-<<<<<<< HEAD
-                src="/images/logo.png" 
-=======
                 src={placeholderLogo}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
                 alt="St. Patrick's Catholic Church Logo" 
                 className="logo-image"
               />
@@ -287,23 +255,6 @@ const Header: React.FC = () => {
           </ul>
         </div>
 
-        {/* My Community Section */}
-        <div className="side-nav-section">
-          <h3 className="side-nav-section-title">My Community</h3>
-          <ul className="nav-list">
-            <li>
-              <Link 
-                to="/association-finance" 
-                className={`nav-link ${isActive('/association-finance') ? 'active' : ''}`}
-                onClick={() => setIsSideNavOpen(false)}
-              >
-                <DollarSign className="nav-link-icon" size={20} />
-                Association Finance
-              </Link>
-            </li>
-          </ul>
-        </div>
-
         {/* Get Involved Section */}
         <div className="side-nav-section">
           <h3 className="side-nav-section-title">Get Involved</h3>
@@ -364,15 +315,7 @@ const Header: React.FC = () => {
           <div className="side-nav-user">
             <div className="side-nav-user-info">
               <div className="side-nav-user-avatar">
-<<<<<<< HEAD
-                {user.profilePicture ? (
-                  <img src={user.profilePicture} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                ) : (
-                  user.firstName ? user.firstName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()
-                )}
-=======
                 {(((user?.firstName && user?.firstName[0]) || (user?.username || 'U')[0]).toUpperCase())}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
               </div>
               <div className="side-nav-user-details">
                 <h4>
@@ -384,30 +327,16 @@ const Header: React.FC = () => {
               </div>
             </div>
             
-<<<<<<< HEAD
-            {(user.role !== 'parishioner') && (
-=======
             {user?.role === 'parishioner' && (
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
               <Link 
-                to="/admin" 
-                className={`nav-link ${isActive('/admin') ? 'active' : ''}`}
+                to="/profile" 
+                className={`nav-link ${isActive('/profile') ? 'active' : ''}`}
                 onClick={() => setIsSideNavOpen(false)}
-                style={{ color: 'var(--gold)', fontWeight: 'bold' }}
               >
-                <Shield className="nav-link-icon" size={20} />
-                Admin Dashboard
+                <User className="nav-link-icon" size={20} />
+                My Profile
               </Link>
             )}
-            
-            <Link 
-              to="/profile" 
-              className={`nav-link ${isActive('/profile') ? 'active' : ''}`}
-              onClick={() => setIsSideNavOpen(false)}
-            >
-              <User className="nav-link-icon" size={20} />
-              My Profile
-            </Link>
             
             <button 
               onClick={() => {

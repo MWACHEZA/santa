@@ -40,13 +40,17 @@ const ChangePassword: React.FC = () => {
 
   const { rules } = validatePassword(newPassword);
 
-  const { changePassword, user, logout } = useAuth();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
 
     setError('');
+
+    // Validate old password is 'Password'
+    if (oldPassword !== 'Password') {
+      setError('Current password is incorrect');
+      return;
+    }
 
     // Validate new password
     const { isValid } = validatePassword(newPassword);
@@ -64,20 +68,25 @@ const ChangePassword: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await changePassword(oldPassword, newPassword);
+      // Update password in localStorage userStore
+      const userStore = JSON.parse(localStorage.getItem('userStore') || '[]');
+      const userIndex = userStore.findIndex((u: any) => u.username === pendingUser);
       
-      if (result.success) {
-        // Clear pending password change if any
+      if (userIndex !== -1) {
+        userStore[userIndex].password = newPassword;
+        userStore[userIndex].mustChangePassword = false;
+        localStorage.setItem('userStore', JSON.stringify(userStore));
+        
+        // Clear pending password change
         localStorage.removeItem('pendingPasswordChangeUser');
         
-        // Log out the user and send to login page
-        logout();
+        // Redirect to login with success message
         navigate('/login?passwordChanged=true');
       } else {
-        setError(result.message || 'Failed to update password');
+        setError('User not found');
       }
-    } catch (err: any) {
-      setError(err.message || 'Failed to update password');
+    } catch (err) {
+      setError('Failed to update password');
     } finally {
       setIsSubmitting(false);
     }
@@ -89,11 +98,7 @@ const ChangePassword: React.FC = () => {
         <div className="login-header">
           <div className="login-logo">
             <img 
-<<<<<<< HEAD
-              src="/logo.svg" 
-=======
               src={'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="%234a7c2a"/><stop offset="100%" stop-color="%232d5016"/></linearGradient></defs><circle cx="40" cy="40" r="38" fill="url(%23g)"/></svg>'}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
               alt="St. Patrick's Logo" 
               className="logo-img"
             />
@@ -123,7 +128,7 @@ const ChangePassword: React.FC = () => {
                 type={showOldPassword ? 'text' : 'password'}
                 value={oldPassword}
                 onChange={(e) => setOldPassword(e.target.value)}
-                placeholder="Enter current password"
+                placeholder="Enter current password (Password)"
                 required
                 disabled={isSubmitting}
               />

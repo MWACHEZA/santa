@@ -1,8 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useAdmin, ParishMember } from '../../contexts/AdminContext';
+import React, { useState } from 'react';
+import { useAdmin } from '../../contexts/AdminContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { api } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
 import AnnouncementManager from '../../components/admin/AnnouncementManager';
 import GalleryManager from '../../components/admin/GalleryManager';
 import EventManager from '../../components/admin/EventManager';
@@ -13,78 +11,67 @@ import NewsManagement from './NewsManagement';
 import Analytics from './Analytics';
 import VideoManager from '../../components/admin/VideoManager';
 import ImageUpload from '../../components/admin/ImageUpload';
-import FinancialManager from '../../components/admin/FinancialManager';
-import PriestDeskManager from '../../components/admin/PriestDeskManager';
-import AuditLogViewer from '../../components/admin/AuditLogViewer';
 import EnhancedProfile from '../../components/EnhancedProfile';
 import { 
+  LogOut, 
   Bell, 
   Calendar, 
-  ChevronDown, 
-  ChevronUp, 
-  Clock, 
-  DollarSign, 
-  FileText, 
-  FolderOpen, 
-  History, 
-  LogOut, 
-  Menu, 
-  Newspaper, 
+  Image, 
   Phone, 
-  Plus, 
-  Trash2, 
-  TrendingUp, 
-  User, 
-  UserCog, 
-  Users, 
-  X,
-  Heart,
+  Clock, 
+  Users,
+  User,
   BarChart3,
-  Activity,
-  Edit2,
-  CalendarDays,
-  FolderTree,
-  PlusCircle,
-  Image,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
   BookOpen,
+  TrendingUp,
+  Activity,
+  Heart,
+  UserCog,
+  Shield,
   AlertTriangle,
-  Info
+  Info,
+  Newspaper,
+  ChevronDown,
+  ChevronUp,
+  FolderOpen,
+  CalendarDays,
+  X
 } from 'lucide-react';
 import './AdminDashboard.css';
 import { api } from '../../services/api';
 
-type AdminSection = 'overview' | 'announcements' | 'events' | 'gallery' | 'contact' | 'schedule' | 'priests-desk' | 'analytics' | 'prayers' | 'images' | 'users' | 'themes' | 'ministries' | 'prayer-intentions' | 'news' | 'videos' | 'profile' | 'finances' | 'audit-logs';
+type AdminSection = 'overview' | 'announcements' | 'events' | 'gallery' | 'contact' | 'schedule' | 'priests-desk' | 'analytics' | 'prayers' | 'images' | 'users' | 'themes' | 'ministries' | 'sacraments' | 'section-images' | 'prayer-intentions' | 'news' | 'videos' | 'profile';
+
+// Types for parish members
+interface ParishMember {
+  id: string;
+  name: string;
+  email: string;
+  lastLogin: Date;
+  status: 'online' | 'away' | 'offline';
+}
 
 const AdminDashboard: React.FC = () => {
-  console.log('🎯 AdminDashboard rendering...');
-  
-  // All hooks must be called first, before any conditional returns
   const { 
     announcements, 
     events, 
     galleryImages, 
     getPublishedEvents,
     getPublishedImages,
-    hasPermission,
-    parishMembers,
-    websiteAnalytics,
-    auditLogs,
-    fetchAuditLogs,
-    isLoading: adminLoading
+    hasPermission
   } = useAdmin();
   
-  const { logout, user, isLoading: authLoading } = useAuth();
-  const { success: toastSuccess, info: toastInfo } = useToast();
+  const { logout, user } = useAuth();
   
-  // All useState hooks must be called before any returns
   const [activeSection, setActiveSection] = useState<AdminSection>('overview');
   const [contentDropdownOpen, setContentDropdownOpen] = useState(false);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
-<<<<<<< HEAD
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-  
-  // All useEffect hooks must also be called before any returns
-=======
   const [parishMembers, setParishMembers] = useState<ParishMember[]>([]);
   const [websiteData, setWebsiteData] = useState({
     totalVisitors: 0,
@@ -96,7 +83,6 @@ const AdminDashboard: React.FC = () => {
     monthlyData: [] as { month: string; visitors: number; pageViews: number }[],
   });
 
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   // Debug: Log user permissions
   React.useEffect(() => {
     if (user) {
@@ -106,29 +92,11 @@ const AdminDashboard: React.FC = () => {
       console.log('Has events permission:', hasPermission('events'));
       console.log('Has announcements permission:', hasPermission('announcements'));
       console.log('Has ministries permission:', hasPermission('ministries'));
-      console.log('🚀 Initial section set based on permissions');
     }
-  }, [hasPermission, user?.role, setActiveSection]);
+  }, [user, hasPermission]);
 
   // Set initial section based on user permissions
   React.useEffect(() => {
-<<<<<<< HEAD
-    if (user?.role === 'treasurer') {
-      setActiveSection('finances');
-    } else if (hasPermission('overview')) {
-      setActiveSection('overview');
-    } else if (hasPermission('announcements')) {
-      setActiveSection('announcements');
-    } else if (hasPermission('events')) {
-      setActiveSection('events');
-    } else if (hasPermission('gallery')) {
-      setActiveSection('gallery');
-    } else if (hasPermission('news')) {
-      setActiveSection('news');
-    } else if (hasPermission('priest_desk')) {
-      setActiveSection('priests-desk');
-    }
-=======
     const candidates: { section: AdminSection; perm: Parameters<typeof hasPermission>[0] }[] = [
       { section: 'overview', perm: 'overview' },
       { section: 'announcements', perm: 'announcements' },
@@ -139,166 +107,25 @@ const AdminDashboard: React.FC = () => {
     ];
     const firstAllowed = candidates.find(c => hasPermission(c.perm));
     if (firstAllowed) setActiveSection(firstAllowed.section);
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   }, [hasPermission]);
 
-  // Fetch audit logs on mount
-  React.useEffect(() => {
-    fetchAuditLogs({ limit: 5 });
-  }, []);
-  
-  console.log('🔍 AdminDashboard state:', {
-    user: user?.username,
-    userRole: user?.role,
-    adminLoading,
-    authLoading,
-    hasPermission: typeof hasPermission
-  });
-  
-  // Show loading state if still loading
-  if (adminLoading || authLoading) {
-    console.log('⏳ AdminDashboard showing loading state', { adminLoading, authLoading });
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        width: '100vw',
-        flexDirection: 'column',
-        backgroundColor: '#2c3e50',
-        color: 'white',
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        zIndex: 99999
-      }}>
-        <div className="modern-spinner" style={{ 
-          width: '60px', 
-          height: '60px', 
-          border: '6px solid rgba(255, 255, 255, 0.1)', 
-          borderTop: '6px solid #3498db', 
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-          marginBottom: '20px'
-        }}></div>
-        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', marginBottom: '10px' }}>
-          Preparing Admin Dashboard...
-        </div>
-        <div style={{ fontSize: '1rem', opacity: 0.8, marginBottom: '30px' }}>
-          Auth: {authLoading ? '⌛ Verifying' : '✅ Ready'} | Admin: {adminLoading ? '⌛ Syncing' : '✅ Ready'}
-        </div>
-        <button 
-          onClick={() => {
-            localStorage.clear();
-            window.location.href = '/login';
-          }}
-          style={{
-            padding: '12px 24px',
-            background: '#e74c3c',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontWeight: 'bold'
-          }}
-        >
-          Something is wrong? Reset & Login Again
-        </button>
-      </div>
-    );
-  }
-  
-  // Check if user has admin access
-  if (!user || user.role === 'parishioner') {
-    console.log('❌ User does not have admin access');
-    return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh',
-        flexDirection: 'column',
-        backgroundColor: '#f5f5f5'
-      }}>
-        <div style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#e74c3c' }}>Access Denied</div>
-        <div style={{ fontSize: '0.9rem', color: '#666' }}>
-          You don't have permission to access the admin dashboard.
-        </div>
-      </div>
-    );
-  }
-
   const handleLogout = () => {
-<<<<<<< HEAD
-    setShowLogoutConfirm(true);
-  };
-
-  const confirmLogout = () => {
-    toastInfo('Logging out...', 'Session');
-    setTimeout(() => {
-=======
     if (globalThis.confirm?.('Are you sure you want to logout?')) {
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       logout();
-      toastSuccess('Successfully logged out. See you soon!', 'Goodbye');
-    }, 800);
+    }
   };
 
   // Get role display name
   const getRoleDisplayName = () => {
-    if (!user) return 'User';
-
-    const roleNames: Record<string, string> = {
+    const roleNames = {
       admin: 'Admin',
       secretary: 'Secretary',
       priest: 'Priest',
       reporter: 'Reporter',
       vice_secretary: 'Vice Secretary',
-      parishioner: 'Parishioner',
-      committee_member: 'Committee Member',
-      council_member: 'Council Member',
-      treasurer: 'Treasurer'
+      parishioner: 'Parishioner'
     };
-
-    let displayName = roleNames[user.role] || 'User';
-
-    // If they have a specific position, use that instead of the generic role name
-    if (user.committeePosition) {
-      const positionMap: Record<string, string> = {
-        chairperson: 'Chairperson',
-        vice_chairperson: 'Vice Chairperson',
-        secretary: 'Secretary',
-        vice_secretary: 'Vice Secretary',
-        organizing_secretary: 'Organizing Secretary',
-        treasurer: 'Treasurer',
-        advisor: 'Advisor',
-        committee_member: 'Committee Member'
-      };
-      displayName = positionMap[user.committeePosition] || user.committeePosition;
-    }
-
-    // Add association if available
-    if (user.association) {
-      const associationMap: Record<string, string> = {
-        'missionary-childhood-mca': 'MCA',
-        'catholic-junior-youth-cja': 'CJA',
-        'catholic-senior-youth-cya': 'CYA',
-        'catholic-young-adults-cyaa': 'CYAA',
-        'most-sacred-heart-jesus': 'Sacred Heart',
-        'sodality-our-lady': 'Sodality',
-        'st-anne': 'St Anne',
-        'st-joseph': 'St Joseph',
-        'couples-association': 'Couples',
-        'focolare': 'Focolare',
-        'womens-forum': 'Women\'s Forum',
-        'association-altar-servers': 'Altar Servers'
-      };
-      const associationName = associationMap[user.association] || user.association;
-      displayName = `${displayName} (${associationName})`;
-    }
-
-    return displayName;
+    return user?.role ? roleNames[user.role] : 'User';
   };
 
   // Get welcome message based on role
@@ -307,8 +134,6 @@ const AdminDashboard: React.FC = () => {
     return `Welcome ${name}`;
   };
 
-<<<<<<< HEAD
-=======
   React.useEffect(() => {
     const loadMembers = async () => {
       try {
@@ -355,7 +180,6 @@ const AdminDashboard: React.FC = () => {
     loadAnalytics();
   }, []);
 
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   const stats = {
     totalAnnouncements: announcements.length,
     activeAnnouncements: announcements.filter(a => a.isActive).length,
@@ -375,23 +199,20 @@ const AdminDashboard: React.FC = () => {
     website: websiteData
   };
 
-  console.log('✅ AdminDashboard rendering main content');
-  
   return (
-    <div className="admin-dashboard admin-container" style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
-      {/* Debug info */}
+    <div className="admin-dashboard admin-container">
       {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <div className="admin-logo">
             <img 
-              src="/logo.svg" 
+              src="/api/placeholder/60/60" 
               alt="St. Patrick's Admin Logo" 
               className="admin-logo-image"
             />
           </div>
           <h2>{getRoleDisplayName()} Panel</h2>
-          <div className="parish-badge">St. Patrick's Parish</div>
+          <p>St. Patrick's</p>
         </div>
 
         <nav className="sidebar-nav">
@@ -404,19 +225,9 @@ const AdminDashboard: React.FC = () => {
               <span>Overview</span>
             </button>
           )}
-
-          {hasPermission('finances') && (
-            <button
-              className={`nav-item ${activeSection === 'finances' ? 'active' : ''}`}
-              onClick={() => setActiveSection('finances')}
-            >
-              <DollarSign size={20} />
-              <span>{user?.role === 'treasurer' && user?.association ? 'Association Finance' : 'Treasury'}</span>
-            </button>
-          )}
           
           {/* Content Management Dropdown */}
-          {(hasPermission('gallery') || hasPermission('ministries') || hasPermission('theme') || hasPermission('images')) && (
+          {(hasPermission('gallery') || hasPermission('section_images') || hasPermission('ministries') || hasPermission('theme') || hasPermission('sacraments') || hasPermission('images')) && (
             <div className="nav-dropdown">
               <button
                 className={`nav-item dropdown-toggle ${contentDropdownOpen ? 'active' : ''}`}
@@ -430,28 +241,61 @@ const AdminDashboard: React.FC = () => {
                 {contentDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {contentDropdownOpen && (
-                <div className="sidebar-submenu">
-                  <button
-                    className={`sidebar-subitem ${activeSection === 'gallery' ? 'active' : ''}`}
-                    onClick={() => {setActiveSection('gallery'); setContentDropdownOpen(false);}}
-                  >
-                    <Image size={16} />
-                    <span>Gallery</span>
-                  </button>
-                  <button
-                    className={`sidebar-subitem ${activeSection === 'ministries' ? 'active' : ''}`}
-                    onClick={() => {setActiveSection('ministries'); setContentDropdownOpen(false);}}
-                  >
-                    <Users size={16} />
-                    <span>Ministries</span>
-                  </button>
-                  <button
-                    className={`sidebar-subitem ${activeSection === 'themes' ? 'active' : ''}`}
-                    onClick={() => {setActiveSection('themes'); setContentDropdownOpen(false);}}
-                  >
-                    <BookOpen size={16} />
-                    <span>Theme of the Year</span>
-                  </button>
+                <div className="dropdown-menu">
+                  {hasPermission('section_images') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'section-images' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('section-images'); setContentDropdownOpen(false);}}
+                    >
+                      <Image size={16} />
+                      <span>Section Images</span>
+                    </button>
+                  )}
+                  {hasPermission('gallery') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'gallery' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('gallery'); setContentDropdownOpen(false);}}
+                    >
+                      <Image size={16} />
+                      <span>Gallery</span>
+                    </button>
+                  )}
+                  {hasPermission('ministries') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'ministries' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('ministries'); setContentDropdownOpen(false);}}
+                    >
+                      <Users size={16} />
+                      <span>Ministries</span>
+                    </button>
+                  )}
+                  {hasPermission('theme') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'themes' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('themes'); setContentDropdownOpen(false);}}
+                    >
+                      <BookOpen size={16} />
+                      <span>Theme of the Year</span>
+                    </button>
+                  )}
+                  {hasPermission('sacraments') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'sacraments' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('sacraments'); setContentDropdownOpen(false);}}
+                    >
+                      <Heart size={16} />
+                      <span>Sacraments</span>
+                    </button>
+                  )}
+                  {hasPermission('images') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'images' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('images'); setContentDropdownOpen(false);}}
+                    >
+                      <Image size={16} />
+                      <span>Images</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -472,28 +316,34 @@ const AdminDashboard: React.FC = () => {
                 {eventDropdownOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
               {eventDropdownOpen && (
-                <div className="sidebar-submenu">
-                  <button
-                    className={`sidebar-subitem ${activeSection === 'events' ? 'active' : ''}`}
-                    onClick={() => {setActiveSection('events'); setEventDropdownOpen(false);}}
-                  >
-                    <Calendar size={16} />
-                    <span>Events Page</span>
-                  </button>
-                  <button
-                    className={`sidebar-subitem ${activeSection === 'announcements' ? 'active' : ''}`}
-                    onClick={() => {setActiveSection('announcements'); setEventDropdownOpen(false);}}
-                  >
-                    <Bell size={16} />
-                    <span>Announcement Page</span>
-                  </button>
-                  <button
-                    className={`sidebar-subitem ${activeSection === 'schedule' ? 'active' : ''}`}
-                    onClick={() => {setActiveSection('schedule'); setEventDropdownOpen(false);}}
-                  >
-                    <Clock size={16} />
-                    <span>Mass Schedule</span>
-                  </button>
+                <div className="dropdown-menu">
+                  {hasPermission('events') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'events' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('events'); setEventDropdownOpen(false);}}
+                    >
+                      <Calendar size={16} />
+                      <span>Events Page</span>
+                    </button>
+                  )}
+                  {hasPermission('announcements') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'announcements' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('announcements'); setEventDropdownOpen(false);}}
+                    >
+                      <Bell size={16} />
+                      <span>Announcement Page</span>
+                    </button>
+                  )}
+                  {hasPermission('mass_schedule') && (
+                    <button
+                      className={`dropdown-item ${activeSection === 'schedule' ? 'active' : ''}`}
+                      onClick={() => {setActiveSection('schedule'); setEventDropdownOpen(false);}}
+                    >
+                      <Clock size={16} />
+                      <span>Mass Schedule</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -577,16 +427,6 @@ const AdminDashboard: React.FC = () => {
               <span>User Management</span>
             </button>
           )}
-          
-          {hasPermission('audit_logs') && (
-            <button
-              className={`nav-item ${activeSection === 'audit-logs' ? 'active' : ''}`}
-              onClick={() => setActiveSection('audit-logs')}
-            >
-              <History size={20} />
-              <span>Audit Logs</span>
-            </button>
-          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -608,72 +448,13 @@ const AdminDashboard: React.FC = () => {
           </div>
         </header>
 
-<<<<<<< HEAD
-        <div className="admin-content">
-          {activeSection === 'overview' && (
-            <OverviewSection 
-              stats={stats} 
-              setActiveSection={setActiveSection} 
-              parishMembers={parishMembers} 
-              auditLogs={auditLogs}
-            />
-          )}
-          {activeSection === 'announcements' && <AnnouncementManager />}
-          {activeSection === 'events' && <EventManager />}
-          {activeSection === 'gallery' && <GalleryManager />}
-          {activeSection === 'news' && <NewsManagement />}
-          {activeSection === 'contact' && <ContactSection />}
-          {activeSection === 'schedule' && <ScheduleSection />}
-          {activeSection === 'priests-desk' && <PriestDeskManager />}
-          {activeSection === 'prayers' && <PrayerManager />}
-          {activeSection === 'analytics' && <Analytics />}
-          {activeSection === 'videos' && <VideoManager />}
-          {activeSection === 'themes' && <ThemeManagementSection />}
-          {activeSection === 'ministries' && <MinistryManagementSection />}
-          {activeSection === 'prayer-intentions' && <PrayerIntentionManagementSection />}
-          {activeSection === 'profile' && <EnhancedProfile />}
-          {activeSection === 'users' && <UserManagement />}
-          {activeSection === 'finances' && <FinancialManager />}
-          {activeSection === 'audit-logs' && <AuditLogViewer />}
-        </div>
-=======
         <MainContent 
           activeSection={activeSection}
           setActiveSection={setActiveSection}
           stats={stats}
           parishMembers={parishMembers}
         />
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       </main>
-
-      {/* Custom Logout Confirmation Modal */}
-      {showLogoutConfirm && (
-        <div className="modal-overlay logout-modal-overlay">
-          <div className="modal logout-confirm-modal">
-            <div className="modal-header">
-              <h3>Confirm Logout</h3>
-              <button className="btn-close" onClick={() => setShowLogoutConfirm(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <div className="logout-icon-container">
-                <LogOut size={48} className="logout-warning-icon" />
-              </div>
-              <p>Are you sure you want to end your session?</p>
-              <p className="logout-subtext">You will need to login again to access the admin panel.</p>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setShowLogoutConfirm(false)}>
-                Stay Logged In
-              </button>
-              <button className="btn btn-danger" onClick={confirmLogout}>
-                Yes, Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -695,10 +476,10 @@ const getSectionTitle = (section: AdminSection): string => {
     users: 'User Management',
     themes: 'Theme of the Year',
     ministries: 'Manage Ministries',
+    sacraments: 'Manage Sacraments',
+    'section-images': 'Section Images',
     'prayer-intentions': 'Prayer Intentions',
-    profile: 'My Profile',
-    finances: 'Financial Management',
-    'audit-logs': 'Central Audit Logs'
+    profile: 'My Profile'
   };
   return sectionTitles[section] || 'Unknown Section';
 };
@@ -739,68 +520,14 @@ const OverviewSection: React.FC<{
   stats: any; 
   setActiveSection: (section: AdminSection) => void;
   parishMembers: ParishMember[];
-  auditLogs: any[];
-}> = ({ stats, setActiveSection, parishMembers, auditLogs }) => {
-  const { getActiveAnnouncement, hasPermission } = useAdmin();
+}> = ({ stats, setActiveSection, parishMembers }) => {
+  const { getActiveAnnouncement } = useAdmin();
   const activeAnnouncement = getActiveAnnouncement();
 
   return (
     <div className="overview-section">
       {/* Quick Stats Cards */}
       <div className="stats-grid">
-<<<<<<< HEAD
-        {hasPermission('announcements') && (
-          <div className="stat-card clickable" onClick={() => setActiveSection('announcements')}>
-            <div className="stat-icon announcements">
-              <Bell size={20} />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.activeAnnouncements}</div>
-              <div className="stat-label">Active Announcements</div>
-              <div className="stat-sublabel">{stats.totalAnnouncements} total</div>
-            </div>
-          </div>
-        )}
-
-        {hasPermission('events') && (
-          <div className="stat-card clickable" onClick={() => setActiveSection('events')}>
-            <div className="stat-icon events">
-              <Calendar size={20} />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.publishedEvents}</div>
-              <div className="stat-label">Published Events</div>
-              <div className="stat-sublabel">{stats.totalEvents} total</div>
-            </div>
-          </div>
-        )}
-
-        {hasPermission('gallery') && (
-          <div className="stat-card clickable" onClick={() => setActiveSection('gallery')}>
-            <div className="stat-icon gallery">
-              <Image size={20} />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.publishedImages}</div>
-              <div className="stat-label">Gallery Images</div>
-              <div className="stat-sublabel">{stats.totalImages} total</div>
-            </div>
-          </div>
-        )}
-
-        {hasPermission('analytics') && (
-          <div className="stat-card clickable" onClick={() => setActiveSection('analytics')}>
-            <div className="stat-icon users">
-              <Users size={20} />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{stats.parishMembers.online}</div>
-              <div className="stat-label">Parish Members Online</div>
-              <div className="stat-sublabel">{stats.parishMembers.total} total members</div>
-            </div>
-          </div>
-        )}
-=======
         <button type="button" className="stat-card clickable" aria-label="Go to announcements" onClick={() => setActiveSection('announcements')}>
           <div className="stat-icon announcements">
             <Bell size={20} />
@@ -844,37 +571,28 @@ const OverviewSection: React.FC<{
             <div className="stat-sublabel">{stats.parishMembers.total} total members</div>
           </div>
         </button>
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       </div>
 
       {/* Quick Actions */}
       <div className="quick-actions">
         <h3>Quick Actions</h3>
         <div className="action-buttons">
-          {hasPermission('announcements') && (
-            <button className="action-btn primary" onClick={() => setActiveSection('announcements')}>
-              <Plus size={16} />
-              New Announcement
-            </button>
-          )}
-          {hasPermission('events') && (
-            <button className="action-btn secondary" onClick={() => setActiveSection('events')}>
-              <Calendar size={16} />
-              New Event
-            </button>
-          )}
-          {hasPermission('news') && (
-            <button className="action-btn tertiary" onClick={() => setActiveSection('news')}>
-              <Newspaper size={16} />
-              Post News
-            </button>
-          )}
-          {hasPermission('finances') && (
-            <button className="action-btn quaternary" onClick={() => setActiveSection('finances')}>
-              <DollarSign size={16} />
-              Finance Record
-            </button>
-          )}
+          <button className="action-btn primary" onClick={() => setActiveSection('announcements')}>
+            <Plus size={16} />
+            New Announcement
+          </button>
+          <button className="action-btn secondary" onClick={() => setActiveSection('events')}>
+            <Calendar size={16} />
+            Add Event
+          </button>
+          <button className="action-btn tertiary" onClick={() => setActiveSection('gallery')}>
+            <Image size={16} />
+            Upload Images
+          </button>
+          <button className="action-btn quaternary" onClick={() => setActiveSection('users')}>
+            <UserCog size={16} />
+            Manage Users
+          </button>
         </div>
       </div>
 
@@ -882,55 +600,33 @@ const OverviewSection: React.FC<{
       <div className="recent-activity">
         <h3>Recent Activity</h3>
         <div className="activity-list">
-          {auditLogs && auditLogs.length > 0 ? (
-            auditLogs.slice(0, 5).map((log) => {
-              // Helper to get icon based on entityType
-              const getIcon = () => {
-                const type = log.entityType?.toLowerCase();
-                if (type?.includes('announcement')) return <Bell size={16} />;
-                if (type?.includes('event')) return <Calendar size={16} />;
-                if (type?.includes('finance') || type?.includes('transaction')) return <DollarSign size={16} />;
-                if (type?.includes('user')) return <User size={16} />;
-                if (type?.includes('gallery') || type?.includes('image')) return <Image size={16} />;
-                return <Activity size={16} />;
-              };
-
-              // Format relative time helper
-              const formatRelativeTime = (timestamp: string) => {
-                try {
-                  const date = new Date(timestamp);
-                  const now = new Date();
-                  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-                  
-                  if (diffInSeconds < 60) return 'Just now';
-                  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
-                  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
-                  return `${Math.floor(diffInSeconds / 86400)} days ago`;
-                } catch (e) {
-                  return 'Recently';
-                }
-              };
-
-              return (
-                <div className="activity-item" key={log.id}>
-                  <div className="activity-icon">
-                    {getIcon()}
-                  </div>
-                  <div className="activity-content">
-                    <div className="activity-title">
-                      <strong>{log.userName}</strong> {log.action} {log.entityType?.replace(/_/g, ' ')}
-                    </div>
-                    <div className="activity-time">{formatRelativeTime(log.timestamp)}</div>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-4 text-muted">
-              <History size={24} className="mb-2 opacity-50" />
-              <p>No recent activity found</p>
+          <div className="activity-item">
+            <div className="activity-icon">
+              <Bell size={16} />
             </div>
-          )}
+            <div className="activity-content">
+              <div className="activity-title">New announcement published</div>
+              <div className="activity-time">2 hours ago</div>
+            </div>
+          </div>
+          <div className="activity-item">
+            <div className="activity-icon">
+              <Calendar size={16} />
+            </div>
+            <div className="activity-content">
+              <div className="activity-title">Christmas Mass schedule updated</div>
+              <div className="activity-time">1 day ago</div>
+            </div>
+          </div>
+          <div className="activity-item">
+            <div className="activity-icon">
+              <Image size={16} />
+            </div>
+            <div className="activity-content">
+              <div className="activity-title">5 new gallery images uploaded</div>
+              <div className="activity-time">3 days ago</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -969,28 +665,7 @@ const OverviewSection: React.FC<{
                   {member.name.split(' ').map(n => n[0]).join('')}
                 </div>
                 <div className="member-info">
-                  <div className="member-name-row">
-                    <div className="member-name">{member.name}</div>
-                    {member.role !== 'parishioner' && (
-                      <span className={`member-role-badge role-${member.role.replace('_', '-')}`}>
-                        {member.role === 'committee_member' ? 'Committee' : 
-                         member.role.charAt(0).toUpperCase() + member.role.slice(1).replace('_', ' ')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="member-subtitle">
-                    {member.committeePosition && (
-                      <span className="member-position">
-                        {member.committeePosition.charAt(0).toUpperCase() + member.committeePosition.slice(1).replace('_', ' ')}
-                      </span>
-                    )}
-                    {member.association && (
-                      <span className="member-assoc">
-                        {member.committeePosition ? ` • ` : ''}
-                        {member.association.split('-').map(w => w.toUpperCase()).join(' ')}
-                      </span>
-                    )}
-                  </div>
+                  <div className="member-name">{member.name}</div>
                   <div className="member-time">
                     {member.status === 'online' ? 'Active now' : 
                      `${Math.floor((Date.now() - member.lastLogin.getTime()) / 60000)} min ago`}
@@ -1000,14 +675,12 @@ const OverviewSection: React.FC<{
               </div>
             ))}
           </div>
-          {hasPermission('analytics') && (
-            <button 
-              className="btn btn-sm btn-secondary"
-              onClick={() => setActiveSection('analytics')}
-            >
-              View All Members
-            </button>
-          )}
+          <button 
+            className="btn btn-sm btn-secondary"
+            onClick={() => setActiveSection('analytics')}
+          >
+            View All Members
+          </button>
         </div>
       </div>
 
@@ -1037,8 +710,6 @@ const OverviewSection: React.FC<{
   );
 };
 
-<<<<<<< HEAD
-=======
 
 
 
@@ -1536,39 +1207,27 @@ export const AnalyticsSection: React.FC<{
     </div>
   );
 };
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
 // Contact Section Component
 const ContactSection: React.FC = () => {
   const [contactInfo, setContactInfo] = useState({
-    phone: '',
-    email: '',
-    address: '',
-    emergencyPhone: '',
+    phone: '+263 9 123 456',
+    email: 'info@stpatricksmakokoba.org',
+    address: '123 Church Street, Makokoba, Bulawayo, Zimbabwe',
+    emergencyPhone: '+263 9 987 654',
     office: {
-      weekdays: '',
-      saturday: '',
-      sunday: ''
+      weekdays: '8:00 AM - 5:00 PM',
+      saturday: '8:00 AM - 12:00 PM',
+      sunday: 'Closed (Except for services)'
     }
   });
 
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    api.contact.get().then((res: any) => {
-      if (res.success && res.data) {
-        setContactInfo(res.data);
-      }
-    }).catch((err: any) => console.error('Failed to fetch contact info', err));
-  }, []);
-
-  const handleSave = async () => {
-    try {
-      await api.contact.update(contactInfo);
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Failed to save contact info', err);
-    }
+  const handleSave = () => {
+    // Save contact info to context/localStorage
+    localStorage.setItem('churchContactInfo', JSON.stringify(contactInfo));
+    setIsEditing(false);
   };
 
   return (
@@ -1680,25 +1339,21 @@ const ContactSection: React.FC = () => {
 
 // Schedule Section Component
 const ScheduleSection: React.FC = () => {
-  const [massSchedule, setMassSchedule] = useState<any[]>([]);
+  const [massSchedule, setMassSchedule] = useState([
+    { day: 'Sunday', times: ['7:00 AM', '9:00 AM', '11:00 AM', '6:00 PM'], language: 'English & IsiNdebele' },
+    { day: 'Monday', times: ['6:00 AM', '6:00 PM'], language: 'English' },
+    { day: 'Tuesday', times: ['6:00 AM', '6:00 PM'], language: 'English' },
+    { day: 'Wednesday', times: ['6:00 AM', '6:00 PM'], language: 'English' },
+    { day: 'Thursday', times: ['6:00 AM', '6:00 PM'], language: 'English' },
+    { day: 'Friday', times: ['6:00 AM', '6:00 PM'], language: 'English' },
+    { day: 'Saturday', times: ['7:00 AM', '6:00 PM'], language: 'English' }
+  ]);
 
   const [isEditing, setIsEditing] = useState(false);
 
-  useEffect(() => {
-    api.schedule.getAll().then((res: any) => {
-      if (res.success && res.data) {
-        setMassSchedule(res.data);
-      }
-    }).catch((err: any) => console.error('Failed to fetch schedule', err));
-  }, []);
-
-  const handleSave = async () => {
-    try {
-      await api.schedule.updateBulk(massSchedule);
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Failed to save schedule', err);
-    }
+  const handleSave = () => {
+    localStorage.setItem('churchMassSchedule', JSON.stringify(massSchedule));
+    setIsEditing(false);
   };
 
   const updateSchedule = (dayIndex: number, field: string, value: any) => {
@@ -1752,8 +1407,6 @@ const ScheduleSection: React.FC = () => {
   );
 };
 
-<<<<<<< HEAD
-=======
 // User Management Section Component
 export const UserManagementSection: React.FC = () => {
   const [users, setUsers] = useState([
@@ -2051,14 +1704,11 @@ export const UserManagementSection: React.FC = () => {
     </div>
   );
 };
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
 // Theme Management Section
 const ThemeManagementSection: React.FC = () => {
   const { themesOfYear, addThemeOfYear, updateThemeOfYear, deleteThemeOfYear } = useAdmin();
-  const { success, error } = useToast();
   const [showAddTheme, setShowAddTheme] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedThemeImageFile, setSelectedThemeImageFile] = useState<File | null>(null);
   const [newTheme, setNewTheme] = useState({
     year: new Date().getFullYear(),
@@ -2066,35 +1716,25 @@ const ThemeManagementSection: React.FC = () => {
     subtitle: '',
     verse: '',
     description: '',
-    imageUrl: '',
+    imageUrl: '/api/placeholder/400/300',
     isActive: false
   });
 
   const handleAddTheme = async () => {
-    if (!newTheme.title) {
-      error('Please enter a theme title');
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
+    if (newTheme.title && newTheme.verse) {
       let finalImageUrl = newTheme.imageUrl;
       
-      // Upload image if selected
+      // If an image file was selected, we would upload it here
       if (selectedThemeImageFile) {
-        const uploadRes = await api.upload.uploadSingle(selectedThemeImageFile, 'themes');
-        if (uploadRes.success && uploadRes.data.url) {
-          finalImageUrl = uploadRes.data.url;
-        }
+        // In a real implementation, you would upload the file to your server
+        // finalImageUrl = await uploadImageToServer(selectedThemeImageFile);
+        console.log('Theme image file selected:', selectedThemeImageFile.name);
       }
       
-      await addThemeOfYear({
+      addThemeOfYear({
         ...newTheme,
-        year: parseInt(newTheme.year.toString()),
         imageUrl: finalImageUrl
       });
-      
-      success(`Theme for ${newTheme.year} added successfully`);
       
       // Reset form
       setNewTheme({
@@ -2103,16 +1743,11 @@ const ThemeManagementSection: React.FC = () => {
         subtitle: '',
         verse: '',
         description: '',
-        imageUrl: '',
+        imageUrl: '/api/placeholder/400/300',
         isActive: false
       });
       setSelectedThemeImageFile(null);
       setShowAddTheme(false);
-    } catch (err) {
-      console.error('Failed to add theme:', err);
-      error('Failed to add theme. Please try again.');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -2155,12 +1790,7 @@ const ThemeManagementSection: React.FC = () => {
                 id="theme-year"
                 type="number"
                 value={newTheme.year}
-<<<<<<< HEAD
-                onChange={(e) => setNewTheme({...newTheme, year: parseInt(e.target.value)})}
-                disabled={isSubmitting}
-=======
                 onChange={(e) => setNewTheme({...newTheme, year: Number.parseInt(e.target.value)})}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
               />
             </div>
             <div className="form-group">
@@ -2171,7 +1801,6 @@ const ThemeManagementSection: React.FC = () => {
                 placeholder="Theme title"
                 value={newTheme.title}
                 onChange={(e) => setNewTheme({...newTheme, title: e.target.value})}
-                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -2183,7 +1812,6 @@ const ThemeManagementSection: React.FC = () => {
               placeholder="Theme subtitle"
               value={newTheme.subtitle}
               onChange={(e) => setNewTheme({...newTheme, subtitle: e.target.value})}
-              disabled={isSubmitting}
             />
           </div>
           <div className="form-group">
@@ -2194,7 +1822,6 @@ const ThemeManagementSection: React.FC = () => {
               placeholder="Bible verse reference"
               value={newTheme.verse}
               onChange={(e) => setNewTheme({...newTheme, verse: e.target.value})}
-              disabled={isSubmitting}
             />
           </div>
           <div className="form-group">
@@ -2205,47 +1832,18 @@ const ThemeManagementSection: React.FC = () => {
               value={newTheme.description}
               onChange={(e) => setNewTheme({...newTheme, description: e.target.value})}
               rows={4}
-              disabled={isSubmitting}
             />
           </div>
           <ImageUpload
             label="Theme Image"
             onImageSelect={handleThemeImageSelect}
             onImageRemove={handleThemeImageRemove}
-<<<<<<< HEAD
-            currentImageUrl={newTheme.imageUrl || undefined}
-=======
             currentImageUrl={newTheme.imageUrl === '/api/placeholder/400/300' ? undefined : newTheme.imageUrl}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
             maxSizeInMB={3}
           />
-          <div className="form-group">
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                checked={newTheme.isActive}
-                onChange={(e) => setNewTheme({...newTheme, isActive: e.target.checked})}
-                disabled={isSubmitting}
-              />
-              <span className="checkmark"></span>
-              Set as current Active Theme (deactivates others)
-            </label>
-          </div>
           <div className="form-actions">
-            <button 
-              className="btn btn-success" 
-              onClick={handleAddTheme}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Adding...' : 'Add Theme'}
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => setShowAddTheme(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
+            <button className="btn btn-success" onClick={handleAddTheme}>Add Theme</button>
+            <button className="btn btn-secondary" onClick={() => setShowAddTheme(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -2285,116 +1883,45 @@ const ThemeManagementSection: React.FC = () => {
 // Ministry Management Section
 const MinistryManagementSection: React.FC = () => {
   const { ministries, addMinistry, updateMinistry, deleteMinistry } = useAdmin();
-  const { success, error } = useToast();
-  
   const [showAddMinistry, setShowAddMinistry] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [ministryToDelete, setMinistryToDelete] = useState<string | null>(null);
-  const [editingMinistryId, setEditingMinistryId] = useState<string | null>(null);
-
   const [newMinistry, setNewMinistry] = useState({
     name: '',
     description: '',
-    imageUrl: '',
+    imageUrl: '/api/placeholder/300/200',
     contactPerson: '',
-    category: '',
     meetingTime: '',
     isActive: true
   });
 
-  const handleEdit = (ministry: any) => {
-    setEditingMinistryId(ministry.id);
-    setNewMinistry({
-      name: ministry.name,
-      description: ministry.description,
-      imageUrl: ministry.imageUrl,
-      contactPerson: ministry.contactPerson || '',
-      category: ministry.category || '',
-      meetingTime: ministry.meetingTime || '',
-      isActive: ministry.isActive !== undefined ? ministry.isActive : true
-    });
-    setShowAddMinistry(true);
-  };
-
   const handleAddMinistry = async () => {
     if (newMinistry.name && newMinistry.description) {
-      setIsSubmitting(true);
-      try {
-        let finalImageUrl = newMinistry.imageUrl;
-        
-        if (selectedImageFile) {
-          const uploadRes = await api.upload.uploadSingle(selectedImageFile, 'ministries');
-          if (uploadRes.success && uploadRes.data.url) {
-            finalImageUrl = uploadRes.data.url;
-          }
-        }
-        
-        if (editingMinistryId) {
-          await updateMinistry(editingMinistryId, {
-            ...newMinistry,
-            imageUrl: finalImageUrl
-          });
-          success(`Ministry "${newMinistry.name}" updated successfully`);
-        } else {
-          await addMinistry({
-            ...newMinistry,
-            imageUrl: finalImageUrl
-          });
-          success(`Ministry "${newMinistry.name}" added successfully`);
-        }
-        
-        handleCancel();
-      } catch (err) {
-        error(editingMinistryId ? 'Failed to update ministry' : 'Failed to add ministry');
-      } finally {
-        setIsSubmitting(false);
+      let finalImageUrl = newMinistry.imageUrl;
+      
+      // If an image file was selected, we would upload it here
+      // For now, we'll use the preview URL or placeholder
+      if (selectedImageFile) {
+        // In a real implementation, you would upload the file to your server
+        // finalImageUrl = await uploadImageToServer(selectedImageFile);
+        console.log('Image file selected:', selectedImageFile.name);
       }
-    }
-  };
-
-  const handleCancel = () => {
-    setNewMinistry({
-      name: '',
-      description: '',
-      imageUrl: '',
-      contactPerson: '',
-      category: '',
-      meetingTime: '',
-      isActive: true
-    });
-    setSelectedImageFile(null);
-    setEditingMinistryId(null);
-    setShowAddMinistry(false);
-  };
-
-  const handleToggleActive = async (id: string, currentStatus: boolean) => {
-    try {
-      await updateMinistry(id, { isActive: !currentStatus });
-      success(`Ministry ${!currentStatus ? 'activated' : 'deactivated'}`);
-    } catch (err) {
-      error('Failed to update status');
-    }
-  };
-
-  const confirmDelete = (id: string) => {
-    setMinistryToDelete(id);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDelete = async () => {
-    if (!ministryToDelete) return;
-    setIsSubmitting(true);
-    try {
-      await deleteMinistry(ministryToDelete);
-      success('Ministry deleted successfully');
-      setShowDeleteConfirm(false);
-      setMinistryToDelete(null);
-    } catch (err) {
-      error('Failed to delete ministry');
-    } finally {
-      setIsSubmitting(false);
+      
+      addMinistry({
+        ...newMinistry,
+        imageUrl: finalImageUrl
+      });
+      
+      // Reset form
+      setNewMinistry({
+        name: '',
+        description: '',
+        imageUrl: '/api/placeholder/300/200',
+        contactPerson: '',
+        meetingTime: '',
+        isActive: true
+      });
+      setSelectedImageFile(null);
+      setShowAddMinistry(false);
     }
   };
 
@@ -2429,7 +1956,7 @@ const MinistryManagementSection: React.FC = () => {
 
       {showAddMinistry && (
         <div className="add-ministry-form">
-          <h4>{editingMinistryId ? 'Edit Ministry' : 'Add New Ministry'}</h4>
+          <h4>Add New Ministry</h4>
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="ministry-name">Ministry Name</label>
@@ -2439,7 +1966,6 @@ const MinistryManagementSection: React.FC = () => {
                 placeholder="Ministry name"
                 value={newMinistry.name}
                 onChange={(e) => setNewMinistry({...newMinistry, name: e.target.value})}
-                disabled={isSubmitting}
               />
             </div>
             <div className="form-group">
@@ -2450,7 +1976,6 @@ const MinistryManagementSection: React.FC = () => {
                 placeholder="Contact person"
                 value={newMinistry.contactPerson}
                 onChange={(e) => setNewMinistry({...newMinistry, contactPerson: e.target.value})}
-                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -2462,68 +1987,28 @@ const MinistryManagementSection: React.FC = () => {
               value={newMinistry.description}
               onChange={(e) => setNewMinistry({...newMinistry, description: e.target.value})}
               rows={3}
-              disabled={isSubmitting}
             />
           </div>
           <div className="form-group">
-<<<<<<< HEAD
-            <label>Category</label>
-            <select
-              value={newMinistry.category}
-              onChange={(e) => setNewMinistry({...newMinistry, category: e.target.value})}
-              disabled={isSubmitting}
-            >
-              <option value="">Select Category</option>
-              <option value="Youth Ministries">Youth Ministries</option>
-              <option value="Women's Associations">Women's Associations</option>
-              <option value="Children's Ministry">Children's Ministry</option>
-              <option value="Men's Guild">Men's Guild</option>
-              <option value="Prayer Groups">Prayer Groups</option>
-              <option value="Liturgical Ministry">Liturgical Ministry</option>
-              <option value="Committees">Committees</option>
-              <option value="Other Ministries">Other Ministries</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Meeting Time</label>
-=======
             <label htmlFor="ministry-meeting">Meeting Time</label>
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
             <input
               id="ministry-meeting"
               type="text"
               placeholder="Meeting time"
               value={newMinistry.meetingTime}
               onChange={(e) => setNewMinistry({...newMinistry, meetingTime: e.target.value})}
-              disabled={isSubmitting}
             />
           </div>
           <ImageUpload
             label="Ministry Image"
             onImageSelect={handleImageSelect}
             onImageRemove={handleImageRemove}
-<<<<<<< HEAD
-            currentImageUrl={newMinistry.imageUrl || undefined}
-=======
             currentImageUrl={newMinistry.imageUrl === '/api/placeholder/300/200' ? undefined : newMinistry.imageUrl}
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
             maxSizeInMB={2}
           />
           <div className="form-actions">
-            <button 
-              className="btn btn-success" 
-              onClick={handleAddMinistry}
-              disabled={isSubmitting || !newMinistry.name || !newMinistry.description}
-            >
-              {isSubmitting ? (editingMinistryId ? 'Saving...' : 'Adding...') : (editingMinistryId ? 'Save Changes' : 'Add Ministry')}
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
+            <button className="btn btn-success" onClick={handleAddMinistry}>Add Ministry</button>
+            <button className="btn btn-secondary" onClick={() => setShowAddMinistry(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -2543,23 +2028,14 @@ const MinistryManagementSection: React.FC = () => {
               </div>
               <div className="ministry-actions">
                 <button 
-                  className="btn btn-primary"
-                  onClick={() => handleEdit(ministry)}
-                  title="Edit Ministry"
-                >
-                  <Edit2 size={16} />
-                </button>
-                <button 
                   className={`btn ${ministry.isActive ? 'btn-success' : 'btn-secondary'}`}
-                  onClick={() => handleToggleActive(ministry.id, ministry.isActive)}
-                  title={ministry.isActive ? 'Deactivate' : 'Activate'}
+                  onClick={() => updateMinistry(ministry.id, { isActive: !ministry.isActive })}
                 >
                   {ministry.isActive ? 'Active' : 'Inactive'}
                 </button>
                 <button 
                   className="btn btn-danger"
-                  onClick={() => confirmDelete(ministry.id)}
-                  title="Delete Ministry"
+                  onClick={() => deleteMinistry(ministry.id)}
                 >
                   <Trash2 size={16} />
                 </button>
@@ -2568,22 +2044,10 @@ const MinistryManagementSection: React.FC = () => {
           </div>
         ))}
       </div>
+    </div>
+  );
+};
 
-<<<<<<< HEAD
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal confirm-modal rectangular">
-            <div className="modal-header">
-              <h3>Confirm Deletion</h3>
-              <button className="btn-close" onClick={() => setShowDeleteConfirm(false)}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-content">
-              <p>Are you sure you want to delete this ministry? This action cannot be undone.</p>
-              <div className="form-actions">
-=======
 // Sacrament Management Section
 const SacramentManagementSection: React.FC = () => {
   const { sacraments, addSacrament, updateSacrament, deleteSacrament } = useAdmin();
@@ -2715,28 +2179,14 @@ const SacramentManagementSection: React.FC = () => {
                   value={req}
                   onChange={(e) => updateRequirement(index, e.target.value)}
                 />
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
                 <button 
-                  className="btn btn-secondary" 
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={isSubmitting}
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => removeRequirement(index)}
                 >
-                  Cancel
-                </button>
-                <button 
-                  className="btn btn-danger" 
-                  onClick={handleDelete}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Deleting...' : 'Delete Ministry'}
+                  <Trash2 size={14} />
                 </button>
               </div>
-<<<<<<< HEAD
-            </div>
-          </div>
-        </div>
-      )}
-=======
             ))}
             <button type="button" className="btn btn-secondary btn-sm" onClick={addRequirement}>
               Add Requirement
@@ -2802,13 +2252,10 @@ const SacramentManagementSection: React.FC = () => {
           </div>
         ))}
       </div>
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     </div>
   );
 };
 
-<<<<<<< HEAD
-=======
 // Section Image Management Section
 const SectionImageManagementSection: React.FC = () => {
   const { sectionImages, addSectionImage, updateSectionImage, deleteSectionImage } = useAdmin();
@@ -2962,7 +2409,6 @@ const SectionImageManagementSection: React.FC = () => {
     </div>
   );
 };
->>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
 // Prayer Intention Management Section
 const PrayerIntentionManagementSection: React.FC = () => {
