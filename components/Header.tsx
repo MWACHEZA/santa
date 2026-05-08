@@ -70,7 +70,7 @@ const Header: React.FC = () => {
             <div className="logo-section">
               <div className="logo" onClick={() => window.location.reload()}>
                 <img 
-                  src="/api/placeholder/80/80" 
+                  src="/images/logo.png" 
                   alt="St. Patrick's Catholic Church Logo" 
                   className="logo-image"
                 />

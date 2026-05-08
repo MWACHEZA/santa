@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validatePrayerIntention, 
@@ -274,12 +274,12 @@ router.get('/stats/overview', authenticateToken, requireContentManager, async (r
     // Get monthly statistics
     const [monthlyStats] = await db.execute(`
       SELECT 
-        DATE_FORMAT(submitted_at, '%Y-%m') as month,
+        TO_CHAR(submitted_at, 'YYYY-MM') as month,
         COUNT(*) as total_submissions,
         SUM(CASE WHEN is_approved = true THEN 1 ELSE 0 END) as approved_submissions
       FROM prayer_intentions
-      WHERE submitted_at >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
-      GROUP BY DATE_FORMAT(submitted_at, '%Y-%m')
+      WHERE submitted_at >= (CURRENT_DATE - INTERVAL '12 months')
+      GROUP BY TO_CHAR(submitted_at, 'YYYY-MM')
       ORDER BY month DESC
       LIMIT 12
     `);

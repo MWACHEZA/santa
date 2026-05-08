@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, User, UserRole } from '../../contexts/AuthContext';
+import { useAdmin } from '../../contexts/AdminContext';
 import { Search, Plus, Edit, Trash2, RotateCcw, X, Eye } from 'lucide-react';
 import UserProfileViewer from './UserProfileViewer';
 import './UserManagement.css';
@@ -12,10 +13,14 @@ interface CreateUserForm {
   lastName: string;
   role: UserRole;
   password: string;
+  association?: string;
+  committeePosition?: string;
+  section?: string;
 }
 
 const UserManagement: React.FC = () => {
   const { listUsers, createUser, updateUser, deleteUser, resetPassword } = useAuth();
+  const { logAdminAction } = useAdmin();
   const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -32,11 +37,15 @@ const UserManagement: React.FC = () => {
     firstName: '',
     lastName: '',
     role: 'parishioner',
-    password: ''
+    password: '',
+    association: '',
+    committeePosition: '',
+    section: ''
   });
 
-  const loadUsers = useCallback(() => {
-    setUsers(listUsers());
+  const loadUsers = useCallback(async () => {
+    const data = await listUsers();
+    setUsers(data);
   }, [listUsers]);
 
   useEffect(() => {
@@ -58,9 +67,13 @@ const UserManagement: React.FC = () => {
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
+<<<<<<< HEAD
+=======
     setProcessing(true);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     const result = await createUser(createForm);
     if (result.success) {
+      logAdminAction('CREATE_USER', 'user', result.data?.id || 'new', `Created user: ${createForm.username} (${createForm.role})`);
       showMessage('success', result.message);
       setCreateForm({
         username: '',
@@ -69,7 +82,10 @@ const UserManagement: React.FC = () => {
         firstName: '',
         lastName: '',
         role: 'parishioner',
-        password: ''
+        password: '',
+        association: '',
+        committeePosition: '',
+        section: ''
       });
       setShowCreateForm(false);
       loadUsers();
@@ -82,16 +98,24 @@ const UserManagement: React.FC = () => {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+<<<<<<< HEAD
+    
+=======
     setProcessing(true);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     const result = await updateUser(editingUser.id, {
       username: editingUser.username,
       email: editingUser.email,
       phone: editingUser.phone,
       firstName: editingUser.firstName,
       lastName: editingUser.lastName,
-      role: editingUser.role
+      role: editingUser.role,
+      association: editingUser.association,
+      committeePosition: editingUser.committeePosition,
+      section: editingUser.section
     });
     if (result.success) {
+      logAdminAction('UPDATE_USER', 'user', editingUser.id, `Updated user details for: ${editingUser.username}`);
       showMessage('success', result.message);
       setEditingUser(null);
       loadUsers();
@@ -103,9 +127,13 @@ const UserManagement: React.FC = () => {
 
   const handleDeleteUser = async (userId: string, username: string) => {
     if (window.confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+<<<<<<< HEAD
+=======
       setProcessing(true);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       const result = await deleteUser(userId);
       if (result.success) {
+        logAdminAction('DELETE_USER', 'user', userId, `Deleted user: ${username}`);
         showMessage('success', result.message);
         loadUsers();
       } else {
@@ -117,9 +145,13 @@ const UserManagement: React.FC = () => {
 
   const handleResetPassword = async (userId: string, username: string) => {
     if (window.confirm(`Reset password for "${username}" to "Password"? They will be required to change it on next login.`)) {
+<<<<<<< HEAD
+=======
       setProcessing(true);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       const result = await resetPassword(userId);
       if (result.success) {
+        logAdminAction('RESET_PASSWORD', 'user', userId, `Reset password for user: ${username}`);
         showMessage('success', result.message);
         loadUsers();
       } else {
@@ -141,7 +173,10 @@ const UserManagement: React.FC = () => {
 
   const handleUserUpdate = async (updatedUser: User) => {
     if (updateUser) {
+<<<<<<< HEAD
+=======
       setProcessing(true);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       const result = await updateUser(updatedUser.id, updatedUser);
       if (result.success) {
         loadUsers();
@@ -160,6 +195,9 @@ const UserManagement: React.FC = () => {
       case 'secretary': return 'role-secretary';
       case 'reporter': return 'role-reporter';
       case 'parishioner': return 'role-parishioner';
+      case 'committee_member': return 'role-committee';
+      case 'council_member': return 'role-council';
+      case 'treasurer': return 'role-treasurer';
       default: return 'role-default';
     }
   };
@@ -231,6 +269,9 @@ const UserManagement: React.FC = () => {
                     <option value="priest">Priest</option>
                     <option value="reporter">Reporter</option>
                     <option value="admin">Admin</option>
+                    <option value="committee_member">Committee Member</option>
+                    <option value="council_member">Council Member</option>
+                    <option value="treasurer">Treasurer</option>
                   </select>
                 </div>
               </div>
@@ -272,6 +313,73 @@ const UserManagement: React.FC = () => {
                     value={createForm.phone}
                     onChange={(e) => setCreateForm({...createForm, phone: e.target.value})}
                   />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Association</label>
+                  <select
+                    value={createForm.association || ''}
+                    onChange={(e) => setCreateForm({...createForm, association: e.target.value})}
+                  >
+                    <option value="">Select association (optional)</option>
+                    <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
+                    <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
+                    <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
+                    <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
+                    <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
+                    <option value="sodality-our-lady">Sodality of Our Lady</option>
+                    <option value="st-anne">St Anne</option>
+                    <option value="st-joseph">St Joseph</option>
+                    <option value="couples-association">Couples Association</option>
+                    <option value="focolare">Focolare</option>
+                    <option value="womens-forum">Women's Forum</option>
+                    <option value="association-altar-servers">Association of Altar Servers</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Committee Position</label>
+                  <select
+                    value={createForm.committeePosition || ''}
+                    onChange={(e) => setCreateForm({...createForm, committeePosition: e.target.value})}
+                  >
+                    <option value="">Select position (optional)</option>
+                    <option value="chairperson">Chairperson</option>
+                    <option value="vice_chairperson">Vice Chairperson</option>
+                    <option value="secretary">Secretary</option>
+                    <option value="vice_secretary">Vice Secretary</option>
+                    <option value="organizing_secretary">Organizing Secretary</option>
+                    <option value="treasurer">Treasurer</option>
+                    <option value="advisor">Advisor</option>
+                    <option value="committee_member">Committee Member</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Parish Section</label>
+                  <select
+                    value={createForm.section || ''}
+                    onChange={(e) => setCreateForm({...createForm, section: e.target.value})}
+                  >
+                    <option value="">Select section (optional)</option>
+                    <option value="st-gabriel">St Gabriel</option>
+                    <option value="st-augustine">St Augustine</option>
+                    <option value="st-mary-magdalena">St Mary Magdalena</option>
+                    <option value="st-michael">St Michael</option>
+                    <option value="st-stephen">St Stephen</option>
+                    <option value="st-francis-of-assisi">St Francis of Assisi</option>
+                    <option value="st-monica">St Monica</option>
+                    <option value="st-theresa">St Theresa</option>
+                    <option value="st-bernadette">St Bernadette</option>
+                    <option value="st-philomina">St Philomina</option>
+                    <option value="st-peter">St Peter</option>
+                    <option value="st-bernard">St Bernard</option>
+                    <option value="st-veronica">St Veronica</option>
+                    <option value="st-paul">St Paul</option>
+                    <option value="st-luke">St Luke</option>
+                    <option value="st-basil">St Basil</option>
+                    <option value="st-anthony">St Anthony</option>
+                  </select>
                 </div>
               </div>
 
@@ -468,6 +576,18 @@ const UserManagement: React.FC = () => {
                 </span>
               </div>
               <div className="detail-item">
+                <label>Section:</label>
+                <span>{selectedUser.section || 'Not assigned'}</span>
+              </div>
+              <div className="detail-item">
+                <label>Association:</label>
+                <span>{selectedUser.association || 'Not assigned'}</span>
+              </div>
+              <div className="detail-item">
+                <label>Committee Position:</label>
+                <span>{selectedUser.committeePosition || 'Not assigned'}</span>
+              </div>
+              <div className="detail-item">
                 <label>Status:</label>
                 <span className={`status-badge ${selectedUser.mustChangePassword ? 'pending' : 'active'}`}>
                   {selectedUser.mustChangePassword ? 'Password Reset Required' : 'Active'}
@@ -552,6 +672,9 @@ const UserManagement: React.FC = () => {
                     <option value="priest">Priest</option>
                     <option value="reporter">Reporter</option>
                     <option value="admin">Admin</option>
+                    <option value="committee_member">Committee Member</option>
+                    <option value="council_member">Council Member</option>
+                    <option value="treasurer">Treasurer</option>
                   </select>
                 </div>
               </div>
@@ -594,6 +717,73 @@ const UserManagement: React.FC = () => {
                 </div>
               </div>
 
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Association</label>
+                  <select
+                    value={editingUser.association || ''}
+                    onChange={(e) => setEditingUser({...editingUser, association: e.target.value})}
+                  >
+                    <option value="">Select association (optional)</option>
+                    <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
+                    <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
+                    <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
+                    <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
+                    <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
+                    <option value="sodality-our-lady">Sodality of Our Lady</option>
+                    <option value="st-anne">St Anne</option>
+                    <option value="st-joseph">St Joseph</option>
+                    <option value="couples-association">Couples Association</option>
+                    <option value="focolare">Focolare</option>
+                    <option value="womens-forum">Women's Forum</option>
+                    <option value="association-altar-servers">Association of Altar Servers</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Committee Position</label>
+                  <select
+                    value={editingUser.committeePosition || ''}
+                    onChange={(e) => setEditingUser({...editingUser, committeePosition: e.target.value})}
+                  >
+                    <option value="">Select position (optional)</option>
+                    <option value="chairperson">Chairperson</option>
+                    <option value="vice_chairperson">Vice Chairperson</option>
+                    <option value="secretary">Secretary</option>
+                    <option value="vice_secretary">Vice Secretary</option>
+                    <option value="organizing_secretary">Organizing Secretary</option>
+                    <option value="treasurer">Treasurer</option>
+                    <option value="advisor">Advisor</option>
+                    <option value="committee_member">Committee Member</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Parish Section</label>
+                  <select
+                    value={editingUser.section || ''}
+                    onChange={(e) => setEditingUser({...editingUser, section: e.target.value})}
+                  >
+                    <option value="">Select section (optional)</option>
+                    <option value="st-gabriel">St Gabriel</option>
+                    <option value="st-augustine">St Augustine</option>
+                    <option value="st-mary-magdalena">St Mary Magdalena</option>
+                    <option value="st-michael">St Michael</option>
+                    <option value="st-stephen">St Stephen</option>
+                    <option value="st-francis-of-assisi">St Francis of Assisi</option>
+                    <option value="st-monica">St Monica</option>
+                    <option value="st-theresa">St Theresa</option>
+                    <option value="st-bernadette">St Bernadette</option>
+                    <option value="st-philomina">St Philomina</option>
+                    <option value="st-peter">St Peter</option>
+                    <option value="st-bernard">St Bernard</option>
+                    <option value="st-veronica">St Veronica</option>
+                    <option value="st-paul">St Paul</option>
+                    <option value="st-luke">St Luke</option>
+                    <option value="st-basil">St Basil</option>
+                    <option value="st-anthony">St Anthony</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setEditingUser(null)}>
                   Cancel
@@ -609,21 +799,13 @@ const UserManagement: React.FC = () => {
 
       {/* User Profile Modal */}
       {showUserProfile && selectedUser && (
-        <div className="modal-overlay">
-          <div className="modal-content user-profile-modal">
-            <div className="modal-header">
-              <h3>User Profile - {selectedUser.firstName} {selectedUser.lastName}</h3>
-              <button 
-                className="modal-close-btn"
-                onClick={handleCloseProfile}
-              >
-                <X size={20} />
-              </button>
-            </div>
+        <div className="modal-overlay" onClick={handleCloseProfile}>
+          <div className="user-profile-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-body">
               <UserProfileViewer 
                 user={selectedUser}
                 onUserUpdate={handleUserUpdate}
+                onClose={handleCloseProfile}
                 isReadOnly={false}
               />
             </div>

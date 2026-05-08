@@ -44,7 +44,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     association: '',
     agreeToTerms: false
   });
-  
+
   const [errors, setErrors] = useState<Partial<RegisterFormData>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -119,7 +119,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       setMessage({ type: 'error', text: 'Please correct the errors below' });
       return;
@@ -150,11 +150,11 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
       const result = await register(registrationData);
 
       if (result.success) {
-        setMessage({ 
-          type: 'success', 
-          text: 'Registration successful! Please sign in with your credentials.' 
+        setMessage({
+          type: 'success',
+          text: 'Registration successful! Please sign in with your credentials.'
         });
-        
+
         // Clear form
         setFormData({
           firstName: '',
@@ -182,15 +182,15 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           }
         }, 2000);
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: result.message || 'Registration failed. Please try again.' 
+        setMessage({
+          type: 'error',
+          text: result.message || 'Registration failed. Please try again.'
         });
       }
     } catch (error) {
-      setMessage({ 
-        type: 'error', 
-        text: 'An error occurred during registration. Please try again.' 
+      setMessage({
+        type: 'error',
+        text: 'An error occurred during registration. Please try again.'
       });
     } finally {
       setLoading(false);
@@ -222,7 +222,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           {/* Personal Information */}
           <div className="form-section">
             <h3>Personal Information</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="firstName">First Name *</label>
@@ -287,7 +287,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           {/* Contact Information */}
           <div className="form-section">
             <h3>Contact Information</h3>
-            
+
             <div className="form-group">
               <label htmlFor="email">Email Address *</label>
               <input
@@ -332,7 +332,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           {/* Parish Information */}
           <div className="form-section">
             <h3>Parish Information (Optional)</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="section">Parish Section</label>
@@ -361,6 +361,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
                   <option value="St Luke">St Luke</option>
                   <option value="St Basil">St Basil</option>
                   <option value="St Anthony">St Anthony</option>
+                  <option value="Not Applicable">Not Applicable</option>
                 </select>
                 {errors.section && <span className="error-text">{errors.section}</span>}
               </div>
@@ -387,6 +388,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
                   <option value="Focolare">Focolare</option>
                   <option value="Women's Forum">Women's Forum</option>
                   <option value="Association of Altar Servers">Association of Altar Servers</option>
+                  <option value="Not Applicable">Not Applicable</option>
                 </select>
                 {errors.association && <span className="error-text">{errors.association}</span>}
               </div>
@@ -396,7 +398,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           {/* Emergency Contact */}
           <div className="form-section">
             <h3>Emergency Contact (Optional)</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="emergencyContact">Emergency Contact Name</label>
@@ -427,7 +429,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           {/* Password */}
           <div className="form-section">
             <h3>Account Security</h3>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="password">Password *</label>
@@ -471,7 +473,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
                   className={errors.agreeToTerms ? 'error' : ''}
                 />
                 <span className="checkmark"></span>
-                I agree to the <a href="/terms" target="_blank">Terms and Conditions</a> and 
+                I agree to the <a href="/terms" target="_blank">Terms and Conditions</a> and
                 <a href="/privacy" target="_blank"> Privacy Policy</a> of St. Patrick's Catholic Church
               </label>
               {errors.agreeToTerms && <span className="error-text">{errors.agreeToTerms}</span>}
@@ -501,8 +503,8 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           <p>
             Already have an account?{' '}
             {onSwitchToLogin ? (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={onSwitchToLogin}
                 className="link-button"
               >
@@ -514,7 +516,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
               </Link>
             )}
           </p>
-          
+
           <div className="help-text">
             <p>
               <strong>Need Help?</strong><br />

@@ -1,7 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { 
   validateUserRegistration, 
@@ -24,7 +24,10 @@ router.post('/users', authenticateToken, requireAdmin, validateUserRegistration,
       dateOfBirth,
       address,
       emergencyContact,
-      emergencyPhone
+      emergencyPhone,
+      association,
+      committeePosition,
+      section
     } = req.body;
     
     // Check if user already exists
@@ -49,18 +52,21 @@ router.post('/users', authenticateToken, requireAdmin, validateUserRegistration,
     await db.execute(
       `INSERT INTO users (
         id, username, email, phone, password_hash, first_name, last_name, 
-        date_of_birth, address, emergency_contact, emergency_phone, role
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        date_of_birth, address, emergency_contact, emergency_phone, role,
+        association, committee_position, section
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         userId, username, email, phone, hashedPassword, firstName, lastName,
-        dateOfBirth, address, emergencyContact, emergencyPhone, role
+        dateOfBirth, address, emergencyContact, emergencyPhone, role,
+        association, committeePosition, section
       ]
     );
     
     // Get created user (without password)
     const [newUser] = await db.execute(
-      `SELECT id, username, email, phone, first_name, last_name, 
-       role, is_active, created_at FROM users WHERE id = ?`,
+      `SELECT id, username, email, phone, first_name AS "firstName", last_name AS "lastName", 
+       role, is_active AS "isActive", association, committee_position AS "committeePosition", 
+       section, created_at AS "createdAt" FROM users WHERE id = ?`,
       [userId]
     );
     
@@ -108,8 +114,9 @@ router.get('/users', authenticateToken, requireAdmin, async (req, res) => {
     
     // Get users
     const [users] = await db.execute(
-      `SELECT id, username, email, phone, first_name, last_name, role, 
-       is_active, created_at, last_login 
+      `SELECT id, username, email, phone, first_name AS "firstName", last_name AS "lastName", role, 
+       is_active AS "isActive", association, committee_position AS "committeePosition", section, 
+       created_at AS "createdAt", last_login AS "lastLogin" 
        FROM users ${whereClause} 
        ORDER BY created_at DESC 
        LIMIT ? OFFSET ?`,
@@ -162,7 +169,10 @@ router.put('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
       dateOfBirth,
       address,
       emergencyContact,
-      emergencyPhone
+      emergencyPhone,
+      association,
+      committeePosition,
+      section
     } = req.body;
     
     // Check if user exists
@@ -196,18 +206,22 @@ router.put('/users/:id', authenticateToken, requireAdmin, async (req, res) => {
       `UPDATE users SET 
        username = ?, email = ?, phone = ?, first_name = ?, last_name = ?, 
        role = ?, is_active = ?, date_of_birth = ?, address = ?, 
-       emergency_contact = ?, emergency_phone = ?, updated_at = CURRENT_TIMESTAMP
+       emergency_contact = ?, emergency_phone = ?, 
+       association = ?, committee_position = ?, section = ?,
+       updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
       [
         username, email, phone, firstName, lastName, role, isActive,
-        dateOfBirth, address, emergencyContact, emergencyPhone, id
+        dateOfBirth, address, emergencyContact, emergencyPhone,
+        association, committeePosition, section, id
       ]
     );
     
     // Get updated user
     const [updatedUser] = await db.execute(
-      `SELECT id, username, email, phone, first_name, last_name, 
-       role, is_active, created_at, updated_at FROM users WHERE id = ?`,
+      `SELECT id, username, email, phone, first_name AS "firstName", last_name AS "lastName", 
+       role, is_active AS "isActive", association, committee_position AS "committeePosition", 
+       section, created_at AS "createdAt", updated_at AS "updatedAt" FROM users WHERE id = ?`,
       [id]
     );
     
@@ -372,8 +386,8 @@ router.get('/users/stats', authenticateToken, requireAdmin, async (req, res) => 
         SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) as admin_users,
         SUM(CASE WHEN role = 'parishioner' THEN 1 ELSE 0 END) as parishioner_users,
         SUM(CASE WHEN role IN ('priest', 'secretary', 'reporter', 'vice_secretary') THEN 1 ELSE 0 END) as staff_users,
-        SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END) as new_users_30_days,
-        SUM(CASE WHEN last_login >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as active_users_7_days
+        SUM(CASE WHEN created_at >= (NOW() - INTERVAL '30 days') THEN 1 ELSE 0 END) as new_users_30_days,
+        SUM(CASE WHEN last_login >= (NOW() - INTERVAL '7 days') THEN 1 ELSE 0 END) as active_users_7_days
       FROM users
     `);
     

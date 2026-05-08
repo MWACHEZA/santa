@@ -19,11 +19,16 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import ModernLogin from './auth/ModernLogin';
 import ChangePassword from './auth/ChangePassword';
 import EnhancedProfile from './EnhancedProfile';
+import AssociationFinance from '../pages/AssociationFinance';
 import LoadingSpinner from './common/LoadingSpinner';
+import AnalyticsTracker from './common/AnalyticsTracker';
 
 const AuthenticatedApp: React.FC = () => {
   const { isAuthenticated: isUserAuthenticated, user, isLoading: authLoading } = useAuth();
   const { isLoading: adminLoading } = useAdmin();
+<<<<<<< HEAD
+  const location = useLocation();
+=======
   const [forceReady, setForceReady] = React.useState(false);
   const location = useLocation();
 
@@ -38,6 +43,7 @@ const AuthenticatedApp: React.FC = () => {
 
     return () => clearTimeout(timer);
   }, [authLoading, adminLoading]);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
   // Debug logging
   console.log('🔍 AuthenticatedApp render:', {
@@ -46,8 +52,12 @@ const AuthenticatedApp: React.FC = () => {
     userRole: user?.role,
     authLoading,
     adminLoading,
+<<<<<<< HEAD
+    pathname: location.pathname,
+=======
     forceReady,
     pathname: globalThis.location.pathname,
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     timestamp: new Date().toISOString()
   });
 
@@ -65,6 +75,8 @@ const AuthenticatedApp: React.FC = () => {
     switch (userRole) {
       case 'admin':
       case 'secretary':
+      case 'vice_secretary':
+      case 'treasurer':
       case 'priest':
       case 'reporter':
         return '/admin';
@@ -84,34 +96,103 @@ const AuthenticatedApp: React.FC = () => {
         left: 0, 
         width: '100vw', 
         height: '100vh', 
-        backgroundColor: 'white', 
+        backgroundColor: '#f0f4f8', 
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        color: '#2d3748'
       }}>
+<<<<<<< HEAD
+        <div className="modern-spinner" style={{ 
+          width: '50px', 
+          height: '50px', 
+          border: '5px solid rgba(66, 153, 225, 0.2)', 
+          borderTop: '5px solid #4299e1', 
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }}></div>
+        <h2 style={{ marginTop: '1.5rem', marginBottom: '0.5rem' }}>
+          {authLoading ? 'Verifying Identity...' : 'Loading Your Dashboard...'}
+        </h2>
+        <p style={{ fontSize: '0.9rem', opacity: 0.7 }}>
+          St. Patrick's Digital Ecosystem
+=======
         <LoadingSpinner />
         <p style={{ marginTop: '1rem', fontSize: '1.2rem', color: '#4a90e2' }}>
           {authLoading ? 'Checking authentication...' : 'Loading application...'}
         </p>
         <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: '#666' }}>
           Debug: authLoading={authLoading.toString()}, adminLoading={adminLoading.toString()}, forceReady={forceReady.toString()}
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
         </p>
+        <div style={{ 
+          marginTop: '2rem', 
+          padding: '10px', 
+          background: '#fff', 
+          borderRadius: '8px', 
+          fontSize: '11px', 
+          fontFamily: 'monospace',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+        }}>
+          DEBUG STATUS: auth={authLoading ? '⏳' : '✅'} | admin={adminLoading ? '⏳' : '✅'}
+        </div>
+        <style>{`
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        `}</style>
       </div>
     );
   }
 
+<<<<<<< HEAD
+  // Public routes that don't require authentication
+  const isPublicRoute = location.pathname === '/login' || 
+                       location.pathname === '/register' ||
+                       location.pathname === '/change-password';
+
+  // If not authenticated and not on a public route, redirect to login
+  if (!isUserAuthenticated && !isPublicRoute) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If authenticated but on login page, redirect to appropriate dashboard
+  if (isUserAuthenticated && location.pathname === '/login') {
+    const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
+    console.log('🔄 Redirecting authenticated user to:', defaultRoute);
+    return <Navigate to={defaultRoute} replace />;
+  }
+
+  // If authenticated but on root path, redirect to appropriate dashboard
+  if (isUserAuthenticated && location.pathname === '/') {
+    const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
+    console.log('🔄 Redirecting from root to:', defaultRoute);
+    
+    // For parishioners and association-level leaders, don't redirect from root
+    if (user?.role === 'parishioner' || (user?.role === 'treasurer' && user?.association)) {
+      console.log('✅ Parishioner/Association leader on home page, no redirect needed');
+      // Don't redirect, let them see the home page
+    } else {
+      return <Navigate to={defaultRoute} replace />;
+    }
+  }
+=======
   
 
   const isAdminRoute = location.pathname.startsWith('/admin');
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
   return (
-    <div key={`auth-${isUserAuthenticated}-${user?.id}`} style={{ minHeight: '100vh', overflow: 'auto' }}>
+    <div key={`auth-${isUserAuthenticated}-${user?.id}`} style={{ minHeight: '100vh' }}>
+      <AnalyticsTracker />
       {/* Show Header and Footer only for authenticated non-admin routes */}
+<<<<<<< HEAD
+      {isUserAuthenticated && !location.pathname.startsWith('/admin') && <Header />}
+=======
       {isUserAuthenticated && !isAdminRoute && <Header />}
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       
-      <main style={{ minHeight: '100vh', overflow: 'auto', paddingBottom: '2rem' }}>
+      <main style={{ minHeight: '100vh', paddingBottom: '2rem' }}>
         <Routes>
           {/* Authentication Routes - Always accessible */}
           <Route path="/login" element={<ModernLogin />} />
@@ -122,8 +203,16 @@ const AuthenticatedApp: React.FC = () => {
           <Route 
             path="/admin/*" 
             element={
-              isUserAuthenticated && user && ['admin', 'secretary', 'priest', 'reporter'].includes(user.role) 
-                ? <AdminDashboard /> 
+              isUserAuthenticated && user && ['admin', 'secretary', 'vice_secretary', 'treasurer', 'priest', 'reporter'].includes(user.role) 
+                ? <AdminDashboard />
+                : isUserAuthenticated && !authLoading
+                ? <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <h2>Profile Loading Error</h2>
+                    <p>We found your session but couldn't load your profile details.</p>
+                    <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>
+                      Reset Session
+                    </button>
+                  </div>
                 : <Navigate to="/login" replace />
             } 
           />
@@ -150,6 +239,7 @@ const AuthenticatedApp: React.FC = () => {
           <Route path="/giving" element={isUserAuthenticated ? <Giving /> : <Navigate to="/login" replace />} />
           <Route path="/news" element={isUserAuthenticated ? <News /> : <Navigate to="/login" replace />} />
           <Route path="/profile" element={isUserAuthenticated ? <EnhancedProfile /> : <Navigate to="/login" replace />} />
+          <Route path="/association-finance" element={isUserAuthenticated ? <AssociationFinance /> : <Navigate to="/login" replace />} />
           
           {/* Redirect unknown routes */}
           <Route path="*" element={
@@ -163,7 +253,11 @@ const AuthenticatedApp: React.FC = () => {
       </main>
       
       {/* Show Footer only for authenticated non-admin routes */}
+<<<<<<< HEAD
+      {isUserAuthenticated && !location.pathname.startsWith('/admin') && <Footer />}
+=======
       {isUserAuthenticated && !isAdminRoute && <Footer />}
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     </div>
   );
 };

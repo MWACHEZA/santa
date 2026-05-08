@@ -1,0 +1,468 @@
+/* ================================================
+   Association Finance Page — Premium Design
+   ================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+.association-finance {
+  background: linear-gradient(160deg, #f0f4f8 0%, #e8edf3 50%, #f0f4f8 100%);
+  min-height: 100vh;
+  font-family: 'Inter', sans-serif;
+  padding-top: 2rem;
+}
+
+/* ── Page Header ─────────────────────────────── */
+
+.header-text h1 {
+  font-size: clamp(1.8rem, 4vw, 2.75rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+  line-height: 1.1;
+  margin-bottom: 0.4rem;
+}
+
+.header-text .lead {
+  font-size: 1rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Entity Type Badge */
+.entity-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.85rem;
+  border-radius: 50px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, rgba(45,80,22,0.12), rgba(74,124,42,0.08));
+  color: #2d5016;
+  border: 1px solid rgba(45,80,22,0.2);
+}
+
+/* Entity Switcher */
+.entity-switcher .form-label {
+  color: #64748b;
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.entity-switcher .input-group {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+/* ── Glassmorphism Alert Banners ──────────────── */
+
+.alert-glass {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.alert-glass:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.alert-glass.info {
+  background: linear-gradient(135deg, rgba(219,234,254,0.9), rgba(191,219,254,0.7));
+  border-color: rgba(147,197,253,0.6);
+  color: #1e40af;
+}
+
+.alert-glass.success {
+  background: linear-gradient(135deg, rgba(209,250,229,0.9), rgba(167,243,208,0.7));
+  border-color: rgba(110,231,183,0.6);
+  color: #065f46;
+}
+
+.alert-glass .glass-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.alert-glass.info .glass-icon {
+  background: rgba(59,130,246,0.15);
+  color: #2563eb;
+}
+
+.alert-glass.success .glass-icon {
+  background: rgba(16,185,129,0.15);
+  color: #059669;
+}
+
+.alert-glass .glass-content strong {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.alert-glass .glass-content p {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+/* ── Balance Cards ────────────────────────────── */
+
+.multi-currency-balances {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.balance-card {
+  position: relative;
+  background: white;
+  padding: 1.75rem;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid rgba(255,255,255,0.8);
+  overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+}
+
+.balance-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.1);
+}
+
+/* Decorative background bubble */
+.balance-card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  opacity: 0.07;
+}
+
+.balance-card.usd::before  { background: #16a34a; }
+.balance-card.zar::before  { background: #ca8a04; }
+.balance-card.zig::before  { background: #475569; }
+
+.balance-card .card-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+}
+
+.balance-card.usd .card-icon {
+  background: linear-gradient(135deg, #15803d, #22c55e);
+}
+
+.balance-card.zar .card-icon {
+  background: linear-gradient(135deg, #b45309, #f59e0b);
+}
+
+.balance-card.zig .card-icon {
+  background: linear-gradient(135deg, #1e293b, #475569);
+}
+
+.balance-card .card-info h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.72rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+}
+
+.balance-card .card-info .amount {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.currency-label {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+/* ── Transaction Table ────────────────────────── */
+
+.transaction-history {
+  background: white;
+  border-radius: 20px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+  border: 1px solid rgba(241,245,249,0.8) !important;
+  overflow: hidden;
+}
+
+.history-header {
+  padding: 1.5rem 1.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.history-header h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.history-header .text-muted {
+  font-size: 0.8rem;
+  color: #94a3b8 !important;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #94a3b8;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 0.85rem 1rem;
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  transition: background 0.15s ease;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody td {
+  padding: 1rem 1rem;
+  vertical-align: middle;
+  font-size: 0.9rem;
+}
+
+.table tbody .text-muted.small {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #cbd5e1 !important;
+}
+
+/* Amount column */
+.fw-bold.ms-1 {
+  font-size: 0.95rem;
+  font-weight: 800 !important;
+}
+
+/* Empty state row */
+.table tbody td[colspan] {
+  padding: 3.5rem 1rem !important;
+}
+
+.table tbody td[colspan] .text-muted {
+  font-size: 0.9rem;
+  color: #94a3b8 !important;
+}
+
+/* ── Record Transaction Modal ─────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: overlayIn 0.2s ease;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-overlay .modal-content {
+  background: white;
+  border-radius: 20px !important;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.18) !important;
+  max-width: 620px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalIn 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.93) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.4rem;
+}
+
+.form-select,
+.form-input {
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  width: 100%;
+  background: #f8fafc;
+}
+
+.form-select:focus,
+.form-input:focus {
+  outline: none;
+  border-color: #2d5016;
+  box-shadow: 0 0 0 3px rgba(45,80,22,0.12);
+  background: white;
+}
+
+textarea.form-input {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.input-container {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.form-help {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 0.3rem;
+}
+
+/* Premium Buttons */
+.btn-premium-primary {
+  background: linear-gradient(135deg, #2d5016 0%, #1e3510 100%);
+  color: white !important;
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(45, 80, 22, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-premium-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(45, 80, 22, 0.35);
+  background: linear-gradient(135deg, #38611c 0%, #2d5016 100%);
+}
+
+.btn-premium-primary:active {
+  transform: translateY(0);
+}
+
+.btn-premium-light {
+  background: #f1f5f9;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-premium-light:hover {
+  background: #e2e8f0;
+  color: #1e293b !important;
+}
+
+.modal-footer-custom {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+/* ── Responsive ───────────────────────────────── */
+
+@media (max-width: 768px) {
+  .multi-currency-balances {
+    grid-template-columns: 1fr;
+  }
+
+  .balance-card {
+    padding: 1.25rem;
+  }
+
+  .balance-card .card-info .amount {
+    font-size: 1.6rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 1rem;
+  }
+
+  .section-header .d-flex.flex-column {
+    width: 100%;
+    align-items: flex-start !important;
+  }
+}
+
+@media print {
+  .no-print, .modal-overlay { display: none !important; }
+}

@@ -1,265 +1,429 @@
-/* Sacraments Page Styles */
+/* Sacraments Page Styles - Premium Design */
+:root {
+  --sacrament-sidebar-width: 280px;
+  --sacrament-accent: #2d5016;
+  --sacrament-accent-light: #4a7c2c;
+  --sacrament-gold: #c5a021;
+}
+
 .sacraments {
   min-height: 100vh;
-  background: var(--light-gray);
+  background-color: #f8f9fa;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(45, 80, 22, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(197, 160, 33, 0.05) 0px, transparent 50%);
+  padding-top: 80px;
 }
 
-.sacraments-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.sacraments-header h1 {
-  color: var(--primary-green);
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.sacraments-header p {
-  color: var(--gray);
-  font-size: 1.1rem;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-/* Sacrament Navigation */
-.sacrament-nav {
+.sacraments-container {
   display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 3rem;
-  flex-wrap: wrap;
+  background: white;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+  min-height: 700px;
+  margin-top: 2rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Sidebar Styling */
+.sacraments-tabs {
+  width: var(--sacrament-sidebar-width);
+  background: #fcfcfc;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .sacrament-tab {
-  background: white;
-  border: 2px solid transparent;
-  padding: 1rem;
-  border-radius: 12px;
-  cursor: pointer;
-  font-weight: 500;
-  color: var(--gray);
-  transition: all 0.3s ease;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 120px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  border: none;
+  background: transparent;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  color: #64748b;
+  position: relative;
+}
+
+.sacrament-tab .tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s ease;
+  color: var(--sacrament-accent);
+}
+
+.sacrament-tab .tab-name {
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .sacrament-tab:hover {
-  background: var(--primary-green);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(45, 80, 22, 0.3);
+  background: rgba(45, 80, 22, 0.04);
+  color: var(--sacrament-accent);
+}
+
+.sacrament-tab:hover .tab-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .sacrament-tab.active {
-  background: var(--primary-green);
+  background: linear-gradient(135deg, var(--sacrament-accent), var(--sacrament-accent-light));
   color: white;
-  border-color: var(--primary-green-dark);
-  box-shadow: 0 4px 20px rgba(45, 80, 22, 0.3);
+  box-shadow: 0 12px 25px rgba(45, 80, 22, 0.25);
+  transform: translateX(10px);
 }
 
-.sacrament-tab span {
-  font-size: 0.9rem;
-  text-align: center;
+.sacrament-tab.active .tab-icon {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  box-shadow: none;
 }
 
-/* Sacrament Details */
+/* Content Area */
+.sacrament-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .sacrament-details {
-  max-width: 1000px;
-  margin: 0 auto;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.sacrament-overview {
-  background: white;
-  margin-bottom: 2rem;
-  border-left: 4px solid var(--primary-green);
-}
-
-.sacrament-header {
+.sacrament-hero {
+  position: relative;
+  height: 350px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid var(--light-gray);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
 }
 
-.sacrament-header h2 {
-  color: var(--primary-green);
-  font-size: 2rem;
+.hero-image-container {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  z-index: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.hero-image-container::before {
+  content: '';
+  position: absolute;
+  width: 80%;
+  height: 80%;
+  background: white;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.5;
+  z-index: -1;
+}
+
+.hero-image {
+  max-width: 85%;
+  max-height: 85%;
+  object-fit: contain;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.12));
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
+}
+
+.sacrament-hero:hover .hero-image {
+  transform: scale(1.05);
+}
+
+.hero-text {
+  flex: 1.2;
+  padding: 3rem 4rem;
+  z-index: 2;
+}
+
+.hero-text h2 {
+  font-size: 2.75rem;
   margin: 0;
+  font-weight: 800;
+  color: var(--sacrament-accent);
+  letter-spacing: -0.02em;
 }
 
-.sacrament-description {
+.hero-text .sacrament-description {
+  margin-top: 1rem;
   font-size: 1.1rem;
-  color: var(--gray);
+  color: #475569;
   line-height: 1.6;
-  margin-bottom: 2rem;
+  font-weight: 500;
 }
 
-.sacrament-info-grid {
+.sacrament-body {
+  padding: 3rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 3rem;
+  flex: 1;
+}
+
+.info-section {
+  background: white;
 }
 
 .info-section h3 {
-  color: var(--primary-green);
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.info-section ul {
+.info-section h3::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.requirements-list {
   list-style: none;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.info-section li {
-  background: var(--light-gray);
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  border-radius: 6px;
-  border-left: 3px solid var(--primary-green);
+.requirements-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  transition: all 0.3s ease;
 }
 
-.info-section p {
-  color: var(--gray);
-  line-height: 1.6;
-}
-
-/* Questions and Answers */
-.qa-section {
-  margin-bottom: 2rem;
-}
-
-.qa-section h3 {
-  color: var(--primary-green);
-  font-size: 1.5rem;
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.qa-grid {
-  display: grid;
-  gap: 1.5rem;
-}
-
-.qa-item {
+.requirements-list li:hover {
   background: white;
-  border-left: 4px solid var(--gold);
-  transition: transform 0.3s ease;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
+  border-color: var(--sacrament-accent-light);
+  transform: translateX(5px);
 }
 
-.qa-item:hover {
-  transform: translateY(-2px);
+.requirements-list li::before {
+  content: '✓';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, var(--sacrament-accent), var(--sacrament-accent-light));
+  color: white;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(45, 80, 22, 0.2);
 }
 
-.question {
-  color: var(--primary-green);
+.contact-card {
+  background: white;
+  color: #1e293b;
+  padding: 2.5rem;
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(45, 80, 22, 0.1);
+}
+
+.contact-card h3 {
+  color: var(--sacrament-accent);
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.contact-card h3::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(45, 80, 22, 0.1);
+}
+
+.contact-info-text {
   font-size: 1.1rem;
+  line-height: 1.7;
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+.contact-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background: var(--sacrament-accent);
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.contact-cta:hover {
+  background: var(--sacrament-accent-light);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(45, 80, 22, 0.2);
+}
+
+/* Footer Section */
+.sacrament-footer {
+  margin-top: 4rem;
+  padding: 4rem;
+  background: white;
+  border-radius: 32px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.sacrament-footer h3 {
+  font-size: 2.5rem;
+  color: #1e293b;
   margin-bottom: 1rem;
+}
+
+.sacrament-footer p {
+  color: #64748b;
+  font-size: 1.2rem;
+  max-width: 800px;
+  margin: 0 auto 3rem;
+}
+
+.footer-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+
+.footer-contact-item {
+  padding: 2rem;
+  background: #f8fafc;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.footer-contact-item:hover {
+  background: white;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  transform: translateY(-5px);
+}
+
+.footer-contact-item strong {
+  display: block;
+  color: var(--sacrament-accent);
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.footer-contact-item span {
+  font-size: 1.1rem;
+  color: #1e293b;
   font-weight: 600;
 }
 
-.answer {
-  color: var(--gray);
-  line-height: 1.6;
-  margin: 0;
+/* Animations */
+.animate-fade-in {
+  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Contact Information */
-.contact-info {
-  background: linear-gradient(135deg, var(--primary-green), var(--primary-green-light));
-  color: white;
-  border-left: 4px solid var(--gold);
-}
-
-.contact-info h3 {
-  color: white;
-  margin-bottom: 1rem;
-}
-
-.contact-info p {
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: 1.5rem;
-}
-
-.contact-details {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 1.5rem;
-  border-radius: 8px;
-}
-
-.contact-details p {
-  margin-bottom: 0.5rem;
-  color: white;
-}
-
-.contact-details strong {
-  color: var(--gold);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
-  .sacraments-header h1 {
-    font-size: 2rem;
+@media (max-width: 1200px) {
+  .sacraments-container {
+    flex-direction: column;
   }
   
-  .sacrament-nav {
-    gap: 0.25rem;
+  .sacraments-tabs {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 1.5rem;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
   
   .sacrament-tab {
-    min-width: 100px;
-    padding: 0.75rem;
-  }
-  
-  .sacrament-tab span {
-    font-size: 0.8rem;
-  }
-  
-  .sacrament-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 0.5rem;
-  }
-  
-  .sacrament-header h2 {
-    font-size: 1.5rem;
-  }
-  
-  .sacrament-info-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
-  .contact-details {
-    padding: 1rem;
+    min-width: 200px;
+    flex-shrink: 0;
   }
 }
 
-@media (max-width: 480px) {
-  .sacrament-nav {
-    flex-direction: column;
-    align-items: center;
+@media (max-width: 992px) {
+  .sacrament-body {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2rem;
   }
   
-  .sacrament-tab {
-    width: 100%;
-    max-width: 200px;
-    flex-direction: row;
-    justify-content: center;
+  .hero-overlay h2 {
+    font-size: 2.25rem;
   }
   
-  .sacraments-header h1 {
-    font-size: 1.8rem;
-  }
-  
-  .qa-grid {
+  .footer-contact-grid {
+    grid-template-columns: 1fr;
     gap: 1rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .sacraments {
+    padding-top: 40px;
+  }
+  
+  .hero-overlay {
+    padding: 1.5rem;
+  }
+  
+  .hero-overlay h2 {
+    font-size: 1.75rem;
+  }
+  
+  .sacrament-footer {
+    padding: 2rem;
+  }
+  
+  .sacrament-footer h3 {
+    font-size: 1.75rem;
   }
 }

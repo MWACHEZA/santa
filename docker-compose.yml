@@ -1,17 +1,15 @@
 version: '3.8'
 services:
   db:
-    image: mysql:8.0
+    image: postgres:15-alpine
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: st_patricks_db
-      MYSQL_USER: st_patricks_user
-      MYSQL_PASSWORD: secure_password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: santana
+      POSTGRES_DB: st_patricks_db
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql_data:/var/lib/mysql
-      - ./backend/comprehensive-database-schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - postgres_data:/var/lib/postgresql/data
 
   app:
     build: .
@@ -20,17 +18,17 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=production
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_USER=st_patricks_user
-      - DB_PASSWORD=secure_password
+      - DB_HOST=localhost
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=santana
       - DB_NAME=st_patricks_db
       - JWT_SECRET=your_jwt_secret_minimum_32_characters
-      - REACT_APP_API_URL=http://localhost:3001
+      - REACT_APP_API_URL=http://localhost:3000
     depends_on:
       - db
     volumes:
       - ./backend/uploads:/app/backend/uploads
 
 volumes:
-  mysql_data:
+  postgres_data:

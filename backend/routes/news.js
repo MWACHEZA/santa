@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireNewsCreator, optionalAuth } = require('../middleware/auth');
 const { 
   validateNews, 
@@ -193,7 +193,7 @@ router.post('/', authenticateToken, requireNewsCreator, validateNews, handleVali
     // Validate category if provided
     if (category_id) {
       const [categories] = await db.execute(
-        'SELECT id FROM categories WHERE id = ? AND type = "news" AND is_active = true',
+        "SELECT id FROM categories WHERE id = ? AND type = 'news' AND is_active = true",
         [category_id]
       );
       
@@ -251,7 +251,8 @@ router.post('/', authenticateToken, requireNewsCreator, validateNews, handleVali
     console.error('Create news error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create news article'
+      message: 'Failed to create news article: ' + error.message,
+      error: error
     });
   }
 });
@@ -284,7 +285,7 @@ router.put('/:id', authenticateToken, requireNewsCreator, validateId, validateNe
     // Validate category if provided
     if (category_id) {
       const [categories] = await db.execute(
-        'SELECT id FROM categories WHERE id = ? AND type = "news" AND is_active = true',
+        "SELECT id FROM categories WHERE id = ? AND type = 'news' AND is_active = true",
         [category_id]
       );
       
@@ -363,7 +364,8 @@ router.put('/:id', authenticateToken, requireNewsCreator, validateId, validateNe
     console.error('Update news error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to update news article'
+      message: 'Failed to update news article: ' + error.message,
+      error: error
     });
   }
 });

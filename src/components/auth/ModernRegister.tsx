@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+<<<<<<< HEAD
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+=======
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 import { 
   User, 
   Mail, 
@@ -16,7 +21,11 @@ import {
   ArrowLeft,
   Check,
   X,
+<<<<<<< HEAD
+  Shield
+=======
   Camera
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 } from 'lucide-react';
 import './ModernAuth.css';
 
@@ -40,8 +49,13 @@ interface RegisterFormData {
   emergencyContact: string;
   emergencyPhone: string;
   section: string;
+<<<<<<< HEAD
+  association: string;
+  committeePosition: string;
+=======
   associations: string[];
   profilePicture: File | null;
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   agreeToTerms: boolean;
 }
 
@@ -50,6 +64,11 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
   onRegistrationSuccess 
 }) => {
   const { register } = useAuth();
+<<<<<<< HEAD
+  const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useLanguage();
+=======
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
   
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -67,15 +86,19 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     emergencyContact: '',
     emergencyPhone: '',
     section: '',
+<<<<<<< HEAD
+    association: '',
+    committeePosition: '',
+=======
     associations: [],
     profilePicture: null,
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
     agreeToTerms: false
   });
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
@@ -103,6 +126,16 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     }));
   };
 
+<<<<<<< HEAD
+  const handleAssociationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      association: value
+    }));
+  };
+=======
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
   const validateStep = (step: number): boolean => {
     switch (step) {
@@ -136,10 +169,16 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setIsLoading(true);
 
     try {
+      // Determine role based on committee position
+      let role = 'parishioner';
+      if (formData.committeePosition === 'Treasurer') role = 'treasurer';
+      else if (formData.committeePosition === 'Secretary') role = 'secretary';
+      else if (formData.committeePosition === 'Vice Secretary') role = 'vice_secretary';
+      else if (formData.committeePosition === 'Chairperson' || formData.committeePosition === 'Vice Chairperson') role = 'admin'; // Or another leadership role
+
       const result = await register({
         username: formData.username,
         email: formData.email,
@@ -154,20 +193,29 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         emergencyContact: formData.emergencyContact,
         emergencyPhone: formData.emergencyPhone,
         section: formData.section,
+<<<<<<< HEAD
+        association: formData.association,
+        committeePosition: formData.committeePosition,
+        role: role as any
+=======
         associations: formData.associations,
         profilePicture: formData.profilePicture
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
       });
 
       if (result.success) {
-        setSuccess('Registration successful!');
+        toastSuccess('Registration successful! Welcome to St. Patrick\'s Parish.', 'Welcome');
         setTimeout(() => {
           onRegistrationSuccess();
         }, 2000);
       } else {
-        setError(result.message || 'Registration failed');
+        const msg = result.message || 'Registration failed';
+        setError(msg);
+        toastError(msg, 'Registration Error');
       }
     } catch (err) {
       setError('An unexpected error occurred');
+      toastError('An unexpected error occurred. Please try again.', 'System Error');
     } finally {
       setIsLoading(false);
     }
@@ -508,6 +556,38 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         </div>
       </div>
 
+<<<<<<< HEAD
+      <div className="form-group">
+        <label htmlFor="section">Parish Section</label>
+        <div className="input-container">
+          <Users className="input-icon" size={20} />
+          <select
+            id="section"
+            name="section"
+            value={formData.section}
+            onChange={handleInputChange}
+            className="modern-input"
+          >
+            <option value="">Select section (optional)</option>
+            <option value="st-gabriel">St Gabriel</option>
+            <option value="st-augustine">St Augustine</option>
+            <option value="st-mary-magdalena">St Mary Magdalena</option>
+            <option value="st-michael">St Michael</option>
+            <option value="st-stephen">St Stephen</option>
+            <option value="st-francis-of-assisi">St Francis of Assisi</option>
+            <option value="st-monica">St Monica</option>
+            <option value="st-theresa">St Theresa</option>
+            <option value="st-bernadette">St Bernadette</option>
+            <option value="st-philomina">St Philomina</option>
+            <option value="st-peter">St Peter</option>
+            <option value="st-bernard">St Bernard</option>
+            <option value="st-veronica">St Veronica</option>
+            <option value="st-paul">St Paul</option>
+            <option value="st-luke">St Luke</option>
+            <option value="st-basil">St Basil</option>
+            <option value="st-anthony">St Anthony</option>
+          </select>
+=======
       <div className="form-row">
         <div className="form-group">
           <label htmlFor="section">Parish Section</label>
@@ -540,8 +620,37 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
               <option value="St Anthony">St Anthony</option>
             </select>
           </div>
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
         </div>
+      </div>
 
+<<<<<<< HEAD
+      <div className="form-group">
+        <label htmlFor="association">Association (Select your primary group)</label>
+        <div className="input-container">
+          <Users className="input-icon" size={20} />
+          <select
+            id="association"
+            name="association"
+            value={formData.association}
+            onChange={handleInputChange}
+            className="modern-input"
+          >
+            <option value="">Select association (optional)</option>
+            <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
+            <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
+            <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
+            <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
+            <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
+            <option value="sodality-our-lady">Sodality of Our Lady</option>
+            <option value="st-anne">St Anne</option>
+            <option value="st-joseph">St Joseph</option>
+            <option value="couples-association">Couples Association</option>
+            <option value="focolare">Focolare</option>
+            <option value="womens-forum">Women's Forum</option>
+            <option value="association-altar-servers">Association of Altar Servers</option>
+          </select>
+=======
         <div className="form-group">
           <label htmlFor="association">Association</label>
           <div className="input-container">
@@ -571,7 +680,33 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
               <option value="Association of Altar Servers">Association of Altar Servers</option>
             </select>
           </div>
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
         </div>
+        <small className="form-help">Select the main parish group you belong to</small>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="committeePosition">Committee Position (If any)</label>
+        <div className="input-container">
+          <Shield className="input-icon" size={20} />
+          <select
+            id="committeePosition"
+            name="committeePosition"
+            value={formData.committeePosition}
+            onChange={handleInputChange}
+            className="modern-input"
+          >
+            <option value="">Member / Parishioner</option>
+            <option value="Chairperson">Chairperson</option>
+            <option value="Vice Chairperson">Vice Chairperson</option>
+            <option value="Secretary">Secretary</option>
+            <option value="Vice Secretary">Vice Secretary</option>
+            <option value="Treasurer">Treasurer</option>
+            <option value="Organizing Secretary">Organizing Secretary</option>
+            <option value="Committee Member">Committee Member</option>
+          </select>
+        </div>
+        <small className="form-help">Select your leadership position within the association</small>
       </div>
 
       <div className="form-group">
@@ -691,12 +826,6 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
                 </div>
               )}
 
-              {success && (
-                <div className="message success-message-modern">
-                  <CheckCircle size={20} />
-                  <span>{success}</span>
-                </div>
-              )}
 
               {/* Navigation Buttons */}
               <div className="form-navigation">

@@ -1,9 +1,10 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateGallery, 
+  validateGalleryUpdate,
   validateId, 
   validatePagination, 
   handleValidationErrors 
@@ -233,7 +234,7 @@ router.post('/', authenticateToken, requireContentManager, validateGallery, hand
 });
 
 // Update gallery image (admin only)
-router.put('/:id', authenticateToken, requireContentManager, validateId, validateGallery, handleValidationErrors, async (req, res) => {
+router.put('/:id', authenticateToken, requireContentManager, validateId, validateGalleryUpdate, handleValidationErrors, async (req, res) => {
   try {
     const { id } = req.params;
     const {

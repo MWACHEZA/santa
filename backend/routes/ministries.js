@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateMinistry, 
@@ -25,14 +25,14 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     
     // For non-authenticated users, only show active ministries
     if (!req.user || req.user.role === 'parishioner') {
-      whereConditions.push('is_active = true');
+      whereConditions.push('m.is_active = true');
     } else if (isActive) {
-      whereConditions.push('is_active = ?');
+      whereConditions.push('m.is_active = ?');
       queryParams.push(true);
     }
     
     if (search) {
-      whereConditions.push('(name LIKE ? OR description LIKE ?)');
+      whereConditions.push('(m.name LIKE ? OR m.description LIKE ?)');
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm);
     }
@@ -40,7 +40,7 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
     
     // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM ministries ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM ministries m LEFT JOIN users u ON m.created_by = u.id ${whereClause}`;
     const [countResult] = await db.execute(countQuery, queryParams);
     const total = countResult[0].total;
     
@@ -54,6 +54,8 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
         m.leader_contact,
         m.meeting_schedule,
         m.requirements,
+        m.image_url,
+        m.category,
         m.is_active,
         m.created_at,
         m.updated_at,
@@ -100,7 +102,9 @@ router.get('/active', async (req, res) => {
         leader_name,
         leader_contact,
         meeting_schedule,
-        requirements
+        requirements,
+        image_url,
+        category
       FROM ministries
       WHERE is_active = true
       ORDER BY name ASC
@@ -144,6 +148,8 @@ router.get('/:id', optionalAuth, validateId, handleValidationErrors, async (req,
         m.leader_contact,
         m.meeting_schedule,
         m.requirements,
+        m.image_url,
+        m.category,
         m.is_active,
         m.created_at,
         m.updated_at,
@@ -186,6 +192,8 @@ router.post('/', authenticateToken, requireContentManager, validateMinistry, han
       leader_contact,
       meeting_schedule,
       requirements,
+      image_url,
+      category,
       is_active = true
     } = req.body;
     
@@ -207,11 +215,11 @@ router.post('/', authenticateToken, requireContentManager, validateMinistry, han
     await db.execute(`
       INSERT INTO ministries (
         id, name, description, leader_name, leader_contact,
-        meeting_schedule, requirements, is_active, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        meeting_schedule, requirements, image_url, category, is_active, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       ministryId, name, description, leader_name, leader_contact,
-      meeting_schedule, requirements, is_active, req.user.id
+      meeting_schedule, requirements, image_url, category, is_active, req.user.id
     ]);
     
     // Get created ministry
@@ -224,6 +232,8 @@ router.post('/', authenticateToken, requireContentManager, validateMinistry, han
         m.leader_contact,
         m.meeting_schedule,
         m.requirements,
+        m.image_url,
+        m.category,
         m.is_active,
         m.created_at,
         u.username as created_by_username
@@ -260,11 +270,13 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
       leader_contact,
       meeting_schedule,
       requirements,
+      image_url,
+      category,
       is_active
     } = req.body;
     
     // Check if ministry exists
-    const [existingMinistries] = await db.execute('SELECT id FROM ministries WHERE id = ?', [id]);
+    const [existingMinistries] = await db.execute('SELECT id, image_url FROM ministries WHERE id = ?', [id]);
     
     if (existingMinistries.length === 0) {
       return res.status(404).json({
@@ -297,6 +309,8 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
     if (leader_contact !== undefined) { updates.push('leader_contact = ?'); values.push(leader_contact); }
     if (meeting_schedule !== undefined) { updates.push('meeting_schedule = ?'); values.push(meeting_schedule); }
     if (requirements !== undefined) { updates.push('requirements = ?'); values.push(requirements); }
+    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
+    if (category !== undefined) { updates.push('category = ?'); values.push(category); }
     if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }
     
     if (updates.length === 0) {
@@ -323,6 +337,8 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
         m.leader_contact,
         m.meeting_schedule,
         m.requirements,
+        m.image_url,
+        m.category,
         m.is_active,
         m.created_at,
         m.updated_at,
@@ -355,7 +371,7 @@ router.delete('/:id', authenticateToken, requireContentManager, validateId, hand
     const { id } = req.params;
     
     // Check if ministry exists
-    const [existingMinistries] = await db.execute('SELECT id, name FROM ministries WHERE id = ?', [id]);
+    const [existingMinistries] = await db.execute('SELECT id, name, image_url FROM ministries WHERE id = ?', [id]);
     
     if (existingMinistries.length === 0) {
       return res.status(404).json({
@@ -366,6 +382,14 @@ router.delete('/:id', authenticateToken, requireContentManager, validateId, hand
     
     // Delete the ministry
     await db.execute('DELETE FROM ministries WHERE id = ?', [id]);
+    
+    // Delete image if it exists
+    if (existingMinistries[0].image_url) {
+      const oldImagePath = path.join(process.cwd(), existingMinistries[0].image_url);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath);
+      }
+    }
     
     res.json({
       success: true,

@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
@@ -35,7 +35,7 @@ router.post('/track', async (req, res) => {
       INSERT INTO analytics (
         id, page_path, visitor_ip, user_agent, referrer, 
         session_id, visit_date
-      ) VALUES (?, ?, ?, ?, ?, ?, CURDATE())
+      ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_DATE)
     `, [
       analyticsId, page_path, visitorIp, user_agent, 
       referrer, session_id
@@ -69,7 +69,7 @@ router.get('/overview', authenticateToken, requireContentManager, async (req, re
         COUNT(DISTINCT page_path) as pages_visited,
         COUNT(DISTINCT DATE(visit_time)) as active_days
       FROM analytics
-      WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
     `, [days]);
     
     // Get today's statistics
@@ -79,7 +79,7 @@ router.get('/overview', authenticateToken, requireContentManager, async (req, re
         COUNT(DISTINCT visitor_ip) as today_visitors,
         COUNT(DISTINCT session_id) as today_sessions
       FROM analytics
-      WHERE visit_date = CURDATE()
+      WHERE visit_date = CURRENT_DATE
     `);
     
     // Get most popular pages
@@ -88,9 +88,9 @@ router.get('/overview', authenticateToken, requireContentManager, async (req, re
         page_path,
         COUNT(*) as visit_count,
         COUNT(DISTINCT visitor_ip) as unique_visitors,
-        ROUND((COUNT(*) * 100.0 / (SELECT COUNT(*) FROM analytics WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY))), 2) as percentage
+        ROUND((COUNT(*) * 100.0 / (SELECT NULLIF(COUNT(*), 0) FROM analytics WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day')))), 2) as percentage
       FROM analytics
-      WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
       GROUP BY page_path
       ORDER BY visit_count DESC
       LIMIT 10
@@ -104,7 +104,7 @@ router.get('/overview', authenticateToken, requireContentManager, async (req, re
         COUNT(DISTINCT visitor_ip) as unique_visitors,
         COUNT(DISTINCT session_id) as sessions
       FROM analytics
-      WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
       GROUP BY visit_date
       ORDER BY visit_date DESC
     `, [days]);
@@ -114,14 +114,14 @@ router.get('/overview', authenticateToken, requireContentManager, async (req, re
       SELECT 
         CASE 
           WHEN referrer IS NULL OR referrer = '' THEN 'Direct'
-          WHEN referrer LIKE '%google%' THEN 'Google'
-          WHEN referrer LIKE '%facebook%' THEN 'Facebook'
-          WHEN referrer LIKE '%twitter%' THEN 'Twitter'
+          WHEN referrer ILIKE '%google%' THEN 'Google'
+          WHEN referrer ILIKE '%facebook%' THEN 'Facebook'
+          WHEN referrer ILIKE '%twitter%' THEN 'Twitter'
           ELSE 'Other'
         END as referrer_type,
         COUNT(*) as visit_count
       FROM analytics
-      WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
       GROUP BY referrer_type
       ORDER BY visit_count DESC
     `, [days]);
@@ -155,7 +155,7 @@ router.get('/pages', authenticateToken, requireContentManager, async (req, res) 
     const days = parseInt(req.query.days) || 30;
     const page = req.query.page;
     
-    let whereCondition = 'visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)';
+    let whereCondition = 'visit_date >= (CURRENT_DATE - (? * INTERVAL \'1 day\'))';
     let queryParams = [days];
     
     if (page) {
@@ -170,9 +170,8 @@ router.get('/pages', authenticateToken, requireContentManager, async (req, res) 
         COUNT(*) as total_visits,
         COUNT(DISTINCT visitor_ip) as unique_visitors,
         COUNT(DISTINCT session_id) as sessions,
-        AVG(TIME_TO_SEC(TIMEDIFF(
-          LEAD(visit_time) OVER (PARTITION BY session_id ORDER BY visit_time),
-          visit_time
+        AVG(EXTRACT(EPOCH FROM (
+          LEAD(visit_time) OVER (PARTITION BY session_id ORDER BY visit_time) - visit_time
         ))) as avg_time_on_page
       FROM analytics
       WHERE ${whereCondition}
@@ -183,11 +182,11 @@ router.get('/pages', authenticateToken, requireContentManager, async (req, res) 
     // Get hourly distribution
     const [hourlyStats] = await db.execute(`
       SELECT 
-        HOUR(visit_time) as hour,
+        EXTRACT(HOUR FROM visit_time) as hour,
         COUNT(*) as visit_count
       FROM analytics
       WHERE ${whereCondition}
-      GROUP BY HOUR(visit_time)
+      GROUP BY EXTRACT(HOUR FROM visit_time)
       ORDER BY hour
     `, queryParams);
     
@@ -228,16 +227,16 @@ router.get('/visitors', authenticateToken, requireContentManager, async (req, re
           COUNT(*) as visits_per_visitor,
           COUNT(DISTINCT page_path) as pages_per_session
         FROM analytics
-        WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+        WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
         GROUP BY visitor_ip, session_id
       ) as visitor_sessions
     `, [days]);
     
-    // Get new vs returning visitors (simplified - based on IP)
+    // Get new vs returning visitors
     const [visitorTypes] = await db.execute(`
       SELECT 
         CASE 
-          WHEN first_visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY) THEN 'New'
+          WHEN first_visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day')) THEN 'New'
           ELSE 'Returning'
         END as visitor_type,
         COUNT(*) as visitor_count
@@ -246,19 +245,19 @@ router.get('/visitors', authenticateToken, requireContentManager, async (req, re
           visitor_ip,
           MIN(visit_date) as first_visit_date
         FROM analytics
-        WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+        WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
         GROUP BY visitor_ip
       ) as visitor_first_visits
       GROUP BY visitor_type
     `, [days, days]);
     
-    // Get top countries/regions (simplified - would need GeoIP in production)
+    // Get top countries/regions (simplified)
     const [locationStats] = await db.execute(`
       SELECT 
-        SUBSTRING_INDEX(visitor_ip, '.', 2) as ip_prefix,
+        SPLIT_PART(visitor_ip, '.', 1) || '.' || SPLIT_PART(visitor_ip, '.', 2) as ip_prefix,
         COUNT(DISTINCT visitor_ip) as visitor_count
       FROM analytics
-      WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
         AND visitor_ip IS NOT NULL
       GROUP BY ip_prefix
       ORDER BY visitor_count DESC
@@ -284,7 +283,7 @@ router.get('/visitors', authenticateToken, requireContentManager, async (req, re
   }
 });
 
-// Get real-time analytics (admin only)
+// Get real-time analytics
 router.get('/realtime', authenticateToken, requireContentManager, async (req, res) => {
   try {
     // Get visitors in the last hour
@@ -294,7 +293,7 @@ router.get('/realtime', authenticateToken, requireContentManager, async (req, re
         COUNT(DISTINCT visitor_ip) as visitors_last_hour,
         COUNT(DISTINCT session_id) as sessions_last_hour
       FROM analytics
-      WHERE visit_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      WHERE visit_time >= (NOW() - INTERVAL '1 hour')
     `);
     
     // Get current active pages (last 30 minutes)
@@ -304,7 +303,7 @@ router.get('/realtime', authenticateToken, requireContentManager, async (req, re
         COUNT(*) as current_visits,
         COUNT(DISTINCT visitor_ip) as current_visitors
       FROM analytics
-      WHERE visit_time >= DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+      WHERE visit_time >= (NOW() - INTERVAL '30 minutes')
       GROUP BY page_path
       ORDER BY current_visits DESC
       LIMIT 10
@@ -318,7 +317,7 @@ router.get('/realtime', authenticateToken, requireContentManager, async (req, re
         visit_time,
         referrer
       FROM analytics
-      WHERE visit_time >= DATE_SUB(NOW(), INTERVAL 1 HOUR)
+      WHERE visit_time >= (NOW() - INTERVAL '1 hour')
       ORDER BY visit_time DESC
       LIMIT 20
     `);
@@ -341,7 +340,7 @@ router.get('/realtime', authenticateToken, requireContentManager, async (req, re
   }
 });
 
-// Get content analytics (admin only)
+// Get content analytics
 router.get('/content', authenticateToken, requireContentManager, async (req, res) => {
   try {
     const days = parseInt(req.query.days) || 30;
@@ -356,11 +355,11 @@ router.get('/content', authenticateToken, requireContentManager, async (req, res
       FROM news n
       LEFT JOIN (
         SELECT 
-          SUBSTRING_INDEX(page_path, '/', -1) as content_id,
+          REVERSE(SPLIT_PART(REVERSE(page_path), '/', 1)) as content_id,
           COUNT(*) as visit_count
         FROM analytics
         WHERE page_path LIKE '/news/%'
-          AND visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+          AND visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
         GROUP BY content_id
       ) a ON n.id = a.content_id
     `, [days]);
@@ -375,11 +374,11 @@ router.get('/content', authenticateToken, requireContentManager, async (req, res
       FROM events e
       LEFT JOIN (
         SELECT 
-          SUBSTRING_INDEX(page_path, '/', -1) as content_id,
+          REVERSE(SPLIT_PART(REVERSE(page_path), '/', 1)) as content_id,
           COUNT(*) as visit_count
         FROM analytics
         WHERE page_path LIKE '/events/%'
-          AND visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+          AND visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
         GROUP BY content_id
       ) a ON e.id = a.content_id
     `, [days]);
@@ -391,7 +390,7 @@ router.get('/content', authenticateToken, requireContentManager, async (req, res
         COUNT(*) as view_count,
         COUNT(DISTINCT visitor_ip) as unique_viewers
       FROM analytics
-      WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE visit_date >= (CURRENT_DATE - (? * INTERVAL '1 day'))
         AND (page_path LIKE '/news/%' OR page_path LIKE '/events/%')
       GROUP BY page_path
       ORDER BY view_count DESC
@@ -416,13 +415,13 @@ router.get('/content', authenticateToken, requireContentManager, async (req, res
   }
 });
 
-// Clean old analytics data (admin only)
+// Clean old analytics data
 router.delete('/cleanup', authenticateToken, requireContentManager, async (req, res) => {
   try {
-    const days = parseInt(req.query.days) || 90; // Default to keep 90 days
+    const days = parseInt(req.query.days) || 90;
     
     const [result] = await db.execute(
-      'DELETE FROM analytics WHERE visit_date < DATE_SUB(CURDATE(), INTERVAL ? DAY)',
+      'DELETE FROM analytics WHERE visit_date < (CURRENT_DATE - (? * INTERVAL \'1 day\'))',
       [days]
     );
     

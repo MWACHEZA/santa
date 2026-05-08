@@ -6,22 +6,29 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
-const db = require('./config/database-simple');
+const db = require('./config/database');
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
 const announcementRoutes = require('./routes/announcements');
 const eventRoutes = require('./routes/events');
 const galleryRoutes = require('./routes/gallery');
 const newsRoutes = require('./routes/news');
-const contactRoutes = require('./routes/contact');
 const scheduleRoutes = require('./routes/schedule');
+const themeRoutes = require('./routes/themes');
 const prayerRoutes = require('./routes/prayers');
 const ministryRoutes = require('./routes/ministries');
 const sacramentRoutes = require('./routes/sacraments');
 const userRoutes = require('./routes/users');
-const categoryRoutes = require('./routes/categories');
 const uploadRoutes = require('./routes/upload');
+const priestDeskRoutes = require('./routes/priest-desk');
+const financeRoutes = require('./routes/finances');
+const categoryRoutes = require('./routes/categories');
+const contactRoutes = require('./routes/contact');
 const analyticsRoutes = require('./routes/analytics');
+const auditLogRoutes = require('./routes/audit-logs');
+
+const liturgicalPrayerRoutes = require('./routes/liturgical-prayers');
+const videosRoutes = require('./routes/videos');
 
 const ensureUserProfilesTable = async () => {
   const createTableSql = `
@@ -66,6 +73,9 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+<<<<<<< HEAD
+// CORS configuration (must be before rate limiting and other middlewares)
+=======
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -83,6 +93,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL
 ].filter(Boolean);
 
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc.)
@@ -100,6 +111,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // increased for development
+  message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api/', limiter);
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -108,19 +127,48 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(compression());
 
 // Logging middleware
-app.use(morgan('combined'));
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  // console.log('Headers:', JSON.stringify(req.headers, null, 2)); // Too verbose, let's just log path
+  next();
+});
+app.use(morgan('dev'));
 
-// Static files
-app.use('/uploads', express.static('uploads'));
+// Static files (with CORS headers to allow canvas screenshot)
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static('uploads'));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
+// API Routes
+app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'OK',
     message: 'St. Patrick\'s Church API is running',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
+});
+
+// Public data endpoints
+app.get('/api/associations', async (req, res) => {
+  try {
+    const [associations] = await db.execute('SELECT * FROM associations WHERE is_active = true ORDER BY name ASC');
+    res.json({ success: true, data: { associations } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch associations' });
+  }
+});
+
+app.get('/api/sections', async (req, res) => {
+  try {
+    const [sections] = await db.execute('SELECT * FROM sections WHERE is_active = true ORDER BY name ASC');
+    res.json({ success: true, data: { sections } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch sections' });
+  }
 });
 
 // API Routes
@@ -132,6 +180,7 @@ app.use('/api/gallery', galleryRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api/themes', themeRoutes);
 app.use('/api/prayers', prayerRoutes);
 app.use('/api/ministries', ministryRoutes);
 app.use('/api/sacraments', sacramentRoutes);
@@ -139,9 +188,15 @@ app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/priest-desk', priestDeskRoutes);
+app.use('/api/liturgical-prayers', liturgicalPrayerRoutes);
+app.use('/api/finances', financeRoutes);
+app.use('/api/videos', videosRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
+  console.warn(`[404] ${req.method} ${req.originalUrl}`);
   res.status(404).json({
     success: false,
     message: 'API endpoint not found',
@@ -186,8 +241,8 @@ app.use((err, req, res, next) => {
     });
   }
   
-  // MySQL errors
-  if (err.code === 'ER_DUP_ENTRY') {
+  // PostgreSQL errors
+  if (err.code === '23505') {
     return res.status(400).json({
       success: false,
       message: 'Duplicate entry'
@@ -206,8 +261,10 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     // Test database connection
-    await db.execute('SELECT 1');
-    console.log('✅ Database connected successfully');
+    // Initialize database (create tables if not exist)
+    await db.initializeDatabase();
+    await db.insertDefaultData();
+    console.log('✅ Database initialized and connected successfully');
     
     // Ensure extended profile table exists
     await ensureUserProfilesTable();
@@ -236,3 +293,4 @@ process.on('SIGINT', () => {
 });
 
 startServer();
+ 

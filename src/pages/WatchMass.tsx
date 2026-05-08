@@ -1,5 +1,13 @@
+<<<<<<< HEAD
+import React, { useState } from 'react';
+import { Play, Calendar, Clock, Users, Video, Eye, X } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { api } from '../services/api';
+import CustomVideoPlayer from '../components/common/CustomVideoPlayer';
+=======
 import React, { useEffect, useState } from 'react';
 import { Play, Calendar, Clock, Users, Video, Eye } from 'lucide-react';
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 import './WatchMass.css';
 import { api } from '../services/api';
 
@@ -23,7 +31,13 @@ interface VideoArchive {
   duration: string;
   publishedDate: string;
   views: number;
-  category: 'mass' | 'event' | 'sermon' | 'special';
+  category: string;
+}
+
+interface VideoCategory {
+  id: string;
+  name: string;
+  description: string;
 }
 
 const WatchMass: React.FC = () => {
@@ -32,6 +46,123 @@ const WatchMass: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
+<<<<<<< HEAD
+  const [videoArchive, setVideoArchive] = useState<VideoArchive[]>([]);
+  const [categories, setCategories] = useState<VideoCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedVideo, setSelectedVideo] = useState<VideoArchive | LiveStream | null>(null);
+
+  // Fetch data on mount
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [streamsRes, archiveRes, categoriesRes] = await Promise.all([
+          api.videos.getStreams({ active: true }),
+          api.videos.getArchive({ published: true }),
+          api.categories.getByType('video')
+        ]);
+        
+        if (streamsRes.success) {
+          const now = new Date();
+          setLiveStreams((streamsRes.data?.items || streamsRes.data || []).map((s: any) => {
+            const scheduledTime = new Date(s.scheduled_time || s.scheduledTime);
+            return {
+              ...s,
+              streamUrl: s.stream_url || s.streamUrl,
+              // Automatically treat as live if marked so OR if the scheduled time has passed
+              isLive: (s.is_live ?? s.isLive) || scheduledTime <= now,
+              scheduledTime: s.scheduled_time || s.scheduledTime,
+              viewers: s.viewers ?? 0,
+              thumbnail: s.thumbnail || ''
+            };
+          }));
+        }
+        
+        if (archiveRes.success) {
+          setVideoArchive((archiveRes.data?.items || archiveRes.data || []).map((v: any) => ({
+            ...v,
+            videoUrl: v.video_url || v.videoUrl,
+            publishedDate: v.published_at || v.publishedAt || v.created_at,
+            views: v.views ?? 0,
+            category: (v.category || 'mass').toLowerCase()
+          })));
+        }
+
+        if (categoriesRes.success) {
+          setCategories(categoriesRes.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch videos:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Refresh every minute to update viewer counts and "Live" status
+    const interval = setInterval(async () => {
+      try {
+        const streamsRes = await api.videos.getStreams({ active: true });
+        if (streamsRes.success) {
+          const now = new Date();
+          setLiveStreams((streamsRes.data?.items || streamsRes.data || []).map((s: any) => {
+            const scheduledTime = new Date(s.scheduled_time || s.scheduledTime);
+            return {
+              ...s,
+              streamUrl: s.stream_url || s.streamUrl,
+              isLive: (s.is_live ?? s.isLive) || scheduledTime <= now,
+              scheduledTime: s.scheduled_time || s.scheduledTime,
+              viewers: s.viewers ?? 0,
+              thumbnail: s.thumbnail || ''
+            };
+          }));
+        }
+      } catch (err) {
+        console.error('Failed to refresh stream data:', err);
+      }
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle viewer tracking when stream modal opens/closes
+  React.useEffect(() => {
+    if (selectedVideo && 'streamUrl' in selectedVideo) {
+      const streamId = selectedVideo.id;
+      api.videos.startViewer(streamId).catch(err => console.error('Failed to start viewer:', err));
+      
+      // Poll to check if stream is still live
+      const statusCheck = setInterval(async () => {
+        try {
+          const res = await api.videos.getStreams();
+          if (res.success) {
+            const currentStream = (res.data?.items || res.data || []).find((s: any) => s.id === streamId);
+            if (currentStream) {
+              const now = new Date();
+              const scheduledTime = new Date(currentStream.scheduled_time || currentStream.scheduledTime);
+              const isActuallyLive = (currentStream.is_live ?? currentStream.isLive) || scheduledTime <= now;
+              
+              if (!isActuallyLive) {
+                // Stream was truly ended
+                alert("The live stream has ended.");
+                setSelectedVideo(null);
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Failed to check stream status:', err);
+        }
+      }, 30000);
+
+      return () => {
+        clearInterval(statusCheck);
+        api.videos.stopViewer(streamId).catch(err => console.error('Failed to stop viewer:', err));
+      };
+    }
+  }, [selectedVideo]);
+=======
 
   const [videoArchive, setVideoArchive] = useState<VideoArchive[]>([]);
 
@@ -73,6 +204,7 @@ const WatchMass: React.FC = () => {
     };
     loadData();
   }, []);
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
   const filteredVideos = videoArchive.filter(video => 
     selectedCategory === 'all' || video.category === selectedCategory
@@ -139,9 +271,20 @@ const WatchMass: React.FC = () => {
               ) : (
                 <div className="streams-grid">
                   {liveStreams.map(stream => (
-                    <div key={stream.id} className={`stream-card ${stream.isLive ? 'live' : 'scheduled'}`}>
+                    <div 
+                      key={stream.id} 
+                      className="stream-card"
+                      onClick={() => stream.isLive && setSelectedVideo(stream)}
+                      style={{ cursor: stream.isLive ? 'pointer' : 'default' }}
+                    >
                       <div className="stream-thumbnail">
-                        <img src={stream.thumbnail} alt={stream.title} />
+                        {stream.thumbnail ? (
+                          <img src={stream.thumbnail} alt={stream.title} className="thumbnail-img" />
+                        ) : (
+                          <div className="thumbnail-placeholder">
+                            <Video size={48} />
+                          </div>
+                        )}
                         {stream.isLive && (
                           <div className="live-indicator">
                             <span className="live-dot"></span>
@@ -174,6 +317,10 @@ const WatchMass: React.FC = () => {
                         <button 
                           className={`watch-button ${stream.isLive ? 'live' : 'scheduled'}`}
                           disabled={!stream.isLive}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (stream.isLive) setSelectedVideo(stream);
+                          }}
                         >
                           {stream.isLive ? 'Watch Live' : 'Scheduled'}
                         </button>
@@ -198,10 +345,11 @@ const WatchMass: React.FC = () => {
                     className="category-select"
                   >
                     <option value="all">All Categories</option>
-                    <option value="mass">Sunday Mass</option>
-                    <option value="event">Events</option>
-                    <option value="sermon">Sermons</option>
-                    <option value="special">Special Services</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.name.toLowerCase()}>
+                        {cat.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -216,13 +364,27 @@ const WatchMass: React.FC = () => {
                   <Play size={48} />
                   <h3>No Videos Available</h3>
                   <p>No videos found in the selected category.</p>
+                  <p className="admin-tip">Tip: Ensure videos are marked as "Published" in the Video Manager.</p>
                 </div>
               ) : (
                 <div className="videos-grid">
                   {filteredVideos.map(video => (
-                    <div key={video.id} className="video-card">
+                    <div 
+                      key={video.id} 
+                      className="video-card"
+                      onClick={() => {
+                        setSelectedVideo(video);
+                        api.videos.incrementViews(video.id, 'archive');
+                      }}
+                    >
                       <div className="video-thumbnail">
-                        <img src={video.thumbnail} alt={video.title} />
+                        {video.thumbnail ? (
+                          <img src={video.thumbnail} alt={video.title} />
+                        ) : (
+                          <div className="thumbnail-fallback">
+                            <Play size={48} />
+                          </div>
+                        )}
                         <div className="video-duration">{video.duration}</div>
                         <div className="play-overlay">
                           <Play size={24} />
@@ -266,6 +428,27 @@ const WatchMass: React.FC = () => {
           )}
         </div>
       </section>
+
+      {/* Video Player Modal */}
+      {selectedVideo && (
+        <div className="video-player-overlay" onClick={() => setSelectedVideo(null)}>
+          <div className="video-player-container" onClick={e => e.stopPropagation()}>
+            <button className="close-player" onClick={() => setSelectedVideo(null)}>
+              <X size={24} />
+            </button>
+            <div className="video-wrapper" style={{ padding: 0 }}>
+              <CustomVideoPlayer 
+                src={'videoUrl' in selectedVideo ? selectedVideo.videoUrl : selectedVideo.streamUrl} 
+                title={selectedVideo.title}
+              />
+            </div>
+            <div className="player-info">
+              <h2>{selectedVideo.title}</h2>
+              <p>{selectedVideo.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

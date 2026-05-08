@@ -96,7 +96,7 @@ const toNullableBoolean = (value) => {
 
 // --- multer setup for public registration uploads ---
 const ensureDir = async (p) => { try { await fs.access(p); } catch { await fs.mkdir(p, { recursive: true }); } };
-const upload = multer({
+const authUpload = multer({
   storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) return cb(null, true);
@@ -123,7 +123,7 @@ const generateTokens = (userId) => {
 };
 
 // Register new user (public registration for parishioners)
-router.post('/register', upload.single('profilePicture'), validateUserRegistration, handleValidationErrors, async (req, res) => {
+router.post('/register', authUpload.single('profilePicture'), validateUserRegistration, handleValidationErrors, async (req, res) => {
   try {
     const { 
       username, 

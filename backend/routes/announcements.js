@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateAnnouncement, 
@@ -25,11 +26,11 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     
     // For non-authenticated users, only show active announcements within date range
     if (!req.user || req.user.role === 'parishioner') {
-      whereConditions.push('is_active = true');
-      whereConditions.push('(start_date IS NULL OR start_date <= CURDATE())');
-      whereConditions.push('(end_date IS NULL OR end_date >= CURDATE())');
+      whereConditions.push('a.is_active = true');
+      whereConditions.push('(a.start_date IS NULL OR a.start_date <= CURRENT_DATE)');
+      whereConditions.push('(a.end_date IS NULL OR a.end_date >= CURRENT_DATE)');
     } else if (isActive) {
-      whereConditions.push('is_active = ?');
+      whereConditions.push('a.is_active = ?');
       queryParams.push(true);
     }
     
@@ -41,9 +42,9 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
     
     // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM announcements ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM announcements a ${whereClause}`;
     const [countResult] = await db.execute(countQuery, queryParams);
-    const total = countResult[0].total;
+    const total = parseInt(countResult[0].total);
     
     // Get announcements with pagination
     const announcementsQuery = `
@@ -110,8 +111,8 @@ router.get('/active', async (req, res) => {
         created_at
       FROM announcements
       WHERE is_active = true
-        AND (start_date IS NULL OR start_date <= CURDATE())
-        AND (end_date IS NULL OR end_date >= CURDATE())
+        AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+        AND (end_date IS NULL OR end_date >= CURRENT_DATE)
       ORDER BY 
         CASE type 
           WHEN 'urgent' THEN 1 
@@ -139,61 +140,6 @@ router.get('/active', async (req, res) => {
   }
 });
 
-// Get single announcement
-router.get('/:id', optionalAuth, validateId, handleValidationErrors, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    let whereCondition = 'a.id = ?';
-    const queryParams = [id];
-    
-    // For non-authenticated users, only show active announcements within date range
-    if (!req.user || req.user.role === 'parishioner') {
-      whereCondition += ` AND a.is_active = true 
-                         AND (a.start_date IS NULL OR a.start_date <= CURDATE())
-                         AND (a.end_date IS NULL OR a.end_date >= CURDATE())`;
-    }
-    
-    const [announcements] = await db.execute(`
-      SELECT 
-        a.id,
-        a.title,
-        a.content,
-        a.type,
-        a.is_active,
-        a.start_date,
-        a.end_date,
-        a.created_at,
-        a.updated_at,
-        u.username as created_by_username
-      FROM announcements a
-      LEFT JOIN users u ON a.created_by = u.id
-      WHERE ${whereCondition}
-    `, queryParams);
-    
-    if (announcements.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Announcement not found'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        announcement: announcements[0]
-      }
-    });
-    
-  } catch (error) {
-    console.error('Get announcement by ID error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch announcement'
-    });
-  }
-});
-
 // Create announcement
 router.post('/', authenticateToken, requireContentManager, validateAnnouncement, handleValidationErrors, async (req, res) => {
   try {
@@ -206,25 +152,27 @@ router.post('/', authenticateToken, requireContentManager, validateAnnouncement,
       end_date
     } = req.body;
     
-    // Validate date range
-    if (start_date && end_date && new Date(start_date) > new Date(end_date)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Start date cannot be after end date'
-      });
-    }
-    
     const announcementId = uuidv4();
     
     await db.execute(`
       INSERT INTO announcements (
-        id, title, content, type, is_active, start_date, end_date, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        id, title, content, message, type, is_active, start_date, end_date, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      announcementId, title, content, type, is_active, 
+      announcementId, title, content, content, type, is_active, 
       start_date || null, end_date || null, req.user.id
     ]);
     
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_ANNOUNCEMENT',
+      entityType: 'announcement',
+      entityId: announcementId,
+      details: `Created announcement: ${title}`,
+      ipAddress: req.ip
+    });
+
     // Get created announcement
     const [createdAnnouncement] = await db.execute(`
       SELECT 
@@ -272,29 +220,14 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
       end_date
     } = req.body;
     
-    // Check if announcement exists
-    const [existingAnnouncements] = await db.execute('SELECT id FROM announcements WHERE id = ?', [id]);
-    
-    if (existingAnnouncements.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Announcement not found'
-      });
-    }
-    
-    // Validate date range
-    if (start_date && end_date && new Date(start_date) > new Date(end_date)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Start date cannot be after end date'
-      });
-    }
-    
     const updates = [];
     const values = [];
     
     if (title !== undefined) { updates.push('title = ?'); values.push(title); }
-    if (content !== undefined) { updates.push('content = ?'); values.push(content); }
+    if (content !== undefined) { 
+      updates.push('content = ?'); values.push(content);
+      updates.push('message = ?'); values.push(content);
+    }
     if (type !== undefined) { updates.push('type = ?'); values.push(type); }
     if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }
     if (start_date !== undefined) { updates.push('start_date = ?'); values.push(start_date || null); }
@@ -314,18 +247,21 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
       values
     );
     
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'UPDATE_ANNOUNCEMENT',
+      entityType: 'announcement',
+      entityId: id,
+      details: `Updated announcement: ${title || id}`,
+      ipAddress: req.ip
+    });
+
     // Get updated announcement
     const [updatedAnnouncement] = await db.execute(`
       SELECT 
-        a.id,
-        a.title,
-        a.content,
-        a.type,
-        a.is_active,
-        a.start_date,
-        a.end_date,
-        a.created_at,
-        a.updated_at,
+        a.id, a.title, a.content, a.type, a.is_active,
+        a.start_date, a.end_date, a.created_at, a.updated_at,
         u.username as created_by_username
       FROM announcements a
       LEFT JOIN users u ON a.created_by = u.id
@@ -354,128 +290,21 @@ router.delete('/:id', authenticateToken, requireContentManager, validateId, hand
   try {
     const { id } = req.params;
     
-    // Check if announcement exists
-    const [existingAnnouncements] = await db.execute('SELECT id FROM announcements WHERE id = ?', [id]);
-    
-    if (existingAnnouncements.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Announcement not found'
-      });
-    }
-    
-    // Delete the announcement
-    await db.execute('DELETE FROM announcements WHERE id = ?', [id]);
-    
-    res.json({
-      success: true,
-      message: 'Announcement deleted successfully'
+    // Log action before deletion
+    await logAction({
+      userId: req.user.id,
+      action: 'DELETE_ANNOUNCEMENT',
+      entityType: 'announcement',
+      entityId: id,
+      details: `Deleted announcement ID: ${id}`,
+      ipAddress: req.ip
     });
-    
+
+    await db.execute('DELETE FROM announcements WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Announcement deleted successfully' });
   } catch (error) {
     console.error('Delete announcement error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete announcement'
-    });
-  }
-});
-
-// Toggle announcement status
-router.patch('/:id/toggle', authenticateToken, requireContentManager, validateId, handleValidationErrors, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Get current status
-    const [announcements] = await db.execute(
-      'SELECT id, is_active FROM announcements WHERE id = ?',
-      [id]
-    );
-    
-    if (announcements.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Announcement not found'
-      });
-    }
-    
-    const newStatus = !announcements[0].is_active;
-    
-    // Update status
-    await db.execute(
-      'UPDATE announcements SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      [newStatus, id]
-    );
-    
-    res.json({
-      success: true,
-      message: `Announcement ${newStatus ? 'activated' : 'deactivated'} successfully`,
-      data: {
-        is_active: newStatus
-      }
-    });
-    
-  } catch (error) {
-    console.error('Toggle announcement error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to toggle announcement status'
-    });
-  }
-});
-
-// Get announcements by type
-router.get('/type/:type', optionalAuth, async (req, res) => {
-  try {
-    const { type } = req.params;
-    
-    const validTypes = ['general', 'urgent', 'event', 'mass'];
-    if (!validTypes.includes(type)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid announcement type'
-      });
-    }
-    
-    let whereCondition = 'type = ?';
-    const queryParams = [type];
-    
-    // For non-authenticated users, only show active announcements within date range
-    if (!req.user || req.user.role === 'parishioner') {
-      whereCondition += ` AND is_active = true 
-                         AND (start_date IS NULL OR start_date <= CURDATE())
-                         AND (end_date IS NULL OR end_date >= CURDATE())`;
-    }
-    
-    const [announcements] = await db.execute(`
-      SELECT 
-        id,
-        title,
-        content,
-        type,
-        is_active,
-        start_date,
-        end_date,
-        created_at
-      FROM announcements
-      WHERE ${whereCondition}
-      ORDER BY created_at DESC
-      LIMIT 10
-    `, queryParams);
-    
-    res.json({
-      success: true,
-      data: {
-        announcements
-      }
-    });
-    
-  } catch (error) {
-    console.error('Get announcements by type error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch announcements'
-    });
+    res.status(500).json({ success: false, message: 'Failed to delete announcement' });
   }
 });
 
@@ -487,59 +316,22 @@ router.get('/stats/overview', authenticateToken, requireContentManager, async (r
         COUNT(*) as total_announcements,
         SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active_announcements,
         SUM(CASE WHEN is_active = true 
-                 AND (start_date IS NULL OR start_date <= CURDATE())
-                 AND (end_date IS NULL OR end_date >= CURDATE()) 
+                 AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+                 AND (end_date IS NULL OR end_date >= CURRENT_DATE) 
             THEN 1 ELSE 0 END) as current_announcements,
         SUM(CASE WHEN type = 'urgent' AND is_active = true THEN 1 ELSE 0 END) as urgent_announcements
       FROM announcements
     `);
     
-    // Get announcements by type
-    const [typeStats] = await db.execute(`
-      SELECT 
-        type,
-        COUNT(*) as total,
-        SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active
-      FROM announcements
-      GROUP BY type
-      ORDER BY total DESC
-    `);
-    
-    // Get recent activity
-    const [recentActivity] = await db.execute(`
-      SELECT 
-        a.id,
-        a.title,
-        a.type,
-        a.is_active,
-        a.created_at,
-        a.updated_at,
-        u.username as created_by_username,
-        CASE 
-          WHEN a.created_at = a.updated_at THEN 'created'
-          ELSE 'updated'
-        END as action
-      FROM announcements a
-      LEFT JOIN users u ON a.created_by = u.id
-      ORDER BY a.updated_at DESC
-      LIMIT 10
-    `);
-    
     res.json({
       success: true,
       data: {
-        overview: stats[0],
-        typeStats,
-        recentActivity
+        overview: stats[0]
       }
     });
-    
   } catch (error) {
-    console.error('Get announcement stats error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch announcement statistics'
-    });
+    console.error('Get stats error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch statistics' });
   }
 });
 

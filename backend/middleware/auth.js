@@ -98,7 +98,9 @@ const ROLE_PERMISSIONS = {
     'mass_schedule',
     'sacraments',
     'prayers',
-    'readings'
+    'readings',
+    'content_management',
+    'videos'
   ],
   priest: [
     'overview',
@@ -110,7 +112,8 @@ const ROLE_PERMISSIONS = {
     'readings',
     'analytics',
     'sacraments',
-    'prayer_intentions'
+    'prayer_intentions',
+    'videos'
   ],
   reporter: [
     'gallery',
@@ -118,17 +121,33 @@ const ROLE_PERMISSIONS = {
     'images',
     'analytics',
     'ministries',
-    'section_images'
+    'content_management',
+    'videos'
+  ],
+  treasurer: [
+    'overview',
+    'finances',
+    'analytics',
+    'audit_logs'
   ]
 };
 
 // Check if user has permission
-const hasPermission = (userRole, requiredPermission) => {
-  if (!userRole) return false;
+const hasPermission = (user, requiredPermission) => {
+  if (!user || !user.role) return false;
+  const userRole = user.role;
   if (userRole === 'admin') return true; // Admin has all permissions
   
   const permissions = ROLE_PERMISSIONS[userRole] || [];
-  return permissions.includes(requiredPermission) || permissions.includes('*');
+  if (!permissions.includes(requiredPermission) && !permissions.includes('*')) return false;
+
+  // Special restrictions for Association Treasurers
+  if (userRole === 'treasurer' && user.association) {
+    const allowedForAssocTreasurer = ['overview', 'finances'];
+    return allowedForAssocTreasurer.includes(requiredPermission);
+  }
+
+  return true;
 };
 
 // Middleware to check specific permission
@@ -141,7 +160,7 @@ const requirePermission = (permission) => {
       });
     }
 
-    if (!hasPermission(req.user.role, permission)) {
+    if (!hasPermission(req.user, permission)) {
       return res.status(403).json({
         success: false,
         message: 'Insufficient permissions'

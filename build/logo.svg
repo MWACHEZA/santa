@@ -1,0 +1,91 @@
+<svg width="680" height="700" viewBox="0 0 680 700" xmlns="http://www.w3.org/2000/svg">
+  <title>St Patrick's Parish Bulawayo Logo</title>
+  <desc>Circular crest logo for St Patrick's Parish, Bulawayo, Zimbabwe. Est. 1902.</desc>
+
+  <!-- ══ OUTER GOLD RING (r=255, stroke=5) ══ -->
+  <circle cx="340" cy="340" r="255" fill="none" stroke="#b8922a" stroke-width="5"/>
+
+  <!-- ══ INNER GREEN RINGS (r=243, r=238) ══ -->
+  <circle cx="340" cy="340" r="243" fill="none" stroke="#0C5C2E" stroke-width="1.2"/>
+  <circle cx="340" cy="340" r="238" fill="none" stroke="#0C5C2E" stroke-width="0.5"/>
+
+  <!-- ══ DOTS in the gap between gold ring (inner edge r=252.5) and green ring (outer edge r=243.6)
+       Placed at r=248 — exactly centred in the ~9px gap. 24 dots, 64.9px apart, 5.6px wide: no overlap. ══ -->
+  <circle cx="340.0" cy="92.0"  r="2.8" fill="#b8922a"/>
+  <circle cx="404.2" cy="100.5" r="2.8" fill="#b8922a"/>
+  <circle cx="464.0" cy="125.2" r="2.8" fill="#b8922a"/>
+  <circle cx="515.4" cy="164.6" r="2.8" fill="#b8922a"/>
+  <circle cx="554.8" cy="216.0" r="2.8" fill="#b8922a"/>
+  <circle cx="579.5" cy="275.8" r="2.8" fill="#b8922a"/>
+  <circle cx="588.0" cy="340.0" r="2.8" fill="#b8922a"/>
+  <circle cx="579.5" cy="404.2" r="2.8" fill="#b8922a"/>
+  <circle cx="554.8" cy="464.0" r="2.8" fill="#b8922a"/>
+  <circle cx="515.4" cy="515.4" r="2.8" fill="#b8922a"/>
+  <circle cx="464.0" cy="554.8" r="2.8" fill="#b8922a"/>
+  <circle cx="404.2" cy="579.5" r="2.8" fill="#b8922a"/>
+  <circle cx="340.0" cy="588.0" r="2.8" fill="#b8922a"/>
+  <circle cx="275.8" cy="579.5" r="2.8" fill="#b8922a"/>
+  <circle cx="216.0" cy="554.8" r="2.8" fill="#b8922a"/>
+  <circle cx="164.6" cy="515.4" r="2.8" fill="#b8922a"/>
+  <circle cx="125.2" cy="464.0" r="2.8" fill="#b8922a"/>
+  <circle cx="100.5" cy="404.2" r="2.8" fill="#b8922a"/>
+  <circle cx="92.0"  cy="340.0" r="2.8" fill="#b8922a"/>
+  <circle cx="100.5" cy="275.8" r="2.8" fill="#b8922a"/>
+  <circle cx="125.2" cy="216.0" r="2.8" fill="#b8922a"/>
+  <circle cx="164.6" cy="164.6" r="2.8" fill="#b8922a"/>
+  <circle cx="216.0" cy="125.2" r="2.8" fill="#b8922a"/>
+  <circle cx="275.8" cy="100.5" r="2.8" fill="#b8922a"/>
+
+  <!-- ══ CREAM BACKGROUND ══ -->
+  <circle cx="340" cy="340" r="233" fill="#f9f6ee"/>
+
+  <!-- ══ DASHED DIVIDERS ══ -->
+  <path d="M 160,248 A 195,195 0 0,1 520,248" fill="none" stroke="#b8922a" stroke-width="0.8" stroke-dasharray="3,4"/>
+  <path d="M 138,440 A 218,218 0 0,0 542,440" fill="none" stroke="#b8922a" stroke-width="0.8" stroke-dasharray="3,4"/>
+
+  <!-- ══ TOP ARC: Parish Name ══ -->
+  <path id="nameArc" d="M 158,295 A 190,190 0 0,1 522,295" fill="none"/>
+  <text font-family="Georgia,'Times New Roman',serif" font-size="20" font-weight="700" fill="#0C5C2E" letter-spacing="3">
+    <textPath href="#nameArc" startOffset="50%" text-anchor="middle">ST PATRICK'S PARISH</textPath>
+  </text>
+
+  <!-- ══ LARGE SHAMROCK — no dot on top ══ -->
+  <!-- Left lobe -->
+  <circle cx="292" cy="348" r="56" fill="#1a7a3c"/>
+  <!-- Right lobe -->
+  <circle cx="388" cy="348" r="56" fill="#1a7a3c"/>
+  <!-- Top lobe -->
+  <circle cx="340" cy="296" r="56" fill="#1a7a3c"/>
+  <!-- Stem -->
+  <rect x="331" y="392" width="18" height="52" rx="8" fill="#1a7a3c"/>
+
+  <!-- ══ BANNER: motto ══ -->
+  <path d="M 185,458 Q 340,480 495,458 L 504,476 Q 340,500 176,476 Z" fill="#0C5C2E"/>
+  <path d="M 176,476 L 185,458 L 168,465 Z" fill="#07401e"/>
+  <path d="M 504,476 L 495,458 L 511,465 Z" fill="#07401e"/>
+  <text x="340" y="484" text-anchor="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="11" font-weight="600"
+        fill="#f5e9c8" letter-spacing="2">ALL THAT YOU DO, DO WELL</text>
+
+  <!-- ══ LOCATION ══ -->
+  <text x="340" y="510" text-anchor="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="13" font-weight="600"
+        fill="#7a5c1e" letter-spacing="2">BULAWAYO  &#10022;  ZIMBABWE</text>
+
+  <!-- ══ YEAR ══ -->
+  <text x="340" y="531" text-anchor="middle"
+        font-family="Georgia,'Times New Roman',serif" font-size="12" font-weight="500"
+        fill="#7a5c1e" letter-spacing="2">EST. 1902</text>
+
+  <!-- Separator lines -->
+  <line x1="240" y1="542" x2="308" y2="542" stroke="#b8922a" stroke-width="0.9"/>
+  <text x="340" y="547" text-anchor="middle" font-family="Georgia,serif" font-size="10" fill="#b8922a">&#10022;</text>
+  <line x1="372" y1="542" x2="440" y2="542" stroke="#b8922a" stroke-width="0.9"/>
+
+  <!-- ══ BOTTOM ARC: Archdiocese ══ -->
+  <path id="archArc" d="M 122,385 A 222,222 0 0,0 558,385" fill="none"/>
+  <text font-family="Georgia,'Times New Roman',serif" font-size="13" font-weight="600" fill="#0C5C2E" letter-spacing="2">
+    <textPath href="#archArc" startOffset="50%" text-anchor="middle">ARCHDIOCESE OF BULAWAYO</textPath>
+  </text>
+
+</svg>

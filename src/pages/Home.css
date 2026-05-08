@@ -1,6 +1,60 @@
+/* Live Alert Section */
+.live-alert-section {
+  background: #fff5f5;
+  border-bottom: 1px solid #feb2b2;
+  padding: 1rem 0;
+  animation: slideDown 0.5s ease-out;
+}
+
+.live-alert-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.live-pulse {
+  width: 12px;
+  height: 12px;
+  background: #f56565;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 101, 101, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(245, 101, 101, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 101, 101, 0); }
+}
+
+.live-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.live-text h3 {
+  color: #c53030;
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.live-text p {
+  margin: 0;
+  color: #4a5568;
+  font-weight: 500;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 /* Hero Section */
 .hero {
-  min-height: 70vh;
+  min-height: 85vh;
   display: flex;
   align-items: center;
   position: relative;
@@ -42,7 +96,7 @@
 .hero-overlay {
   position: relative;
   width: 100%;
-  padding: 4rem 0;
+  padding: 8rem 0;
   background: linear-gradient(135deg, rgba(45, 80, 22, 0.8), rgba(30, 53, 16, 0.8));
   z-index: 2;
 }
@@ -206,7 +260,7 @@
 /* Quick Info Section */
 .quick-info {
   background: white;
-  margin-top: -50px;
+  margin-top: 2rem;
   position: relative;
   z-index: 10;
 }
@@ -350,7 +404,7 @@
 
 /* Gallery Preview */
 .gallery-preview {
-  padding: 4rem 0;
+  padding: 8rem 0;
 }
 
 .gallery-grid {
@@ -385,8 +439,8 @@
 }
 
 /* Spiritual Content Section */
-.spiritual-content {
-  background: var(--light-gray);
+.spiritual-content { background: #f8f9fa !important; position: relative; z-index: 5; margin-top: 0;
+  background: #f8f9fa !important;
 }
 
 .spiritual-card {
@@ -412,9 +466,10 @@
   width: 48px;
   height: 48px;
   color: var(--primary-green);
-  padding: 12px;
-  background: var(--light-gray);
-  border-radius: 50%;
+  padding: 10px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
 .spiritual-header h3 {
@@ -432,21 +487,36 @@
   color: var(--gold);
 }
 
+.theme-image {
+  width: 100%;
+  height: 200px;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.theme-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .theme-content h4 {
   color: var(--primary-green);
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin-bottom: 1rem;
   text-align: center;
 }
 
 .theme-verse {
-  background: var(--gold-light);
-  padding: 1rem;
+  background: rgba(212, 175, 55, 0.1);
+  padding: 1.25rem;
   border-radius: 8px;
   font-style: italic;
   color: var(--primary-green);
   margin-bottom: 1rem;
   border-left: 4px solid var(--gold);
+  line-height: 1.6;
 }
 
 /* Reading Card */
@@ -458,6 +528,23 @@
   color: #4ecdc4;
 }
 
+.liturgical-season {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.season-badge {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
 .reading-date {
   font-weight: 600;
   color: var(--primary-green);
@@ -467,11 +554,29 @@
 }
 
 .reading-citation {
-  background: var(--light-gray);
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  line-height: 1.6;
+  background: #f8f9fa;
+  padding: 1.25rem;
+  border-radius: 10px;
+  margin-bottom: 1.25rem;
+  border: 1px solid #eee;
+}
+
+.reading-item {
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.reading-item:last-child {
+  margin-bottom: 0;
+}
+
+.reading-item strong {
+  color: var(--primary-green);
+  display: block;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  margin-bottom: 2px;
 }
 
 .reading-reflection {
@@ -504,45 +609,83 @@
   color: #f093fb;
 }
 
+.saint-image {
+  width: 100%;
+  height: 180px;
+  margin-bottom: 1.25rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.saint-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.saint-card:hover .saint-image img {
+  transform: scale(1.1);
+}
+
 .saint-name {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
   color: var(--primary-green);
   text-align: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .saint-title {
   font-style: italic;
-  color: var(--gray);
+  color: var(--primary-green);
   text-align: center;
-  margin-bottom: 0.5rem;
-}
-
-.saint-dates {
+  margin-bottom: 0.75rem;
   font-size: 0.9rem;
-  color: var(--gray);
-  text-align: center;
-  margin-bottom: 1rem;
+  opacity: 0.8;
 }
 
 .saint-description {
   line-height: 1.6;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  color: #444;
 }
 
 .saint-quote {
-  background: #f093fb;
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
   color: white;
-  padding: 1rem;
-  border-radius: 8px;
+  padding: 1.25rem;
+  border-radius: 10px;
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+  font-style: italic;
+  position: relative;
+  box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+}
+
+.saint-quote::before {
+  content: '"';
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  font-size: 4rem;
+  opacity: 0.2;
+  font-family: serif;
 }
 
 .saint-prayer {
   font-size: 0.9rem;
   line-height: 1.5;
+  background: #fdfdfd;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px dashed #f093fb;
+}
+
+.saint-prayer strong {
+  color: #f093fb;
 }
 
 /* Parish History Section */
@@ -602,7 +745,7 @@
 }
 
 .timeline-content {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 2rem;
   border-radius: 12px;
   margin: 0 2rem;
@@ -623,54 +766,127 @@
 }
 
 .history-highlights {
-  background: var(--light-gray);
-  padding: 3rem 2rem;
-  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(45, 80, 22, 0.05), rgba(212, 175, 55, 0.1));
+  padding: 4rem 2rem;
+  margin-top: 4rem;
+  width: 100%;
+  border-radius: 20px;
   text-align: center;
+  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.5), 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
 }
 
 .history-highlights h3 {
   color: var(--primary-green);
-  font-size: 2rem;
-  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  margin-bottom: 3rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  position: relative;
+  display: inline-block;
+}
+
+.history-highlights h3::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: var(--gold);
+  border-radius: 2px;
 }
 
 .highlights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2.5rem;
 }
 
 .highlight-item {
+  background: white;
+  padding: 2.5rem 1.5rem;
+  border-radius: 16px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-bottom: 4px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.highlight-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, transparent, rgba(212, 175, 55, 0.05));
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.highlight-item:hover {
+  transform: translateY(-10px);
+  border-bottom-color: var(--gold);
+  box-shadow: 0 15px 35px rgba(45, 80, 22, 0.15);
+}
+
+.highlight-item:hover::before {
+  opacity: 1;
 }
 
 .highlight-icon {
-  width: 64px;
-  height: 64px;
+  width: 70px;
+  height: 70px;
   color: var(--primary-green);
-  margin-bottom: 1rem;
-  padding: 16px;
+  margin-bottom: 1.5rem;
+  padding: 18px;
   background: white;
   border-radius: 50%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.highlight-item:hover .highlight-icon {
+  transform: rotateY(180deg) scale(1.1);
+  color: white;
+  background: linear-gradient(135deg, var(--gold), #b8960c);
 }
 
 .highlight-item h4 {
   color: var(--primary-green);
+  font-size: 1.3rem;
+  font-weight: 700;
   margin-bottom: 1rem;
-  font-size: 1.1rem;
+  position: relative;
+  z-index: 1;
+  text-align: center;
 }
 
 .highlight-item p {
   color: var(--gray);
-  line-height: 1.5;
-  font-size: 0.9rem;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  margin: 0;
+  position: relative;
+  z-index: 1;
+  text-align: center;
 }
 
 /* About Us Section */
 .about-us {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
 }
 
 .about-card {
@@ -777,7 +993,7 @@
 }
 
 .message-signature {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 1.5rem;
   border-radius: 8px;
   border-left: 4px solid var(--primary-green);
@@ -813,7 +1029,7 @@
 }
 
 .update-item {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -844,7 +1060,7 @@
   }
   
   .quick-info {
-    margin-top: -30px;
+    margin-top: 1rem;
   }
   
   .contact-grid {
@@ -1242,4 +1458,22 @@
   .gallery-item img {
     height: 150px;
   }
+}
+
+/* Default Hero Fallback */
+.default-hero-bg {
+  background: linear-gradient(135deg, #1a472a 0%, #2d5a3c 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.default-hero-bg::after {
+  content: "";
+ position: absolute;
+ top: 0;
+ left: 0;
+ right: 0;
+ bottom: 0;
+ background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+ background-size: 32px 32px;
 }

@@ -1,6 +1,6 @@
 /* Hero Section */
 .hero {
-  min-height: 70vh;
+  min-height: 85vh;
   display: flex;
   align-items: center;
   position: relative;
@@ -42,7 +42,7 @@
 .hero-overlay {
   position: relative;
   width: 100%;
-  padding: 4rem 0;
+  padding: 8rem 0;
   background: linear-gradient(135deg, rgba(45, 80, 22, 0.8), rgba(30, 53, 16, 0.8));
   z-index: 2;
 }
@@ -206,7 +206,7 @@
 /* Quick Info Section */
 .quick-info {
   background: white;
-  margin-top: -50px;
+  margin-top: 2rem;
   position: relative;
   z-index: 10;
 }
@@ -350,7 +350,7 @@
 
 /* Gallery Preview */
 .gallery-preview {
-  padding: 4rem 0;
+  padding: 8rem 0;
 }
 
 .gallery-grid {
@@ -385,8 +385,8 @@
 }
 
 /* Spiritual Content Section */
-.spiritual-content {
-  background: var(--light-gray);
+.spiritual-content { background: #f8f9fa !important; position: relative; z-index: 5; margin-top: 0;
+  background: #f8f9fa !important;
 }
 
 .spiritual-card {
@@ -413,7 +413,7 @@
   height: 48px;
   color: var(--primary-green);
   padding: 12px;
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   border-radius: 50%;
 }
 
@@ -467,7 +467,7 @@
 }
 
 .reading-citation {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -602,7 +602,7 @@
 }
 
 .timeline-content {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 2rem;
   border-radius: 12px;
   margin: 0 2rem;
@@ -623,7 +623,7 @@
 }
 
 .history-highlights {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 3rem 2rem;
   border-radius: 12px;
   text-align: center;
@@ -670,7 +670,7 @@
 
 /* About Us Section */
 .about-us {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
 }
 
 .about-card {
@@ -777,7 +777,7 @@
 }
 
 .message-signature {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 1.5rem;
   border-radius: 8px;
   border-left: 4px solid var(--primary-green);
@@ -813,7 +813,7 @@
 }
 
 .update-item {
-  background: var(--light-gray);
+  background: #f8f9fa !important;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1rem;
@@ -844,7 +844,7 @@
   }
   
   .quick-info {
-    margin-top: -30px;
+    margin-top: 1rem;
   }
   
   .contact-grid {

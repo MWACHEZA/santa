@@ -7,13 +7,13 @@ import './Home.css';
 
 const Home: React.FC = () => {
   const { t } = useLanguage();
-  const { 
-    getActiveTheme, 
-    saintOfDay, 
-    liturgicalInfo, 
-    getActiveMinistries, 
+  const {
+    getActiveTheme,
+    saintOfDay,
+    liturgicalInfo,
+    getActiveMinistries,
     getSectionImages,
-    getPublishedImages 
+    getPublishedImages
   } = useAdmin();
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 3;
@@ -46,16 +46,16 @@ const Home: React.FC = () => {
         {/* Background Image Slider */}
         <div className="hero-slider">
           <div className={`slide slide-1 ${currentSlide === 0 ? 'active' : ''}`}>
-            <img src="/api/placeholder/1920/1080" alt="St. Patrick's Church exterior view" />
+            <img src="/images/PIC1.png" alt="St. Patrick's Church exterior view" />
           </div>
           <div className={`slide slide-2 ${currentSlide === 1 ? 'active' : ''}`}>
-            <img src="/api/placeholder/1920/1080" alt="Sunday Mass celebration" />
+            <img src="/images/PIC2.png" alt="Sunday Mass celebration" />
           </div>
           <div className={`slide slide-3 ${currentSlide === 2 ? 'active' : ''}`}>
-            <img src="/api/placeholder/1920/1080" alt="Parish community gathering" />
+            <img src="/images/PIC3.png" alt="Parish community gathering" />
           </div>
         </div>
-        
+
         <div className="hero-overlay">
           <div className="container">
             <div className="hero-content">
@@ -76,11 +76,11 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Slider Indicators */}
         <div className="slider-indicators">
           {[0, 1, 2].map((index) => (
-            <span 
+            <span
               key={index}
               className={`indicator ${currentSlide === index ? 'active' : ''}`}
               onClick={() => goToSlide(index)}
@@ -89,8 +89,11 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Physical Spacer to prevent overlap */}
+      <div className="home-content-spacer" style={{ height: '100px', width: '100%', background: '#f8f9fa' }}></div>
+
       {/* Spiritual Content Section */}
-      <section className="spiritual-content section-padding">
+      <section className="spiritual-content section-padding" style={{ position: 'relative', zIndex: 10, background: '#f8f9fa' }}>
         <div className="container">
           <div className="grid grid-3">
             {/* Theme of the Year */}
@@ -118,11 +121,11 @@ const Home: React.FC = () => {
                 <h3>Today's Readings</h3>
               </div>
               <div className="reading-content">
-                <div className="reading-date">{new Date().toLocaleDateString('en-US', { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+                <div className="reading-date">{new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })}</div>
                 {liturgicalInfo && (
                   <>
@@ -132,10 +135,10 @@ const Home: React.FC = () => {
                       </span>
                     </div>
                     <div className="reading-citation">
-                      <strong>First Reading:</strong> {liturgicalInfo.readings.firstReading}<br/>
-                      <strong>Psalm:</strong> {liturgicalInfo.readings.psalm}<br/>
+                      <strong>First Reading:</strong> {liturgicalInfo.readings.firstReading}<br />
+                      <strong>Psalm:</strong> {liturgicalInfo.readings.psalm}<br />
                       {liturgicalInfo.readings.secondReading && (
-                        <><strong>Second Reading:</strong> {liturgicalInfo.readings.secondReading}<br/></>
+                        <><strong>Second Reading:</strong> {liturgicalInfo.readings.secondReading}<br /></>
                       )}
                       <strong>Gospel:</strong> {liturgicalInfo.readings.gospel}
                     </div>
@@ -199,7 +202,7 @@ const Home: React.FC = () => {
                 <p className="priest-title">Parish Priest</p>
               </div>
             </div>
-            
+
             <div className="priests-message card">
               <div className="message-content">
                 <h3>A Message of Hope and Unity</h3>
@@ -221,8 +224,8 @@ const Home: React.FC = () => {
                     May God bless you and your families abundantly in the coming year.
                   </p>
                   <p className="message-signature">
-                    In Christ,<br/>
-                    <strong>Fr Rodeney Simainza</strong><br/>
+                    In Christ,<br />
+                    <strong>Fr Rodeney Simainza</strong><br />
                     Parish Priest
                   </p>
                 </div>
@@ -424,7 +427,7 @@ const Home: React.FC = () => {
       <section className="parish-history section-padding">
         <div className="container">
           <h2 className="section-title text-center">History of St. Patrick's Parish, Bulawayo</h2>
-          
+
           <div className="history-content">
             <div className="history-timeline">
               <div className="timeline-item">
@@ -437,7 +440,7 @@ const Home: React.FC = () => {
                   <p>St. Patrick's Catholic Church was established in Makokoba, Bulawayo, to serve the growing Catholic community in the area. The parish was founded during a time of significant social and political change in Zimbabwe.</p>
                 </div>
               </div>
-              
+
               <div className="timeline-item">
                 <div className="timeline-year">1970s</div>
                 <div className="timeline-image">
@@ -448,7 +451,7 @@ const Home: React.FC = () => {
                   <p>The parish experienced rapid growth as more families moved to Makokoba. The church became a center for both spiritual life and community support, offering services in both English and IsiNdebele.</p>
                 </div>
               </div>
-              
+
               <div className="timeline-item">
                 <div className="timeline-year">1980s</div>
                 <div className="timeline-image">
@@ -459,7 +462,7 @@ const Home: React.FC = () => {
                   <p>Following Zimbabwe's independence, St. Patrick's played a crucial role in community healing and reconciliation. The parish expanded its social justice programs and outreach initiatives.</p>
                 </div>
               </div>
-              
+
               <div className="timeline-item">
                 <div className="timeline-year">1990s-2000s</div>
                 <div className="timeline-image">
@@ -470,7 +473,7 @@ const Home: React.FC = () => {
                   <p>The parish established numerous ministries including youth groups, women's associations, and educational programs. The church became known for its strong commitment to social justice and community development.</p>
                 </div>
               </div>
-              
+
               <div className="timeline-item">
                 <div className="timeline-year">2010s-Present</div>
                 <div className="timeline-image">
@@ -482,7 +485,7 @@ const Home: React.FC = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="history-highlights">
               <h3>Parish Highlights</h3>
               <div className="highlights-grid">

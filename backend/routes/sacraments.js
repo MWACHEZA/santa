@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateSacrament, 
@@ -25,14 +25,14 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     
     // For non-authenticated users, only show active sacraments
     if (!req.user || req.user.role === 'parishioner') {
-      whereConditions.push('is_active = true');
+      whereConditions.push('s.is_active = true');
     } else if (isActive) {
-      whereConditions.push('is_active = ?');
+      whereConditions.push('s.is_active = ?');
       queryParams.push(true);
     }
     
     if (search) {
-      whereConditions.push('(name LIKE ? OR description LIKE ?)');
+      whereConditions.push('(s.name LIKE ? OR s.description LIKE ?)');
       const searchTerm = `%${search}%`;
       queryParams.push(searchTerm, searchTerm);
     }
@@ -40,7 +40,7 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
     
     // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM sacraments ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM sacraments s LEFT JOIN users u ON s.created_by = u.id ${whereClause}`;
     const [countResult] = await db.execute(countQuery, queryParams);
     const total = countResult[0].total;
     
@@ -54,6 +54,7 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
         s.preparation_time,
         s.contact_person,
         s.contact_info,
+        s.image_url,
         s.is_active,
         s.created_at,
         s.updated_at,
@@ -65,7 +66,12 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
       LIMIT ? OFFSET ?
     `;
     
-    const [sacraments] = await db.execute(sacramentsQuery, [...queryParams, limit, offset]);
+    const [rawSacraments] = await db.execute(sacramentsQuery, [...queryParams, limit, offset]);
+    
+    const sacraments = rawSacraments.map((s) => ({
+      ...s,
+      requirements: typeof s.requirements === 'string' ? JSON.parse(s.requirements) : (Array.isArray(s.requirements) ? s.requirements : [])
+    }));
     
     res.json({
       success: true,
@@ -100,16 +106,22 @@ router.get('/active', async (req, res) => {
         requirements,
         preparation_time,
         contact_person,
-        contact_info
+        contact_info,
+        image_url
       FROM sacraments
       WHERE is_active = true
       ORDER BY name ASC
     `);
     
+    const parsedSacraments = sacraments.map((s) => ({
+      ...s,
+      requirements: typeof s.requirements === 'string' ? JSON.parse(s.requirements) : (Array.isArray(s.requirements) ? s.requirements : [])
+    }));
+    
     res.json({
       success: true,
       data: {
-        sacraments
+        sacraments: parsedSacraments
       }
     });
     
@@ -144,6 +156,7 @@ router.get('/:id', optionalAuth, validateId, handleValidationErrors, async (req,
         s.preparation_time,
         s.contact_person,
         s.contact_info,
+        s.image_url,
         s.is_active,
         s.created_at,
         s.updated_at,
@@ -160,10 +173,15 @@ router.get('/:id', optionalAuth, validateId, handleValidationErrors, async (req,
       });
     }
     
+    const sacrament = sacraments[0];
+    sacrament.requirements = typeof sacrament.requirements === 'string' 
+      ? JSON.parse(sacrament.requirements) 
+      : (Array.isArray(sacrament.requirements) ? sacrament.requirements : []);
+    
     res.json({
       success: true,
       data: {
-        sacrament: sacraments[0]
+        sacrament
       }
     });
     

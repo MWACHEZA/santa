@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAdmin, Event } from '../../contexts/AdminContext';
 import { Plus, Edit, Trash2, Eye, EyeOff, Calendar, Clock, MapPin, X } from 'lucide-react';
+import { useToast } from '../../contexts/ToastContext';
 import './EventManager.css';
 
 const EventManager: React.FC = () => {
@@ -8,8 +9,12 @@ const EventManager: React.FC = () => {
     events, 
     addEvent, 
     updateEvent, 
-    deleteEvent 
+    deleteEvent,
+    eventCategories,
+    addCategory,
+    logAdminAction
   } = useAdmin();
+  const { success: toastSuccess, error: toastError } = useToast();
   
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -20,68 +25,59 @@ const EventManager: React.FC = () => {
     date: '',
     time: '',
     location: '',
-    category: 'mass' as 'mass' | 'meeting' | 'social' | 'education' | 'outreach',
+    category: 'mass',
     isPublished: true
   });
 
-  const [eventCategories, setEventCategories] = useState([
-    'mass', 'meeting', 'social', 'education', 'outreach', 'retreat', 'fundraising', 'youth'
-  ]);
   
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
 
   const categories = [
     { value: 'all', label: 'All Events' },
-    ...eventCategories.map(cat => ({ 
+    ...eventCategories.map((cat: string) => ({ 
       value: cat, 
       label: cat.charAt(0).toUpperCase() + cat.slice(1).replace(/([A-Z])/g, ' $1')
     }))
   ];
 
-  // Load categories from localStorage
-  React.useEffect(() => {
-    const savedCategories = localStorage.getItem('eventCategories');
-    if (savedCategories) {
-      try {
-        const parsedCategories = JSON.parse(savedCategories);
-        if (Array.isArray(parsedCategories)) {
-          setEventCategories(parsedCategories);
-        }
-      } catch (error) {
-        console.error('Error loading event categories:', error);
-      }
-    }
-  }, []);
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (newCategoryName.trim() && !eventCategories.includes(newCategoryName.trim().toLowerCase())) {
-      const updatedCategories = [...eventCategories, newCategoryName.trim().toLowerCase()];
-      setEventCategories(updatedCategories);
-      localStorage.setItem('eventCategories', JSON.stringify(updatedCategories));
-      setNewCategoryName('');
-      setShowAddCategory(false);
+      try {
+        await addCategory(newCategoryName.trim().toLowerCase(), 'event');
+        logAdminAction('ADD_EVENT_CATEGORY', 'event', 'new', `Added new event category: ${newCategoryName.trim()}`);
+        setNewCategoryName('');
+        setShowAddCategory(false);
+        toastSuccess('Category added successfully', 'Events');
+      } catch (err) {
+        toastError('Failed to add category', 'Error');
+      }
     }
   };
 
   const handleDeleteCategory = (categoryToDelete: string) => {
-    if (window.confirm(`Are you sure you want to delete the "${categoryToDelete}" category?`)) {
-      const updatedCategories = eventCategories.filter(cat => cat !== categoryToDelete);
-      setEventCategories(updatedCategories);
-      localStorage.setItem('eventCategories', JSON.stringify(updatedCategories));
-    }
+    toastError('Category deletion not implemented yet', 'System');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingId) {
-      updateEvent(editingId, formData);
-    } else {
-      addEvent(formData);
+    try {
+      if (editingId) {
+        await updateEvent(editingId, formData);
+        await logAdminAction('UPDATE_EVENT', 'event', editingId, `Updated event: ${formData.title}`);
+        toastSuccess('Event updated successfully', 'Events');
+      } else {
+        await addEvent(formData);
+        await logAdminAction('CREATE_EVENT', 'event', 'new', `Created event: ${formData.title}`);
+        toastSuccess('New event created', 'Events');
+      }
+      resetForm();
+    } catch (err) {
+      console.error('Submit error:', err);
+      toastError('Failed to save event. Please check if the server is running.', 'Error');
     }
-    
-    resetForm();
   };
 
   const resetForm = () => {
@@ -112,19 +108,31 @@ const EventManager: React.FC = () => {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this event?')) {
-      deleteEvent(id);
+      try {
+        await deleteEvent(id);
+        await logAdminAction('DELETE_EVENT', 'event', id, `Deleted event ID: ${id}`);
+        toastSuccess('Event deleted successfully', 'Events');
+      } catch (err) {
+        toastError('Failed to delete event', 'Error');
+      }
     }
   };
 
-  const togglePublished = (id: string, isPublished: boolean) => {
-    updateEvent(id, { isPublished: !isPublished });
+  const togglePublished = async (id: string, isPublished: boolean) => {
+    try {
+      await updateEvent(id, { isPublished: !isPublished });
+      await logAdminAction('TOGGLE_EVENT_VISIBILITY', 'event', id, `${isPublished ? 'Unpublished' : 'Published'} event ID: ${id}`);
+      toastSuccess(isPublished ? 'Event unpublished' : 'Event published', 'Status Update');
+    } catch (err) {
+      toastError('Failed to update status', 'Error');
+    }
   };
 
   const filteredEvents = selectedCategory === 'all' 
     ? events 
-    : events.filter(event => event.category === selectedCategory);
+    : events.filter(event => (event.category || '').toLowerCase() === selectedCategory.toLowerCase());
 
   const sortedEvents = filteredEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
@@ -194,7 +202,7 @@ const EventManager: React.FC = () => {
               <span className="category-icon">{getCategoryIcon(category)}</span>
               <span className="category-name">{category.charAt(0).toUpperCase() + category.slice(1)}</span>
               <span className="event-count">
-                ({events.filter(e => e.category === category).length} events)
+                ({events.filter(e => (e.category || '').toLowerCase() === category.toLowerCase()).length} events)
               </span>
               <button
                 className="btn btn-danger btn-sm"
@@ -219,7 +227,7 @@ const EventManager: React.FC = () => {
               {category.label}
               {category.value !== 'all' && (
                 <span className="count">
-                  {events.filter(event => event.category === category.value).length}
+                  {events.filter(event => (event.category || '').toLowerCase() === category.value.toLowerCase()).length}
                 </span>
               )}
             </button>
@@ -303,11 +311,9 @@ const EventManager: React.FC = () => {
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
                   >
-                    <option value="mass">Mass & Liturgy</option>
-                    <option value="meeting">Meetings</option>
-                    <option value="social">Social Events</option>
-                    <option value="education">Education</option>
-                    <option value="outreach">Outreach</option>
+                    {eventCategories.map((category: string) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
                   </select>
                 </div>
 

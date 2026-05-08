@@ -4,7 +4,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/database-simple');
+const db = require('../config/database');
 const { authenticateToken, requireContentManager } = require('../middleware/auth');
 
 const router = express.Router();
@@ -47,7 +47,12 @@ const fileFilter = (req, file, cb) => {
     'image/webp',
     'application/pdf',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'video/mp4',
+    'video/mpeg',
+    'video/quicktime',
+    'video/x-msvideo',
+    'video/webm'
   ];
   
   if (allowedTypes.includes(file.mimetype)) {
@@ -62,8 +67,8 @@ const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024, // 10MB default
-    files: 5 // Maximum 5 files per request
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 500 * 1024 * 1024, // 500MB default for videos
+    files: 5 
   }
 });
 

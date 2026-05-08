@@ -1,293 +1,172 @@
+<<<<<<< HEAD
+import React, { useState, useEffect } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Cross, Heart, Crown, Church, Users, BookOpen, Droplets, Image as ImageIcon } from 'lucide-react';
+import { api } from '../services/api';
+import { type Sacrament as SacramentType } from '../contexts/AdminContext';
+=======
 import React, { useState } from 'react';
 import { Cross, Heart, Crown, Church, BookOpen, Droplets } from 'lucide-react';
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 import './Sacraments.css';
 
-interface Sacrament {
-  id: string;
-  name: string;
-  icon: React.ReactNode;
-  description: string;
-  requirements: string[];
-  preparation: string;
-  questions: { question: string; answer: string }[];
-}
+const SACRAMENTS_DATA: SacramentType[] = [
+  {
+    id: 'baptism',
+    name: 'Baptism',
+    description: 'The first sacrament of Christian initiation, welcoming the person into the Church.',
+    requirements: ['Birth Certificate', 'Godparents Information', 'Parents Baptismal Certificates'],
+    preparationTime: '2 weeks preparation',
+    imageUrl: '/images/baptism.png'
+  },
+  {
+    id: 'confirmation',
+    name: 'Confirmation',
+    description: 'A sacrament of initiation that completes the grace of Baptism through the sealing of the Holy Spirit.',
+    requirements: ['Baptismal Certificate', 'Sponsor Details', 'Completion of Catechism classes'],
+    preparationTime: '1 year program',
+    imageUrl: '/images/confirmation.jpg'
+  },
+  {
+    id: 'eucharist',
+    name: 'Eucharist',
+    description: "Also known as Holy Communion, it is the center of the Church's life.",
+    requirements: ['Baptismal Certificate', 'First Reconciliation'],
+    preparationTime: '6 months preparation',
+    imageUrl: '/images/holy communion.jpg'
+  },
+  {
+    id: 'reconciliation',
+    name: 'Reconciliation',
+    description: "The sacrament through which we receive God's forgiveness for our sins.",
+    requirements: ['Baptism'],
+    preparationTime: 'Continuous',
+    imageUrl: '/images/confession.jpg'
+  },
+  {
+    id: 'anointing',
+    name: 'Anointing of the Sick',
+    description: 'A sacrament of healing for those who are seriously ill or elderly.',
+    requirements: ['None (Available upon request)'],
+    preparationTime: 'Immediate/On-call',
+    imageUrl: '/images/annointing of the sick.jpg'
+  },
+  {
+    id: 'marriage',
+    name: 'Marriage',
+    description: 'The sacrament by which a man and a woman establish a lifelong partnership.',
+    requirements: ['Baptismal & Confirmation Certificates', 'Marriage Preparation Course', 'Civil Documents'],
+    preparationTime: '6 months preparation',
+    imageUrl: '/images/marriage.png'
+  },
+  {
+    id: 'holy-orders',
+    name: 'Holy Orders',
+    description: 'The sacrament through which the mission entrusted by Christ to his apostles continues.',
+    requirements: ['Baptismal Certificate', 'Confirmation Certificate', 'Discernment Interview'],
+    preparationTime: 'Years of formation',
+    imageUrl: '/images/holy orders.webp'
+  }
+];
 
 const Sacraments: React.FC = () => {
+<<<<<<< HEAD
+  const { t } = useLanguage();
+  const [activeSacramentId, setActiveSacramentId] = useState<string>(SACRAMENTS_DATA[0].id);
+=======
   const [activeSacrament, setActiveSacrament] = useState<string>('baptism');
+>>>>>>> 59124fe9bac7e6937579955e0d27d1c221fc2546
 
-  const sacraments: Sacrament[] = [
-    {
-      id: 'baptism',
-      name: 'Baptism',
-      icon: <Droplets size={32} />,
-      description: 'The first sacrament of initiation, washing away original sin and welcoming new members into the Church.',
-      requirements: [
-        'Birth certificate',
-        'Parents\' marriage certificate (if applicable)',
-        'Godparents must be confirmed Catholics',
-        'Baptismal preparation class attendance'
-      ],
-      preparation: 'One preparation class required for parents and godparents. Classes held monthly.',
-      questions: [
-        {
-          question: 'What is Baptism?',
-          answer: 'Baptism is the first sacrament of initiation that cleanses us from original sin and makes us children of God and members of the Church.'
-        },
-        {
-          question: 'Who can be baptized?',
-          answer: 'Anyone who has not been baptized can receive this sacrament. For infants, parents make the decision. Adults must freely choose baptism.'
-        },
-        {
-          question: 'What are the requirements for godparents?',
-          answer: 'Godparents must be confirmed Catholics, at least 16 years old, and living a life consistent with Catholic teaching.'
-        }
-      ]
-    },
-    {
-      id: 'confirmation',
-      name: 'Confirmation',
-      icon: <Crown size={32} />,
-      description: 'The sacrament that completes baptismal grace and strengthens us with the gifts of the Holy Spirit.',
-      requirements: [
-        'Must be baptized Catholic',
-        'Minimum age of 14 years',
-        'Two years of preparation classes',
-        'Active participation in parish life',
-        'Confirmation sponsor (confirmed Catholic)'
-      ],
-      preparation: 'Two-year preparation program including catechesis, service projects, and spiritual formation.',
-      questions: [
-        {
-          question: 'What is Confirmation?',
-          answer: 'Confirmation is the sacrament that completes baptismal grace and gives us the fullness of the Holy Spirit to live as mature Christians.'
-        },
-        {
-          question: 'What are the seven gifts of the Holy Spirit?',
-          answer: 'Wisdom, Understanding, Counsel, Fortitude, Knowledge, Piety, and Fear of the Lord.'
-        },
-        {
-          question: 'Can adults receive Confirmation?',
-          answer: 'Yes, adults who were baptized but not confirmed can receive this sacrament after proper preparation.'
-        }
-      ]
-    },
-    {
-      id: 'eucharist',
-      name: 'Holy Eucharist',
-      icon: <Church size={32} />,
-      description: 'The source and summit of Christian life, receiving the Body and Blood of Christ.',
-      requirements: [
-        'Must be baptized Catholic',
-        'Reached age of reason (usually 7-8 years)',
-        'First Communion preparation classes',
-        'Understanding of the Eucharist',
-        'State of grace (free from mortal sin)'
-      ],
-      preparation: 'One-year preparation program including catechesis and practice for the ceremony.',
-      questions: [
-        {
-          question: 'What is the Eucharist?',
-          answer: 'The Eucharist is the true Body and Blood of Jesus Christ under the appearances of bread and wine.'
-        },
-        {
-          question: 'How often should Catholics receive Communion?',
-          answer: 'Catholics are encouraged to receive Communion at every Mass they attend, provided they are in a state of grace.'
-        },
-        {
-          question: 'What is required before receiving Communion?',
-          answer: 'One must be free from mortal sin, fast for one hour before receiving (except water and medicine), and believe in the Real Presence.'
-        }
-      ]
-    },
-    {
-      id: 'reconciliation',
-      name: 'Reconciliation (Confession)',
-      icon: <Heart size={32} />,
-      description: 'The sacrament of God\'s mercy and forgiveness for sins committed after baptism.',
-      requirements: [
-        'Must be baptized Catholic',
-        'Reached age of reason',
-        'Examination of conscience',
-        'Genuine sorrow for sins',
-        'Firm purpose of amendment'
-      ],
-      preparation: 'First Confession preparation is part of First Communion program. Ongoing formation through parish programs.',
-      questions: [
-        {
-          question: 'What is Confession?',
-          answer: 'Confession is the sacrament where we confess our sins to a priest and receive God\'s forgiveness through absolution.'
-        },
-        {
-          question: 'How often should I go to Confession?',
-          answer: 'Catholics must confess mortal sins before receiving Communion. Regular confession (monthly) is recommended for spiritual growth.'
-        },
-        {
-          question: 'What are the steps of a good Confession?',
-          answer: 'Examination of conscience, genuine sorrow, confession of sins, receiving absolution, and doing the assigned penance.'
-        }
-      ]
-    },
-    {
-      id: 'anointing',
-      name: 'Anointing of the Sick',
-      icon: <Cross size={32} />,
-      description: 'The sacrament of healing for those who are seriously ill, elderly, or facing surgery.',
-      requirements: [
-        'Must be baptized Catholic',
-        'Serious illness, old age, or major surgery',
-        'Conscious and able to receive (preferred)',
-        'Request from patient or family'
-      ],
-      preparation: 'No formal preparation required. Contact parish priest immediately when needed.',
-      questions: [
-        {
-          question: 'Who can receive Anointing of the Sick?',
-          answer: 'Any Catholic who is seriously ill, elderly and frail, or about to undergo major surgery can receive this sacrament.'
-        },
-        {
-          question: 'Is this sacrament only for the dying?',
-          answer: 'No, it\'s for anyone facing serious illness. It can be received multiple times during different illnesses.'
-        },
-        {
-          question: 'What are the effects of this sacrament?',
-          answer: 'Spiritual healing, strength to bear illness, forgiveness of sins, and sometimes physical healing if it\'s God\'s will.'
-        }
-      ]
-    },
-    {
-      id: 'marriage',
-      name: 'Marriage',
-      icon: <Heart size={32} />,
-      description: 'The sacrament uniting a man and woman in a lifelong covenant of love, mirroring Christ\'s love for the Church.',
-      requirements: [
-        'Both parties must be free to marry',
-        'At least one party must be Catholic',
-        'Pre-marriage investigation',
-        'Marriage preparation program',
-        'Banns of marriage published'
-      ],
-      preparation: 'Six-month preparation program including Pre-Cana classes, natural family planning, and spiritual direction.',
-      questions: [
-        {
-          question: 'What makes a Catholic marriage valid?',
-          answer: 'Free consent of both parties, proper form (Catholic ceremony), and no impediments to marriage.'
-        },
-        {
-          question: 'Can Catholics marry non-Catholics?',
-          answer: 'Yes, with proper dispensation and preparation. The Catholic party must promise to raise children Catholic.'
-        },
-        {
-          question: 'What is the purpose of Catholic marriage?',
-          answer: 'The mutual sanctification of the spouses and the procreation and education of children.'
-        }
-      ]
-    },
-    {
-      id: 'holy-orders',
-      name: 'Holy Orders',
-      icon: <BookOpen size={32} />,
-      description: 'The sacrament by which men are ordained as deacons, priests, or bishops to serve the Church.',
-      requirements: [
-        'Must be baptized and confirmed Catholic man',
-        'Called by God to priesthood',
-        'Seminary formation and education',
-        'Celibacy commitment (Latin rite)',
-        'Bishop\'s approval'
-      ],
-      preparation: 'Years of seminary formation including philosophy, theology, pastoral training, and spiritual formation.',
-      questions: [
-        {
-          question: 'What are the three degrees of Holy Orders?',
-          answer: 'Deacon, Priest (Presbyter), and Bishop. Each has specific roles and responsibilities in the Church.'
-        },
-        {
-          question: 'Can married men become priests?',
-          answer: 'In the Latin rite, priests must be celibate. In Eastern Catholic rites, married men can be ordained as priests.'
-        },
-        {
-          question: 'How does one discern a call to priesthood?',
-          answer: 'Through prayer, spiritual direction, involvement in parish life, and consultation with priests and vocations director.'
-        }
-      ]
-    }
-  ];
+  const getSacramentIcon = (name: string) => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('baptism')) return <Droplets size={32} />;
+    if (lowerName.includes('confirmation')) return <Crown size={32} />;
+    if (lowerName.includes('eucharist') || lowerName.includes('communion')) return <Church size={32} />;
+    if (lowerName.includes('reconciliation') || lowerName.includes('confession')) return <Heart size={32} />;
+    if (lowerName.includes('anointing')) return <Cross size={32} />;
+    if (lowerName.includes('marriage') || lowerName.includes('matrimony')) return <Heart size={32} />;
+    if (lowerName.includes('holy orders') || lowerName.includes('priesthood')) return <BookOpen size={32} />;
+    return <Church size={32} />;
+  };
 
-  const currentSacrament = sacraments.find(s => s.id === activeSacrament) || sacraments[0];
+  const activeSacrament = SACRAMENTS_DATA.find(s => s.id === activeSacramentId);
 
   return (
     <div className="sacraments section-padding">
       <div className="container">
-        <div className="sacraments-header">
-          <h1 className="text-center mb-4">The Seven Sacraments</h1>
-          <p className="text-center mb-5">
-            The sacraments are outward signs of inward grace, instituted by Christ for our sanctification.
-          </p>
-        </div>
-
-        {/* Sacrament Navigation */}
-        <div className="sacrament-nav">
-          {sacraments.map((sacrament) => (
-            <button
-              key={sacrament.id}
-              className={`sacrament-tab ${activeSacrament === sacrament.id ? 'active' : ''}`}
-              onClick={() => setActiveSacrament(sacrament.id)}
-            >
-              {sacrament.icon}
-              <span>{sacrament.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Sacrament Details */}
-        <div className="sacrament-details">
-          <div className="sacrament-overview card">
-            <div className="sacrament-header">
-              {currentSacrament.icon}
-              <h2>{currentSacrament.name}</h2>
-            </div>
-            <p className="sacrament-description">{currentSacrament.description}</p>
-            
-            <div className="sacrament-info-grid">
-              <div className="info-section">
-                <h3>Requirements</h3>
-                <ul>
-                  {currentSacrament.requirements.map((req, index) => (
-                    <li key={index}>{req}</li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="info-section">
-                <h3>Preparation</h3>
-                <p>{currentSacrament.preparation}</p>
-              </div>
-            </div>
+        <h1 className="text-center mb-4">{t('sacraments.title')}</h1>
+        
+        <div className="sacraments-container">
+          <div className="sacraments-tabs">
+            {SACRAMENTS_DATA.map((sacrament) => (
+              <button
+                key={sacrament.id}
+                className={`sacrament-tab ${activeSacramentId === sacrament.id ? 'active' : ''}`}
+                onClick={() => setActiveSacramentId(sacrament.id)}
+              >
+                <span className="tab-icon">{getSacramentIcon(sacrament.name)}</span>
+                <span className="tab-name">{sacrament.name}</span>
+              </button>
+            ))}
           </div>
 
-          {/* Questions and Answers */}
-          <div className="qa-section">
-            <h3>Frequently Asked Questions</h3>
-            <div className="qa-grid">
-              {currentSacrament.questions.map((qa, index) => (
-                <div key={index} className="qa-item card">
-                  <h4 className="question">{qa.question}</h4>
-                  <p className="answer">{qa.answer}</p>
+          <div className="sacrament-content">
+            {activeSacrament && (
+              <div className="sacrament-details animate-fade-in" key={activeSacrament.id}>
+                <div className="sacrament-hero">
+                  <div className="hero-text">
+                    <h2>{activeSacrament.name}</h2>
+                    <p className="sacrament-description">{activeSacrament.description}</p>
+                  </div>
+                  <div className="hero-image-container">
+                    <img 
+                      src={activeSacrament.imageUrl} 
+                      alt={activeSacrament.name} 
+                      className="hero-image"
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Contact Information */}
-          <div className="contact-info card">
-            <h3>Need More Information?</h3>
-            <p>
-              For more details about any sacrament or to schedule preparation classes, 
-              please contact the parish office or speak with one of our priests after Mass.
-            </p>
-            <div className="contact-details">
-              <p><strong>Parish Office:</strong> +263 9 123456</p>
-              <p><strong>Email:</strong> info@stpatricksmakokoba.org</p>
-              <p><strong>Office Hours:</strong> Monday-Friday 8:00 AM - 4:00 PM</p>
+                <div className="sacrament-body">
+                  <div className="info-section">
+                    <h3>Requirements</h3>
+                    <ul className="requirements-list">
+                      {(activeSacrament.requirements || []).map((req, index) => (
+                        <li key={index}>{req}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div className="info-section">
+                    <h3>Preparation Time</h3>
+                    <div className="prep-time-card">
+                      <p>{activeSacrament.preparationTime}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="sacrament-footer">
+          <h3>Need More Information?</h3>
+          <p>
+            Our priests and parish staff are here to guide you through your spiritual journey. 
+            For scheduling or specific questions, please reach out to us.
+          </p>
+          <div className="footer-contact-grid">
+            <div className="footer-contact-item">
+              <strong>Parish Office</strong>
+              <span>+263 9 123456</span>
+            </div>
+            <div className="footer-contact-item">
+              <strong>Email Address</strong>
+              <span>info@stpatricksmakokoba.org</span>
+            </div>
+            <div className="footer-contact-item">
+              <strong>Office Hours</strong>
+              <span>Mon-Fri: 8:00 AM - 4:00 PM</span>
             </div>
           </div>
         </div>

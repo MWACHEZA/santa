@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useState, useEffect, useCallback } from 'react';
 import { useAuth, type UserRole, type User } from './AuthContext';
+import * as api from '../services/api';
 
 // Define all the necessary interfaces
 export interface Announcement {
@@ -357,22 +358,132 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return permissions.includes(permission);
   };
 
-  // Announcement methods
-  const addAnnouncement = useCallback((announcement: Omit<Announcement, 'id' | 'createdAt'>) => {
-    const newAnnouncement: Announcement = {
-      ...announcement,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
+  // Fetch data on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          annResp,
+          eventsResp,
+          galleryResp,
+          newsResp,
+          ministriesResp,
+          sacramentsResp,
+          contactResp,
+          scheduleResp,
+          prayersResp
+        ] = await Promise.all([
+          api.announcementsApi.getAll(),
+          api.eventsApi.getAll(),
+          api.galleryApi.getAll(),
+          api.newsApi.getAll(),
+          api.ministriesApi.getAll(),
+          api.sacramentsApi.getAll(),
+          api.contactApi.get(),
+          api.scheduleApi.getAll(),
+          api.prayersApi.getAll()
+        ]);
+
+        if (annResp.success) setAnnouncements(annResp.data.announcements || []);
+        if (eventsResp.success) setEvents(eventsResp.data.events || []);
+        if (galleryResp.success) {
+          const mappedGallery = (galleryResp.data.gallery || []).map((img: any) => ({
+            id: img.id,
+            title: img.title,
+            description: img.description,
+            url: img.image_url,
+            category: img.category_name?.toLowerCase() || 'general',
+            uploadedAt: img.created_at,
+            isPublished: img.is_published
+          }));
+          setGalleryImages(mappedGallery);
+        }
+        if (newsResp.success) {
+          const mappedNews = (newsResp.data.news || []).map((n: any) => ({
+            id: n.id,
+            title: n.title,
+            summary: n.summary,
+            content: n.content,
+            category: n.category_name,
+            imageUrl: n.image_url,
+            author: n.author,
+            authorRole: n.author_role,
+            publishedAt: n.published_at,
+            isArchived: n.is_archived,
+            isPublished: n.is_published,
+            createdAt: n.created_at
+          }));
+          setParishNews(mappedNews);
+        }
+        if (ministriesResp.success) setMinistries(ministriesResp.data.ministries || []);
+        if (sacramentsResp.success) setSacraments(sacramentsResp.data.sacraments || []);
+        if (contactResp.success) setContactInfo(contactResp.data || {});
+        if (scheduleResp.success) setMassSchedule(scheduleResp.data || {});
+        if (prayersResp.success) setPrayerIntentions(prayersResp.data.prayers || []);
+      } catch (error) {
+        console.error('Failed to fetch admin data:', error);
+      }
     };
-    setAnnouncements(prev => [...prev, newAnnouncement]);
+
+    if (user && user.role !== 'parishioner') {
+      fetchData();
+    }
+  }, [user]);
+
+  // Announcement methods
+  const addAnnouncement = useCallback(async (announcement: Omit<Announcement, 'id' | 'createdAt'>) => {
+    try {
+      const response = await api.announcementsApi.create({
+        title: announcement.title,
+        content: announcement.message,
+        type: announcement.type,
+        is_active: announcement.isActive,
+        end_date: announcement.expiresAt
+      });
+      if (response.success) {
+        const ann = response.data.announcement;
+        setAnnouncements(prev => [...prev, {
+          id: ann.id,
+          title: ann.title,
+          message: ann.content,
+          type: ann.type,
+          isActive: ann.is_active,
+          createdAt: ann.created_at,
+          expiresAt: ann.end_date
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to add announcement:', error);
+    }
   }, []);
 
-  const updateAnnouncement = useCallback((id: string, announcement: Partial<Announcement>) => {
-    setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, ...announcement } : a));
+  const updateAnnouncement = useCallback(async (id: string, announcement: Partial<Announcement>) => {
+    try {
+      const apiData: any = {};
+      if (announcement.title !== undefined) apiData.title = announcement.title;
+      if (announcement.message !== undefined) apiData.content = announcement.message;
+      if (announcement.type !== undefined) apiData.type = announcement.type;
+      if (announcement.isActive !== undefined) apiData.is_active = announcement.isActive;
+      if (announcement.expiresAt !== undefined) apiData.end_date = announcement.expiresAt;
+
+      const response = await api.announcementsApi.update(id, apiData);
+      if (response.success) {
+        setAnnouncements(prev => prev.map(a => a.id === id ? { ...a, ...announcement } : a));
+      }
+    } catch (error) {
+      console.error('Failed to update announcement:', error);
+    }
   }, []);
 
-  const deleteAnnouncement = useCallback((id: string) => {
-    setAnnouncements(prev => prev.filter(a => a.id !== id));
+  const deleteAnnouncement = useCallback(async (id: string) => {
+    try {
+      const response = await api.announcementsApi.delete(id);
+      if (response.success) {
+        setAnnouncements(prev => prev.filter(a => a.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete announcement:', error);
+    }
   }, []);
 
   const getActiveAnnouncement = useCallback((): Announcement | null => {
@@ -386,21 +497,64 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [announcements, updateAnnouncement]);
 
   // Event methods
-  const addEvent = useCallback((event: Omit<Event, 'id' | 'createdAt'>) => {
-    const newEvent: Event = {
-      ...event,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setEvents(prev => [...prev, newEvent]);
+  const addEvent = useCallback(async (event: Omit<Event, 'id' | 'createdAt'>) => {
+    try {
+      const response = await api.eventsApi.create({
+        title: event.title,
+        description: event.description,
+        event_date: event.date,
+        start_time: event.time,
+        location: event.location,
+        category_name: event.category,
+        is_published: event.isPublished
+      });
+      if (response.success) {
+        const e = response.data.event;
+        setEvents(prev => [...prev, {
+          id: e.id,
+          title: e.title,
+          description: e.description,
+          date: e.event_date,
+          time: e.start_time,
+          location: e.location,
+          category: event.category,
+          isPublished: e.is_published,
+          createdAt: e.created_at
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to add event:', error);
+    }
   }, []);
 
-  const updateEvent = useCallback((id: string, event: Partial<Event>) => {
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...event } : e));
+  const updateEvent = useCallback(async (id: string, event: Partial<Event>) => {
+    try {
+      const apiData: any = {};
+      if (event.title !== undefined) apiData.title = event.title;
+      if (event.description !== undefined) apiData.description = event.description;
+      if (event.date !== undefined) apiData.event_date = event.date;
+      if (event.time !== undefined) apiData.start_time = event.time;
+      if (event.location !== undefined) apiData.location = event.location;
+      if (event.isPublished !== undefined) apiData.is_published = event.isPublished;
+
+      const response = await api.eventsApi.update(id, apiData);
+      if (response.success) {
+        setEvents(prev => prev.map(e => e.id === id ? { ...e, ...event } : e));
+      }
+    } catch (error) {
+      console.error('Failed to update event:', error);
+    }
   }, []);
 
-  const deleteEvent = useCallback((id: string) => {
-    setEvents(prev => prev.filter(e => e.id !== id));
+  const deleteEvent = useCallback(async (id: string) => {
+    try {
+      const response = await api.eventsApi.delete(id);
+      if (response.success) {
+        setEvents(prev => prev.filter(e => e.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete event:', error);
+    }
   }, []);
 
   const getPublishedEvents = useCallback((): Event[] => {
@@ -408,21 +562,58 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [events]);
 
   // Gallery methods
-  const addImage = useCallback((image: Omit<GalleryImage, 'id' | 'uploadedAt'>) => {
-    const newImage: GalleryImage = {
-      ...image,
-      id: Date.now().toString(),
-      uploadedAt: new Date().toISOString()
-    };
-    setGalleryImages(prev => [...prev, newImage]);
+  const addImage = useCallback(async (image: Omit<GalleryImage, 'id' | 'uploadedAt'>) => {
+    try {
+      const response = await api.galleryApi.create({
+        title: image.title,
+        description: image.description,
+        image_url: image.url,
+        is_published: image.isPublished,
+        category_name: image.category // The backend might expect a category_id, but let's see
+      });
+      if (response.success) {
+        const newImg = response.data.gallery;
+        setGalleryImages(prev => [...prev, {
+          id: newImg.id,
+          title: newImg.title,
+          description: newImg.description,
+          url: newImg.image_url,
+          category: image.category,
+          uploadedAt: newImg.created_at,
+          isPublished: newImg.is_published
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to add image:', error);
+    }
   }, []);
 
-  const updateImage = useCallback((id: string, image: Partial<GalleryImage>) => {
-    setGalleryImages(prev => prev.map(i => i.id === id ? { ...i, ...image } : i));
+  const updateImage = useCallback(async (id: string, image: Partial<GalleryImage>) => {
+    try {
+      const apiData: any = {};
+      if (image.title !== undefined) apiData.title = image.title;
+      if (image.description !== undefined) apiData.description = image.description;
+      if (image.url !== undefined) apiData.image_url = image.url;
+      if (image.isPublished !== undefined) apiData.is_published = image.isPublished;
+      
+      const response = await api.galleryApi.update(id, apiData);
+      if (response.success) {
+        setGalleryImages(prev => prev.map(i => i.id === id ? { ...i, ...image } : i));
+      }
+    } catch (error) {
+      console.error('Failed to update image:', error);
+    }
   }, []);
 
-  const deleteImage = useCallback((id: string) => {
-    setGalleryImages(prev => prev.filter(i => i.id !== id));
+  const deleteImage = useCallback(async (id: string) => {
+    try {
+      const response = await api.galleryApi.delete(id);
+      if (response.success) {
+        setGalleryImages(prev => prev.filter(i => i.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete image:', error);
+    }
   }, []);
 
   const getPublishedImages = useCallback((): GalleryImage[] => {
@@ -430,21 +621,62 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [galleryImages]);
 
   // Ministry methods
-  const addMinistry = useCallback((ministry: Omit<Ministry, 'id' | 'createdAt'>) => {
-    const newMinistry: Ministry = {
-      ...ministry,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setMinistries(prev => [...prev, newMinistry]);
+  const addMinistry = useCallback(async (ministry: Omit<Ministry, 'id' | 'createdAt'>) => {
+    try {
+      const response = await api.ministriesApi.create({
+        name: ministry.name,
+        description: ministry.description,
+        image_url: ministry.imageUrl,
+        contact_person: ministry.contactPerson,
+        meeting_time: ministry.meetingTime,
+        is_active: ministry.isActive
+      });
+      if (response.success) {
+        const m = response.data.ministry;
+        setMinistries(prev => [...prev, {
+          id: m.id,
+          name: m.name,
+          description: m.description,
+          imageUrl: m.image_url,
+          contactPerson: m.leader_name,
+          meetingTime: m.meeting_schedule,
+          isActive: m.is_active,
+          createdAt: m.created_at
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to add ministry:', error);
+    }
   }, []);
 
-  const updateMinistry = useCallback((id: string, ministry: Partial<Ministry>) => {
-    setMinistries(prev => prev.map(m => m.id === id ? { ...m, ...ministry } : m));
+  const updateMinistry = useCallback(async (id: string, ministry: Partial<Ministry>) => {
+    try {
+      const apiData: any = {};
+      if (ministry.name !== undefined) apiData.name = ministry.name;
+      if (ministry.description !== undefined) apiData.description = ministry.description;
+      if (ministry.imageUrl !== undefined) apiData.image_url = ministry.imageUrl;
+      if (ministry.contactPerson !== undefined) apiData.leader_name = ministry.contactPerson;
+      if (ministry.meetingTime !== undefined) apiData.meeting_schedule = ministry.meetingTime;
+      if (ministry.isActive !== undefined) apiData.is_active = ministry.isActive;
+
+      const response = await api.ministriesApi.update(id, apiData);
+      if (response.success) {
+        setMinistries(prev => prev.map(m => m.id === id ? { ...m, ...ministry } : m));
+      }
+    } catch (error) {
+      console.error('Failed to update ministry:', error);
+    }
   }, []);
 
-  const deleteMinistry = useCallback((id: string) => {
-    setMinistries(prev => prev.filter(m => m.id !== id));
+  const deleteMinistry = useCallback(async (id: string) => {
+    try {
+      const response = await api.ministriesApi.delete(id);
+      if (response.success) {
+        setMinistries(prev => prev.filter(m => m.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete ministry:', error);
+    }
   }, []);
 
   const getActiveMinistries = useCallback((): Ministry[] => {
@@ -452,46 +684,86 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [ministries]);
 
   // Parish News methods
-  const addParishNews = useCallback((news: Omit<ParishNews, 'id' | 'createdAt'>) => {
-    const newNews: ParishNews = {
-      ...news,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setParishNews(prev => [...prev, newNews]);
+  const addParishNews = useCallback(async (news: Omit<ParishNews, 'id' | 'createdAt'>) => {
+    try {
+      const response = await api.newsApi.create({
+        title: news.title,
+        summary: news.summary,
+        content: news.content,
+        author: news.author,
+        author_role: news.authorRole,
+        image_url: news.imageUrl,
+        is_published: news.isPublished,
+        is_archived: false
+      });
+      if (response.success) {
+        const n = response.data.news;
+        setParishNews(prev => [...prev, {
+          id: n.id,
+          title: n.title,
+          summary: n.summary,
+          content: n.content,
+          category: n.category_name,
+          imageUrl: n.image_url,
+          author: n.author,
+          authorRole: n.author_role,
+          publishedAt: n.published_at,
+          isArchived: n.is_archived,
+          isPublished: n.is_published,
+          createdAt: n.created_at
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to add news:', error);
+    }
   }, []);
 
-  const updateParishNews = useCallback((id: string, news: Partial<ParishNews>) => {
-    setParishNews(prev => prev.map(n => n.id === id ? { ...n, ...news } : n));
+  const updateParishNews = useCallback(async (id: string, news: Partial<ParishNews>) => {
+    try {
+      const apiData: any = {};
+      if (news.title !== undefined) apiData.title = news.title;
+      if (news.summary !== undefined) apiData.summary = news.summary;
+      if (news.content !== undefined) apiData.content = news.content;
+      if (news.author !== undefined) apiData.author = news.author;
+      if (news.authorRole !== undefined) apiData.author_role = news.authorRole;
+      if (news.imageUrl !== undefined) apiData.image_url = news.imageUrl;
+      if (news.isPublished !== undefined) apiData.is_published = news.isPublished;
+      if (news.isArchived !== undefined) apiData.is_archived = news.isArchived;
+
+      const response = await api.newsApi.update(id, apiData);
+      if (response.success) {
+        setParishNews(prev => prev.map(n => n.id === id ? { ...n, ...news } : n));
+      }
+    } catch (error) {
+      console.error('Failed to update news:', error);
+    }
   }, []);
 
-  const deleteParishNews = useCallback((id: string) => {
-    setParishNews(prev => prev.filter(n => n.id !== id));
+  const deleteParishNews = useCallback(async (id: string) => {
+    try {
+      const response = await api.newsApi.delete(id);
+      if (response.success) {
+        setParishNews(prev => prev.filter(n => n.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete news:', error);
+    }
   }, []);
 
   const getPublishedParishNews = useCallback((): ParishNews[] => {
     return parishNews.filter(news => news.isPublished && !news.isArchived);
   }, [parishNews]);
 
-  const archiveParishNews = useCallback((id: string) => {
-    const newsItem = parishNews.find(n => n.id === id);
-    if (newsItem) {
-      const archiveItem: NewsArchive = {
-        id: Date.now().toString(),
-        title: newsItem.title,
-        summary: newsItem.summary,
-        content: newsItem.content,
-        imageUrl: newsItem.imageUrl,
-        author: newsItem.author,
-        originalPublishDate: newsItem.publishedAt,
-        archivedAt: new Date().toISOString(),
-        year: new Date(newsItem.publishedAt).getFullYear(),
-        month: new Date(newsItem.publishedAt).getMonth() + 1
-      };
-      setNewsArchive(prev => [...prev, archiveItem]);
-      updateParishNews(id, { isArchived: true });
+  const archiveParishNews = useCallback(async (id: string) => {
+    try {
+      const response = await api.newsApi.archive(id);
+      if (response.success) {
+        setParishNews(prev => prev.map(n => n.id === id ? { ...n, isArchived: true } : n));
+      }
+    } catch (error) {
+      console.error('Failed to archive news:', error);
     }
-  }, [parishNews, updateParishNews]);
+  }, []);
 
   // External News methods
   const fetchExternalNews = useCallback(async (source: ExternalNews['source']) => {
@@ -578,21 +850,62 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   // Sacrament methods
-  const addSacrament = useCallback((sacrament: Omit<Sacrament, 'id' | 'createdAt'>) => {
-    const newSacrament: Sacrament = {
-      ...sacrament,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    setSacraments(prev => [...prev, newSacrament]);
+  const addSacrament = useCallback(async (sacrament: Omit<Sacrament, 'id' | 'createdAt'>) => {
+    try {
+      const response = await api.sacramentsApi.create({
+        name: sacrament.name,
+        description: sacrament.description,
+        image_url: sacrament.imageUrl,
+        requirements: sacrament.requirements.join('\n'),
+        contact_info: sacrament.contactInfo,
+        is_active: sacrament.isActive
+      });
+      if (response.success) {
+        const s = response.data.sacrament;
+        setSacraments(prev => [...prev, {
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          imageUrl: s.image_url,
+          requirements: s.requirements ? s.requirements.split('\n') : [],
+          contactInfo: s.contact_person,
+          isActive: s.is_active,
+          createdAt: s.created_at
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to add sacrament:', error);
+    }
   }, []);
 
-  const updateSacrament = useCallback((id: string, sacrament: Partial<Sacrament>) => {
-    setSacraments(prev => prev.map(s => s.id === id ? { ...s, ...sacrament } : s));
+  const updateSacrament = useCallback(async (id: string, sacrament: Partial<Sacrament>) => {
+    try {
+      const apiData: any = {};
+      if (sacrament.name !== undefined) apiData.name = sacrament.name;
+      if (sacrament.description !== undefined) apiData.description = sacrament.description;
+      if (sacrament.imageUrl !== undefined) apiData.image_url = sacrament.imageUrl;
+      if (sacrament.requirements !== undefined) apiData.requirements = sacrament.requirements.join('\n');
+      if (sacrament.contactInfo !== undefined) apiData.contact_person = sacrament.contactInfo;
+      if (sacrament.isActive !== undefined) apiData.is_active = sacrament.isActive;
+
+      const response = await api.sacramentsApi.update(id, apiData);
+      if (response.success) {
+        setSacraments(prev => prev.map(s => s.id === id ? { ...s, ...sacrament } : s));
+      }
+    } catch (error) {
+      console.error('Failed to update sacrament:', error);
+    }
   }, []);
 
-  const deleteSacrament = useCallback((id: string) => {
-    setSacraments(prev => prev.filter(s => s.id !== id));
+  const deleteSacrament = useCallback(async (id: string) => {
+    try {
+      const response = await api.sacramentsApi.delete(id);
+      if (response.success) {
+        setSacraments(prev => prev.filter(s => s.id !== id));
+      }
+    } catch (error) {
+      console.error('Failed to delete sacrament:', error);
+    }
   }, []);
 
   const getActiveSacraments = useCallback((): Sacrament[] => {

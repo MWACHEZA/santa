@@ -1,631 +1,311 @@
 const express = require('express');
-const router = express.Router();
-const { body, validationResult, query } = require('express-validator');
-const auth = require('../middleware/auth');
-const roleAuth = require('../middleware/roleAuth');
+const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
+const { logAction } = require('../utils/logger');
 
-// =============================================
-// LIVE STREAMS ENDPOINTS
-// =============================================
+const router = express.Router();
 
-// Get all live streams
-router.get('/streams', [
-  query('active').optional().isBoolean(),
-  query('scheduled').optional().isBoolean(),
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 })
-], async (req, res) => {
+// ── LIVE STREAMS ──────────────────────────────────────────────
+
+// GET /videos/streams
+router.get('/streams', optionalAuth, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { active, scheduled, page = 1, limit = 10 } = req.query;
-    const offset = (page - 1) * limit;
-
-    let whereClause = 'WHERE 1=1';
+    const { active } = req.query;
+    // Only return streams that are either currently LIVE or scheduled for the FUTURE
+    let query = `
+      SELECT * FROM live_streams 
+      WHERE is_live = true 
+      OR scheduled_time > CURRENT_TIMESTAMP - INTERVAL '4 hours'
+      ORDER BY scheduled_time ASC
+    `;
     const params = [];
-
-    if (active !== undefined) {
-      whereClause += ` AND is_live = $${params.length + 1}`;
-      params.push(active === 'true');
-    }
-
-    if (scheduled !== undefined) {
-      const now = new Date();
-      if (scheduled === 'true') {
-        whereClause += ` AND scheduled_time > $${params.length + 1}`;
-        params.push(now);
-      }
-    }
-
-    const query = `
-      SELECT 
-        ls.*,
-        u.username as created_by_username,
-        u.first_name as created_by_first_name,
-        u.last_name as created_by_last_name
-      FROM live_streams ls
-      LEFT JOIN users u ON ls.created_by = u.id
-      ${whereClause}
-      ORDER BY 
-        CASE WHEN is_live THEN 1 ELSE 2 END,
-        scheduled_time DESC
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `;
-
-    params.push(limit, offset);
-
-    const result = await db.query(query, params);
-
-    // Get total count for pagination
-    const countQuery = `SELECT COUNT(*) FROM live_streams ls ${whereClause}`;
-    const countResult = await db.query(countQuery, params.slice(0, -2));
-    const totalCount = parseInt(countResult.rows[0].count);
-
-    res.json({
-      success: true,
-      data: result.rows,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: totalCount,
-        pages: Math.ceil(totalCount / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching live streams:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    
+    const [streams] = await db.execute(query, params);
+    res.json({ success: true, data: streams });
+  } catch (err) {
+    console.error('Get streams error:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch streams', error: err.message });
   }
 });
 
-// Create new live stream
-router.post('/streams', [
-  auth,
-  roleAuth(['admin', 'reporter']),
-  body('title').notEmpty().trim().isLength({ min: 1, max: 255 }),
-  body('description').optional().trim(),
-  body('streamUrl').notEmpty().isURL(),
-  body('scheduledTime').notEmpty().isISO8601(),
-  body('thumbnailUrl').optional().isURL()
-], async (req, res) => {
+// POST /videos/streams
+router.post('/streams', authenticateToken, requireContentManager, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+    const { title, description, streamUrl, scheduledTime, thumbnail, isLive } = req.body;
+    if (!title || !streamUrl) {
+      return res.status(400).json({ success: false, message: 'title and streamUrl are required' });
     }
-
-    const { title, description, streamUrl, scheduledTime, thumbnailUrl } = req.body;
-
-    const query = `
-      INSERT INTO live_streams (
-        title, description, stream_url, scheduled_time, 
-        thumbnail_url, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `;
-
-    const result = await db.query(query, [
-      title, description, streamUrl, scheduledTime, 
-      thumbnailUrl, req.user.id
-    ]);
-
-    res.status(201).json({
-      success: true,
-      data: result.rows[0],
-      message: 'Live stream created successfully'
+    const liveStatus = isLive === true || isLive === 'true';
+    const id = uuidv4();
+    await db.execute(
+      'INSERT INTO live_streams (id, title, description, stream_url, scheduled_time, thumbnail, is_live, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [id, title, description || null, streamUrl, scheduledTime || null, thumbnail || null, liveStatus, req.user.id]
+    );
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_STREAM',
+      entityType: 'stream',
+      entityId: id,
+      details: `Created stream: ${title}`,
+      ipAddress: req.ip
     });
-  } catch (error) {
-    console.error('Error creating live stream:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    const [rows] = await db.execute('SELECT * FROM live_streams WHERE id = ?', [id]);
+    res.status(201).json({ success: true, data: rows[0], message: 'Live stream created successfully' });
+  } catch (err) {
+    console.error('Create stream error:', err);
+    res.status(500).json({ success: false, message: 'Failed to create stream' });
   }
 });
 
-// Update live stream
-router.put('/streams/:id', [
-  auth,
-  roleAuth(['admin', 'reporter']),
-  body('title').optional().trim().isLength({ min: 1, max: 255 }),
-  body('description').optional().trim(),
-  body('streamUrl').optional().isURL(),
-  body('scheduledTime').optional().isISO8601(),
-  body('thumbnailUrl').optional().isURL(),
-  body('isLive').optional().isBoolean()
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { id } = req.params;
-    const updates = req.body;
-
-    // Build dynamic update query
-    const setClause = [];
-    const params = [];
-    let paramIndex = 1;
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined) {
-        const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        setClause.push(`${dbKey} = $${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-      }
-    }
-
-    if (setClause.length === 0) {
-      return res.status(400).json({ success: false, message: 'No valid fields to update' });
-    }
-
-    params.push(id);
-    const query = `
-      UPDATE live_streams 
-      SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
-
-    const result = await db.query(query, params);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Live stream not found' });
-    }
-
-    res.json({
-      success: true,
-      data: result.rows[0],
-      message: 'Live stream updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating live stream:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// Delete live stream
-router.delete('/streams/:id', [
-  auth,
-  roleAuth(['admin', 'reporter'])
-], async (req, res) => {
+// PUT /videos/streams/:id
+router.put('/streams/:id', authenticateToken, requireContentManager, async (req, res) => {
   try {
     const { id } = req.params;
+    const { title, description, streamUrl, scheduledTime, thumbnail, isLive } = req.body;
 
-    const query = 'DELETE FROM live_streams WHERE id = $1 RETURNING *';
-    const result = await db.query(query, [id]);
+    const updates = [];
+    const vals = [];
+    if (title !== undefined)         { updates.push('title = ?');          vals.push(title); }
+    if (description !== undefined)   { updates.push('description = ?');    vals.push(description); }
+    if (streamUrl !== undefined)     { updates.push('stream_url = ?');     vals.push(streamUrl); }
+    if (scheduledTime !== undefined) { updates.push('scheduled_time = ?'); vals.push(scheduledTime); }
+    if (thumbnail !== undefined)     { updates.push('thumbnail = ?');      vals.push(thumbnail); }
+    if (isLive !== undefined)        { updates.push('is_live = ?');        vals.push(isLive); }
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Live stream not found' });
-    }
+    if (!updates.length) return res.status(400).json({ success: false, message: 'No fields to update' });
 
-    res.json({
-      success: true,
-      message: 'Live stream deleted successfully'
+    vals.push(id);
+    await db.execute(`UPDATE live_streams SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, vals);
+
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'UPDATE_STREAM',
+      entityType: 'stream',
+      entityId: id,
+      details: `Updated stream: ${title || id}`,
+      ipAddress: req.ip
     });
-  } catch (error) {
-    console.error('Error deleting live stream:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+
+    const [rows] = await db.execute('SELECT * FROM live_streams WHERE id = ?', [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Stream not found' });
+    res.json({ success: true, data: rows[0], message: 'Stream updated successfully' });
+  } catch (err) {
+    console.error('Update stream error:', err);
+    res.status(500).json({ success: false, message: 'Failed to update stream' });
   }
 });
 
-// =============================================
-// VIDEO ARCHIVE ENDPOINTS
-// =============================================
-
-// Get all archived videos
-router.get('/archive', [
-  query('category').optional().isIn(['mass', 'event', 'sermon', 'special']),
-  query('published').optional().isBoolean(),
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('search').optional().trim()
-], async (req, res) => {
+// DELETE /videos/streams/:id
+router.delete('/streams/:id', authenticateToken, requireContentManager, async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    const { id } = req.params;
+    
+    // Log action before deletion
+    await logAction({
+      userId: req.user.id,
+      action: 'DELETE_STREAM',
+      entityType: 'stream',
+      entityId: id,
+      details: `Deleted stream ID: ${id}`,
+      ipAddress: req.ip
+    });
 
-    const { category, published, page = 1, limit = 10, search } = req.query;
+    await db.execute('DELETE FROM live_streams WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Stream deleted successfully' });
+  } catch (err) {
+    console.error('Delete stream error:', err);
+    res.status(500).json({ success: false, message: 'Failed to delete stream' });
+  }
+});
+
+// POST /videos/streams/:id/viewer/start
+router.post('/streams/:id/viewer/start', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.execute('UPDATE live_streams SET viewers = viewers + 1 WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Viewer joined' });
+  } catch (err) {
+    console.error('Increment viewers error:', err);
+    res.status(500).json({ success: false, message: 'Failed to join stream' });
+  }
+});
+
+// POST /videos/streams/:id/viewer/stop
+router.post('/streams/:id/viewer/stop', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Ensure viewers don't go below 0
+    await db.execute('UPDATE live_streams SET viewers = GREATEST(0, viewers - 1) WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Viewer left' });
+  } catch (err) {
+    console.error('Decrement viewers error:', err);
+    res.status(500).json({ success: false, message: 'Failed to leave stream' });
+  }
+});
+
+// ── VIDEO ARCHIVE ─────────────────────────────────────────────
+
+// GET /videos/archive
+router.get('/archive', optionalAuth, async (req, res) => {
+  try {
+    const { category, page = 1, limit = 12 } = req.query;
     const offset = (page - 1) * limit;
-
-    let whereClause = 'WHERE 1=1';
+    
+    let whereClause = 'WHERE is_published = true';
     const params = [];
-
+    
     if (category) {
-      whereClause += ` AND category = $${params.length + 1}`;
+      whereClause += ' AND category = ?';
       params.push(category);
     }
-
-    if (published !== undefined) {
-      whereClause += ` AND is_published = $${params.length + 1}`;
-      params.push(published === 'true');
-    }
-
-    if (search) {
-      whereClause += ` AND (title ILIKE $${params.length + 1} OR description ILIKE $${params.length + 1})`;
-      params.push(`%${search}%`);
-    }
-
-    const query = `
-      SELECT 
-        va.*,
-        u.username as created_by_username,
-        u.first_name as created_by_first_name,
-        u.last_name as created_by_last_name,
-        EXTRACT(EPOCH FROM duration) as duration_seconds
-      FROM video_archive va
-      LEFT JOIN users u ON va.created_by = u.id
-      ${whereClause}
-      ORDER BY 
-        CASE WHEN is_published THEN published_at ELSE created_at END DESC
-      LIMIT $${params.length + 1} OFFSET $${params.length + 2}
-    `;
-
-    params.push(limit, offset);
-
-    const result = await db.query(query, params);
-
-    // Get total count for pagination
-    const countQuery = `SELECT COUNT(*) FROM video_archive va ${whereClause}`;
-    const countResult = await db.query(countQuery, params.slice(0, -2));
-    const totalCount = parseInt(countResult.rows[0].count);
-
+    
+    const [items] = await db.execute(
+      `SELECT * FROM video_archive ${whereClause} ORDER BY published_at DESC LIMIT ? OFFSET ?`,
+      [...params, parseInt(limit), offset]
+    );
+    
+    const [countResult] = await db.execute(
+      `SELECT COUNT(*) as total FROM video_archive ${whereClause}`,
+      params
+    );
+    
+    const total = countResult[0].total;
+    
     res.json({
       success: true,
-      data: result.rows,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: totalCount,
-        pages: Math.ceil(totalCount / limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching video archive:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// Create new archived video
-router.post('/archive', [
-  auth,
-  roleAuth(['admin', 'reporter']),
-  body('title').notEmpty().trim().isLength({ min: 1, max: 255 }),
-  body('description').optional().trim(),
-  body('videoUrl').notEmpty().isURL(),
-  body('category').notEmpty().isIn(['mass', 'event', 'sermon', 'special']),
-  body('duration').optional().matches(/^\d{2}:\d{2}:\d{2}$/),
-  body('thumbnailUrl').optional().isURL(),
-  body('tags').optional().isArray()
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { title, description, videoUrl, category, duration, thumbnailUrl, tags } = req.body;
-
-    // Generate slug from title
-    const slug = title.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim('-');
-
-    const query = `
-      INSERT INTO video_archive (
-        title, description, video_url, category, duration,
-        thumbnail_url, tags, slug, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *
-    `;
-
-    const result = await db.query(query, [
-      title, description, videoUrl, category, duration,
-      thumbnailUrl, tags || [], slug, req.user.id
-    ]);
-
-    res.status(201).json({
-      success: true,
-      data: result.rows[0],
-      message: 'Video created successfully'
-    });
-  } catch (error) {
-    console.error('Error creating video:', error);
-    if (error.code === '23505') { // Unique constraint violation
-      res.status(400).json({ success: false, message: 'Video with this title already exists' });
-    } else {
-      res.status(500).json({ success: false, message: 'Server error' });
-    }
-  }
-});
-
-// Update archived video
-router.put('/archive/:id', [
-  auth,
-  roleAuth(['admin', 'reporter']),
-  body('title').optional().trim().isLength({ min: 1, max: 255 }),
-  body('description').optional().trim(),
-  body('videoUrl').optional().isURL(),
-  body('category').optional().isIn(['mass', 'event', 'sermon', 'special']),
-  body('duration').optional().matches(/^\d{2}:\d{2}:\d{2}$/),
-  body('thumbnailUrl').optional().isURL(),
-  body('isPublished').optional().isBoolean(),
-  body('tags').optional().isArray()
-], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { id } = req.params;
-    const updates = req.body;
-
-    // Build dynamic update query
-    const setClause = [];
-    const params = [];
-    let paramIndex = 1;
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined) {
-        const dbKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        setClause.push(`${dbKey} = $${paramIndex}`);
-        params.push(value);
-        paramIndex++;
-
-        // Set published_at when publishing
-        if (key === 'isPublished' && value === true) {
-          setClause.push(`published_at = CURRENT_TIMESTAMP`);
+      data: {
+        items,
+        pagination: {
+          total,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          pages: Math.ceil(total / limit)
         }
       }
-    }
+    });
+  } catch (err) {
+    console.error('Get archive error:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch archive' });
+  }
+});
 
-    if (setClause.length === 0) {
-      return res.status(400).json({ success: false, message: 'No valid fields to update' });
-    }
+// POST /videos/archive
+router.post('/archive', authenticateToken, requireContentManager, async (req, res) => {
+  try {
+    const { title, description, videoUrl, thumbnail, duration, category, isPublished } = req.body;
+    const id = uuidv4();
+    const publishedAt = isPublished ? new Date() : null;
+    
+    await db.execute(
+      `INSERT INTO video_archive (
+        id, title, description, video_url, thumbnail, duration, category, is_published, published_at, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, title, description, videoUrl, thumbnail, duration, category, isPublished || false, publishedAt, req.user.id]
+    );
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_ARCHIVE_VIDEO',
+      entityType: 'video',
+      entityId: id,
+      details: `Archived video: ${title}`,
+      ipAddress: req.ip
+    });
 
-    params.push(id);
-    const query = `
-      UPDATE video_archive 
-      SET ${setClause.join(', ')}, updated_at = CURRENT_TIMESTAMP
-      WHERE id = $${paramIndex}
-      RETURNING *
-    `;
+    const [rows] = await db.execute('SELECT * FROM video_archive WHERE id = ?', [id]);
+    res.status(201).json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('Create archive error:', err);
+    res.status(500).json({ success: false, message: 'Failed to archive video' });
+  }
+});
 
-    const result = await db.query(query, params);
+// GET /videos/archive/:id
+router.get('/archive/:id', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.execute('SELECT * FROM video_archive WHERE id = ?', [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Video not found' });
+    
+    // Increment views
+    await db.execute('UPDATE video_archive SET views = views + 1 WHERE id = ?', [id]);
+    
+    res.json({ success: true, data: rows[0] });
+  } catch (err) {
+    console.error('Get video error:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch video' });
+  }
+});
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Video not found' });
-    }
+// POST /videos/archive/:id/view
+router.post('/archive/:id/view', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.execute('UPDATE video_archive SET views = views + 1 WHERE id = ?', [id]);
+    res.json({ success: true, message: 'View incremented' });
+  } catch (err) {
+    console.error('Increment archive views error:', err);
+    res.status(500).json({ success: false, message: 'Failed to increment views' });
+  }
+});
+
+// POST /videos/stream/:id/view (for consistency)
+router.post('/stream/:id/view', optionalAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.execute('UPDATE live_streams SET viewers = viewers + 1 WHERE id = ?', [id]);
+    res.json({ success: true, message: 'View incremented' });
+  } catch (err) {
+    console.error('Increment stream views error:', err);
+    res.status(500).json({ success: false, message: 'Failed to increment views' });
+  }
+});
+
+// GET /videos/analytics (admin only)
+router.get('/analytics', authenticateToken, requireContentManager, async (req, res) => {
+  try {
+    // Get live stream stats
+    const [streamStats] = await db.execute(`
+      SELECT 
+        COUNT(*) as total_streams,
+        SUM(viewers) as total_live_viewers,
+        (SELECT COUNT(*) FROM live_streams WHERE is_live = true) as currently_live
+      FROM live_streams
+    `);
+
+    // Get archive stats
+    const [archiveStats] = await db.execute(`
+      SELECT 
+        COUNT(*) as total_videos,
+        SUM(views) as total_archive_views,
+        AVG(views) as avg_views_per_video
+      FROM video_archive
+    `);
+
+    // Get popular content
+    const [popularStreams] = await db.execute('SELECT title, viewers FROM live_streams ORDER BY viewers DESC LIMIT 5');
+    const [popularArchive] = await db.execute('SELECT title, views FROM video_archive ORDER BY views DESC LIMIT 5');
 
     res.json({
       success: true,
-      data: result.rows[0],
-      message: 'Video updated successfully'
-    });
-  } catch (error) {
-    console.error('Error updating video:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// Delete archived video
-router.delete('/archive/:id', [
-  auth,
-  roleAuth(['admin', 'reporter'])
-], async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const query = 'DELETE FROM video_archive WHERE id = $1 RETURNING *';
-    const result = await db.query(query, [id]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Video not found' });
-    }
-
-    res.json({
-      success: true,
-      message: 'Video deleted successfully'
-    });
-  } catch (error) {
-    console.error('Error deleting video:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// =============================================
-// VIEW TRACKING ENDPOINTS
-// =============================================
-
-// Track video view
-router.post('/archive/:id/view', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id || null;
-    const ipAddress = req.ip;
-    const userAgent = req.get('User-Agent');
-
-    // Insert view record
-    const viewQuery = `
-      INSERT INTO video_views (video_id, user_id, ip_address, user_agent)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `;
-
-    await db.query(viewQuery, [id, userId, ipAddress, userAgent]);
-
-    // Update video view count
-    const updateQuery = `
-      UPDATE video_archive 
-      SET views = views + 1 
-      WHERE id = $1
-    `;
-
-    await db.query(updateQuery, [id]);
-
-    res.json({ success: true, message: 'View tracked successfully' });
-  } catch (error) {
-    console.error('Error tracking video view:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// Track stream view
-router.post('/streams/:id/view', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.id || null;
-    const ipAddress = req.ip;
-    const userAgent = req.get('User-Agent');
-
-    // Insert view record
-    const viewQuery = `
-      INSERT INTO video_views (stream_id, user_id, ip_address, user_agent)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-    `;
-
-    await db.query(viewQuery, [id, userId, ipAddress, userAgent]);
-
-    // Update stream view count
-    const updateQuery = `
-      UPDATE live_streams 
-      SET total_views = total_views + 1 
-      WHERE id = $1
-    `;
-
-    await db.query(updateQuery, [id]);
-
-    res.json({ success: true, message: 'View tracked successfully' });
-  } catch (error) {
-    console.error('Error tracking stream view:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-// =============================================
-// ANALYTICS ENDPOINTS
-// =============================================
-
-// Get video analytics
-router.get('/analytics', [
-  auth,
-  roleAuth(['admin', 'priest', 'reporter']),
-  query('timeRange').optional().isIn(['7d', '30d', '90d', '1y']),
-  query('videoId').optional().isUUID(),
-  query('category').optional().isIn(['mass', 'event', 'sermon', 'special'])
-], async (req, res) => {
-  try {
-    const { timeRange = '30d', videoId, category } = req.query;
-
-    // Calculate date range
-    const timeRanges = {
-      '7d': 7,
-      '30d': 30,
-      '90d': 90,
-      '1y': 365
-    };
-
-    const days = timeRanges[timeRange];
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    let analytics = {};
-
-    if (videoId) {
-      // Get analytics for specific video
-      const videoQuery = `
-        SELECT 
-          va.*,
-          COUNT(vv.id) as total_detailed_views,
-          AVG(EXTRACT(EPOCH FROM vv.watch_duration)) as avg_watch_duration,
-          COUNT(vv.id) FILTER (WHERE vv.completed = true) as completed_views
-        FROM video_archive va
-        LEFT JOIN video_views vv ON va.id = vv.video_id 
-          AND vv.viewed_at >= $1
-        WHERE va.id = $2
-        GROUP BY va.id
-      `;
-
-      const result = await db.query(videoQuery, [startDate, videoId]);
-      analytics = result.rows[0] || {};
-    } else {
-      // Get overall analytics
-      let whereClause = 'WHERE va.created_at >= $1';
-      const params = [startDate];
-
-      if (category) {
-        whereClause += ` AND va.category = $${params.length + 1}`;
-        params.push(category);
+      data: {
+        live: streamStats[0],
+        archive: archiveStats[0],
+        popular: {
+          streams: popularStreams,
+          archive: popularArchive
+        }
       }
-
-      const overallQuery = `
-        SELECT 
-          COUNT(DISTINCT va.id) as total_videos,
-          COUNT(DISTINCT ls.id) as total_streams,
-          SUM(va.views) as total_video_views,
-          SUM(ls.total_views) as total_stream_views,
-          COUNT(DISTINCT vv.id) as total_detailed_views,
-          AVG(EXTRACT(EPOCH FROM vv.watch_duration)) as avg_watch_duration
-        FROM video_archive va
-        FULL OUTER JOIN live_streams ls ON 1=1
-        LEFT JOIN video_views vv ON (va.id = vv.video_id OR ls.id = vv.stream_id)
-          AND vv.viewed_at >= $1
-        ${whereClause}
-      `;
-
-      const overallResult = await db.query(overallQuery, params);
-      analytics.overall = overallResult.rows[0];
-
-      // Get top performing videos
-      const topVideosQuery = `
-        SELECT 
-          va.id, va.title, va.category, va.views,
-          COUNT(vv.id) as recent_views
-        FROM video_archive va
-        LEFT JOIN video_views vv ON va.id = vv.video_id 
-          AND vv.viewed_at >= $1
-        ${whereClause}
-        GROUP BY va.id, va.title, va.category, va.views
-        ORDER BY recent_views DESC, va.views DESC
-        LIMIT 10
-      `;
-
-      const topVideosResult = await db.query(topVideosQuery, params);
-      analytics.topVideos = topVideosResult.rows;
-
-      // Get category breakdown
-      const categoryQuery = `
-        SELECT 
-          category,
-          COUNT(*) as video_count,
-          SUM(views) as total_views
-        FROM video_archive va
-        ${whereClause}
-        GROUP BY category
-        ORDER BY total_views DESC
-      `;
-
-      const categoryResult = await db.query(categoryQuery, params);
-      analytics.categoryBreakdown = categoryResult.rows;
-    }
-
-    res.json({
-      success: true,
-      data: analytics,
-      timeRange,
-      generatedAt: new Date().toISOString()
     });
-  } catch (error) {
-    console.error('Error fetching video analytics:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+  } catch (err) {
+    console.error('Video analytics error:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch video analytics' });
   }
 });
 

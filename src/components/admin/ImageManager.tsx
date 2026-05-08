@@ -14,35 +14,7 @@ interface ImageItem {
 }
 
 const ImageManager: React.FC = () => {
-  const [images, setImages] = useState<ImageItem[]>([
-    {
-      id: '1',
-      url: '/api/placeholder/400/300',
-      title: 'Palm Sunday Celebration',
-      description: 'Parish celebrating Palm Sunday with procession',
-      category: 'gallery',
-      altText: 'Parishioners holding palm branches during Palm Sunday procession',
-      uploadDate: '2024-03-24'
-    },
-    {
-      id: '2',
-      url: '/api/placeholder/400/300',
-      title: 'Our Father Prayer Image',
-      description: 'Beautiful image for Our Father prayer',
-      category: 'prayers',
-      altText: 'Artistic representation of the Our Father prayer',
-      uploadDate: '2024-03-20'
-    },
-    {
-      id: '3',
-      url: '/api/placeholder/400/300',
-      title: 'Youth Group Meeting',
-      description: 'CYA Youth group during their weekly meeting',
-      category: 'ministries',
-      altText: 'Young people gathered in church hall for youth group meeting',
-      uploadDate: '2024-03-18'
-    }
-  ]);
+  const [images, setImages] = useState<ImageItem[]>([]);
 
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -343,15 +315,14 @@ const ImageEditModal: React.FC<{
         </div>
         
         <form onSubmit={handleSubmit} className="image-form">
-          <div className="form-group">
-            <label>Image URL</label>
-            <input
-              type="url"
-              value={formData.url}
-              onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-              required
-            />
-          </div>
+          <ImageUpload
+            label="Image"
+            onImageSelect={(file, url) => setFormData({ ...formData, url })}
+            onImageRemove={() => setFormData({ ...formData, url: '' })}
+            currentImageUrl={formData.url}
+            maxSizeInMB={5}
+            required
+          />
           
           <div className="form-group">
             <label>Title</label>

@@ -806,36 +806,45 @@ html, body {
 
 /* Multi-select styles */
 .multi-select {
-  min-height: 120px !important;
+  min-height: 160px !important;
   height: auto !important;
+  background: var(--white) !important;
+  border: 2px solid var(--gray-200) !important;
+  border-radius: var(--radius-md) !important;
+  padding: 0.5rem !important;
+  overflow-y: auto !important;
 }
 
 .multi-select option {
-  padding: 8px 12px;
-  margin: 2px 0;
-  border-radius: 4px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: none;
+  padding: 10px 12px;
+  margin: 4px 0;
+  border-radius: 8px;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
 }
 
 .multi-select option:checked {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-  color: white;
-  font-weight: 500;
+  background: var(--primary-green) !important;
+  color: white !important;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
-.multi-select option:hover {
-  background: var(--primary-color);
-  color: white;
+.multi-select option:hover:not(:checked) {
+  background: var(--gray-100);
+  color: var(--primary-green);
 }
 
 .form-help {
   display: block;
-  margin-top: 5px;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--gray-500);
   font-style: italic;
+  font-weight: 500;
 }
 
 .modern-submit-btn:hover:not(:disabled) {

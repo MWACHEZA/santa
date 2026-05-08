@@ -38,9 +38,9 @@ const validateUserRegistration = [
     .withMessage('Valid email is required')
     .normalizeEmail(),
   body('phone')
-    .optional()
-    .matches(/^(\+263|0)(7[0-9]|8[6-9])[0-9]{7}$/)
-    .withMessage('Invalid Zimbabwe phone number format'),
+    .optional({ checkFalsy: true })
+    .matches(/^\+?[\d\s\-\(\)]+$/)
+    .withMessage('Invalid phone number format'),
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
@@ -67,13 +67,16 @@ const validateUserRegistration = [
     .isLength({ max: 100 })
     .withMessage('Emergency contact name must be less than 100 characters'),
   body('emergencyPhone')
-    .optional()
-    .matches(/^(\+263|0)(7[0-9]|8[6-9])[0-9]{7}$/)
-    .withMessage('Invalid Zimbabwe phone number format'),
+    .optional({ checkFalsy: true })
+    .matches(/^\+?[\d\s\-\(\)]+$/)
+    .withMessage('Invalid emergency phone number format'),
   body('role')
     .optional()
-    .isIn(['admin', 'priest', 'secretary', 'reporter', 'vice_secretary', 'parishioner'])
-    .withMessage('Invalid role')
+    .isIn(['admin', 'priest', 'secretary', 'reporter', 'vice_secretary', 'parishioner', 'committee_member', 'council_member', 'treasurer'])
+    .withMessage('Invalid role'),
+  body('association').optional(),
+  body('committeePosition').optional(),
+  body('section').optional()
 ];
 
 const validateUserLogin = [
@@ -93,12 +96,15 @@ const validateUserUpdate = [
     .normalizeEmail(),
   body('role')
     .optional()
-    .isIn(['admin', 'priest', 'secretary', 'reporter', 'vice_secretary', 'parishioner'])
+    .isIn(['admin', 'priest', 'secretary', 'reporter', 'vice_secretary', 'parishioner', 'committee_member', 'council_member', 'treasurer'])
     .withMessage('Invalid role'),
   body('is_active')
     .optional()
     .isBoolean()
-    .withMessage('is_active must be a boolean')
+    .withMessage('is_active must be a boolean'),
+  body('association').optional(),
+  body('committeePosition').optional(),
+  body('section').optional()
 ];
 
 // News validation
@@ -127,9 +133,9 @@ const validateNews = [
     .isBoolean()
     .withMessage('is_published must be a boolean'),
   body('image_url')
-    .optional()
-    .isURL()
-    .withMessage('Invalid image URL')
+    .optional({ checkFalsy: true })
+    .isString()
+    .withMessage('Invalid image URL format'),
 ];
 
 // Event validation
@@ -145,24 +151,24 @@ const validateEvent = [
     .isISO8601()
     .withMessage('Valid event date is required'),
   body('start_time')
-    .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .optional({ checkFalsy: true })
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/)
     .withMessage('Invalid start time format (HH:MM)'),
   body('end_time')
-    .optional()
-    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+    .optional({ checkFalsy: true })
+    .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/)
     .withMessage('Invalid end time format (HH:MM)'),
   body('location')
     .optional()
     .isLength({ max: 255 })
     .withMessage('Location must be less than 255 characters'),
   body('max_attendees')
-    .optional()
+    .optional({ checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage('Max attendees must be a positive integer'),
   body('category_id')
-    .optional()
-    .isUUID()
+    .optional({ checkFalsy: true })
+    .isString()
     .withMessage('Invalid category ID'),
   body('is_published')
     .optional()
@@ -208,8 +214,8 @@ const validateGallery = [
     .isISO8601()
     .withMessage('Valid upload date is required'),
   body('category_id')
-    .optional()
-    .isUUID()
+    .optional({ checkFalsy: true })
+    .isString()
     .withMessage('Invalid category ID'),
   body('event_id')
     .optional()
@@ -220,6 +226,34 @@ const validateGallery = [
     .isBoolean()
     .withMessage('is_featured must be a boolean')
 ];
+
+const validateGalleryUpdate = [
+  body('title')
+    .optional()
+    .isLength({ min: 1, max: 255 })
+    .withMessage('Title must be less than 255 characters'),
+  body('description')
+    .optional()
+    .isLength({ max: 1000 })
+    .withMessage('Description must be less than 1000 characters'),
+  body('upload_date')
+    .optional()
+    .isISO8601()
+    .withMessage('Valid upload date must be a date'),
+  body('category_id')
+    .optional({ checkFalsy: true })
+    .isString()
+    .withMessage('Invalid category ID'),
+  body('event_id')
+    .optional()
+    .isUUID()
+    .withMessage('Invalid event ID'),
+  body('is_featured')
+    .optional()
+    .isBoolean()
+    .withMessage('is_featured must be a boolean')
+];
+
 
 // Category validation
 const validateCategory = [
@@ -391,6 +425,7 @@ module.exports = {
   validateEvent,
   validateAnnouncement,
   validateGallery,
+  validateGalleryUpdate,
   validateCategory,
   validateContactInfo,
   validateMassSchedule,

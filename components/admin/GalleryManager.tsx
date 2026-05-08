@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAdmin, GalleryImage } from '../../contexts/AdminContext';
 import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Image as ImageIcon } from 'lucide-react';
 import './GalleryManager.css';
+import { uploadApi } from '../../services/api';
 
 const GalleryManager: React.FC = () => {
   const { 
@@ -14,6 +15,7 @@ const GalleryManager: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -77,13 +79,25 @@ const GalleryManager: React.FC = () => {
     updateImage(id, { isPublished: !isPublished });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real application, you would upload to a server
-      // For demo purposes, we'll create a local URL
-      const url = URL.createObjectURL(file);
-      setFormData({ ...formData, url });
+      try {
+        setIsUploading(true);
+        const response = await uploadApi.uploadSingle(file, 'gallery');
+        if (response.success && response.data?.file?.url) {
+          // Use the absolute URL if available, otherwise prepend base URL
+          const imageUrl = response.data.file.url.startsWith('http') 
+            ? response.data.file.url 
+            : `http://localhost:5000${response.data.file.url}`;
+          setFormData({ ...formData, url: imageUrl });
+        }
+      } catch (error) {
+        console.error('Upload failed:', error);
+        alert('Failed to upload image. Please try again.');
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
