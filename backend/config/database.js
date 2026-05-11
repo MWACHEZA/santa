@@ -173,12 +173,15 @@ const initializeDatabase = async () => {
     await dbClient.query(`
       CREATE TABLE IF NOT EXISTS users (
         id VARCHAR(36) PRIMARY KEY,
+        user_number SERIAL UNIQUE,
         username VARCHAR(50) UNIQUE NOT NULL,
         email VARCHAR(100) UNIQUE NOT NULL,
         phone VARCHAR(20) UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
         first_name VARCHAR(50),
         last_name VARCHAR(50),
+        middle_name VARCHAR(50),
+        gender VARCHAR(10),
         date_of_birth DATE,
         address TEXT,
         emergency_contact VARCHAR(100),
@@ -214,6 +217,9 @@ const initializeDatabase = async () => {
     // Dynamically migrate existing users table if columns are missing
     await addColumnIfNotExists('users', 'section_id', 'VARCHAR(36) NULL');
     await addColumnIfNotExists('users', 'association_id', 'VARCHAR(36) NULL');
+    await addColumnIfNotExists('users', 'user_number', 'SERIAL UNIQUE');
+    await addColumnIfNotExists('users', 'middle_name', 'VARCHAR(50) NULL');
+    await addColumnIfNotExists('users', 'gender', 'VARCHAR(10) NULL');
     await addColumnIfNotExists('users', 'profile_picture_id', 'VARCHAR(36) NULL');
     await addColumnIfNotExists('users', 'is_baptized', 'BOOLEAN DEFAULT false');
     await addColumnIfNotExists('users', 'baptism_date', 'DATE NULL');

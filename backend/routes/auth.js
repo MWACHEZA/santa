@@ -194,14 +194,20 @@ router.post('/register', authUpload.single('profilePicture'), validateUserRegist
     }
     
     if (section) {
-      const [sectionResult] = await db.execute('SELECT id FROM sections WHERE name = ?', [section]);
+      const [sectionResult] = await db.execute(
+        "SELECT id FROM sections WHERE LOWER(name) = LOWER(?) OR LOWER(REPLACE(name, ' ', '-')) = LOWER(?) OR LOWER(REPLACE(name, '-', ' ')) = LOWER(?)",
+        [section, section, section]
+      );
       if (sectionResult.length > 0) {
         sectionId = sectionResult[0].id;
       }
     }
     
     if (association) {
-      const [associationResult] = await db.execute('SELECT id FROM associations WHERE name = ?', [association]);
+      const [associationResult] = await db.execute(
+        "SELECT id FROM associations WHERE LOWER(name) = LOWER(?) OR LOWER(REPLACE(name, ' ', '-')) = LOWER(?) OR LOWER(REPLACE(name, '-', ' ')) = LOWER(?) OR LOWER(REPLACE(REPLACE(name, ' ', ''), '-', '')) = LOWER(REPLACE(REPLACE(?, ' ', ''), '-', ''))",
+        [association, association, association, association]
+      );
       if (associationResult.length > 0) {
         associationId = associationResult[0].id;
       }
@@ -231,10 +237,11 @@ router.post('/register', authUpload.single('profilePicture'), validateUserRegist
     
     // Now insert the media file record (after user is created)
     if (profilePictureId && fileName && filePath && relativePath) {
+      const fileUrl = `/uploads/profiles/${fileName}`;
       await db.execute(
-        `INSERT INTO media_files (id, filename, original_filename, file_path, file_type, mime_type, file_size, uploaded_by, is_public)
-         VALUES (?, ?, ?, ?, 'image', ?, ?, ?, true)`,
-        [profilePictureId, fileName, req.file.originalname, relativePath, req.file.mimetype, req.file.size, userId]
+        `INSERT INTO media_files (id, filename, original_filename, file_path, file_url, file_type, mime_type, file_size, uploaded_by, is_public)
+         VALUES (?, ?, ?, ?, ?, 'image', ?, ?, ?, true)`,
+        [profilePictureId, fileName, req.file.originalname, relativePath, fileUrl, req.file.mimetype, req.file.size, userId]
       );
       
       // Update user with profile picture ID
