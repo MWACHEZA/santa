@@ -528,7 +528,24 @@ const insertDefaultData = async () => {
       { name: 'Choir', type: 'ministry', description: 'Church choir ministry' },
       { name: 'Baptism', type: 'sacrament', description: 'Baptism sacrament' },
       { name: 'Confirmation', type: 'sacrament', description: 'Confirmation sacrament' },
-      { name: 'Marriage', type: 'sacrament', description: 'Marriage sacrament' }
+      { name: 'Marriage', type: 'sacrament', description: 'Marriage sacrament' },
+      // Financial Categories
+      { name: 'Monthly Subscriptions', type: 'financial', description: 'Regular monthly member subscriptions' },
+      { name: 'Building Fund', type: 'financial', description: 'Church construction and maintenance' },
+      { name: 'Donations', type: 'financial', description: 'General parish donations' },
+      { name: 'Offertory Collection', type: 'financial', description: 'Sunday offertory collections' },
+      { name: 'Special Collection', type: 'financial', description: 'Special purpose collections' },
+      { name: 'Catering & Events', type: 'financial', description: 'Food and event expenses' },
+      { name: 'Stationery', type: 'financial', description: 'Office supplies and printing' },
+      { name: 'Utilities', type: 'financial', description: 'Water, electricity and other utilities' },
+      { name: 'Maintenance & Repairs', type: 'financial', description: 'Building and equipment maintenance' },
+      { name: 'Charitable Giving', type: 'financial', description: 'Outreach and charitable expenses' },
+      // Gallery Categories
+      { name: 'Mass & Liturgy', type: 'gallery', description: 'Photos from liturgical celebrations and mass' },
+      { name: 'Parish Events', type: 'gallery', description: 'Photos from parish gatherings and events' },
+      { name: 'Youth Group', type: 'gallery', description: 'Activities and events for parish youth' },
+      { name: 'Parish Choir', type: 'gallery', description: 'Choir rehearsals and performances' },
+      { name: 'Community Outreach', type: 'gallery', description: 'Parish charitable and outreach activities' }
     ];
 
     for (const category of defaultCategories) {
