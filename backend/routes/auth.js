@@ -223,9 +223,9 @@ router.post('/register', authUpload.single('profilePicture'), validateUserRegist
     await db.execute(
       `INSERT INTO user_profiles (user_id, association, section)
        VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE 
-         association = VALUES(association),
-         section = VALUES(section)`,
+       ON CONFLICT (user_id) DO UPDATE SET 
+         association = EXCLUDED.association,
+         section = EXCLUDED.section`,
       [userId, association || null, section || null]
     );
     
@@ -545,8 +545,8 @@ router.put('/profile', authenticateToken, async (req, res) => {
       await db.execute(
         `INSERT INTO user_profiles (user_id, ${columns.join(', ')})
          VALUES (?, ${columns.map(() => '?').join(', ')})
-         ON DUPLICATE KEY UPDATE 
-           ${columns.map(col => `${col} = VALUES(${col})`).join(', ')},
+         ON CONFLICT (user_id) DO UPDATE SET 
+           ${columns.map(col => `${col} = EXCLUDED.${col}`).join(', ')},
            updated_at = CURRENT_TIMESTAMP`,
         [userId, ...values]
       );
