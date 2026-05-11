@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useToast } from '../../contexts/ToastContext';
+
 import { 
   User, 
   Mail, 
@@ -15,8 +19,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Check,
-  X,
-  Camera
+  Shield,
+  Camera,
+  X
 } from 'lucide-react';
 import './ModernAuth.css';
 
@@ -40,9 +45,12 @@ interface RegisterFormData {
   emergencyContact: string;
   emergencyPhone: string;
   section: string;
-  associations: string[];
-  profilePicture: File | null;
+
+  association: string;
+  committeePosition: string;
+
   agreeToTerms: boolean;
+  profilePicture: File | null;
 }
 
 const ModernRegister: React.FC<ModernRegisterProps> = ({ 
@@ -50,6 +58,10 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
   onRegistrationSuccess 
 }) => {
   const { register } = useAuth();
+
+  const { success: toastSuccess, error: toastError } = useToast();
+  const { t } = useLanguage();
+
   
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegisterFormData>({
@@ -67,15 +79,17 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     emergencyContact: '',
     emergencyPhone: '',
     section: '',
-    associations: [],
-    profilePicture: null,
-    agreeToTerms: false
+
+    association: '',
+    committeePosition: '',
+
+    agreeToTerms: false,
+    profilePicture: null
   });
   
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
 
@@ -100,6 +114,15 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+
+  const handleAssociationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      association: value
     }));
   };
 
@@ -136,10 +159,16 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSuccess('');
     setIsLoading(true);
 
     try {
+      // Determine role based on committee position
+      let role = 'parishioner';
+      if (formData.committeePosition === 'Treasurer') role = 'treasurer';
+      else if (formData.committeePosition === 'Secretary') role = 'secretary';
+      else if (formData.committeePosition === 'Vice Secretary') role = 'vice_secretary';
+      else if (formData.committeePosition === 'Chairperson' || formData.committeePosition === 'Vice Chairperson') role = 'admin'; // Or another leadership role
+
       const result = await register({
         username: formData.username,
         email: formData.email,
@@ -154,20 +183,26 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         emergencyContact: formData.emergencyContact,
         emergencyPhone: formData.emergencyPhone,
         section: formData.section,
-        associations: formData.associations,
-        profilePicture: formData.profilePicture
+
+        association: formData.association,
+        committeePosition: formData.committeePosition,
+        role: role as any
+
       });
 
       if (result.success) {
-        setSuccess('Registration successful!');
+        toastSuccess('Registration successful! Welcome to St. Patrick\'s Parish.', 'Welcome');
         setTimeout(() => {
           onRegistrationSuccess();
         }, 2000);
       } else {
-        setError(result.message || 'Registration failed');
+        const msg = result.message || 'Registration failed';
+        setError(msg);
+        toastError(msg, 'Registration Error');
       }
     } catch (err) {
       setError('An unexpected error occurred');
+      toastError('An unexpected error occurred. Please try again.', 'System Error');
     } finally {
       setIsLoading(false);
     }
@@ -508,70 +543,94 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         </div>
       </div>
 
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="section">Parish Section</label>
-          <div className="input-container">
-            <Users className="input-icon" size={20} />
-            <select
-              id="section"
-              name="section"
-              value={formData.section}
-              onChange={handleInputChange}
-              className="modern-input"
-            >
-              <option value="">Select section (optional)</option>
-              <option value="St Gabriel">St Gabriel</option>
-              <option value="St Augustine">St Augustine</option>
-              <option value="St Mary Magdalena">St Mary Magdalena</option>
-              <option value="St Michael">St Michael</option>
-              <option value="St Stephen">St Stephen</option>
-              <option value="St Francis of Assisi">St Francis of Assisi</option>
-              <option value="St Monica">St Monica</option>
-              <option value="St Theresa">St Theresa</option>
-              <option value="St Bernadette">St Bernadette</option>
-              <option value="St Philomina">St Philomina</option>
-              <option value="St Peter">St Peter</option>
-              <option value="St Bernard">St Bernard</option>
-              <option value="St Veronica">St Veronica</option>
-              <option value="St Paul">St Paul</option>
-              <option value="St Luke">St Luke</option>
-              <option value="St Basil">St Basil</option>
-              <option value="St Anthony">St Anthony</option>
-            </select>
-          </div>
-        </div>
 
-        <div className="form-group">
-          <label htmlFor="association">Association</label>
-          <div className="input-container">
-            <Users className="input-icon" size={20} />
-            <select
-              id="association"
-              name="association"
-              value={formData.associations[0] || ''}
-              onChange={(e) => setFormData(prev => ({
-                ...prev,
-                associations: e.target.value ? [e.target.value] : []
-              }))}
-              className="modern-input"
-            >
-              <option value="">Select association (optional)</option>
-              <option value="Missionary Childhood (MCA)">Missionary Childhood (MCA)</option>
-              <option value="Catholic Junior Youth Association (CJA)">Catholic Junior Youth Association (CJA)</option>
-              <option value="Catholic Senior Youth Association (CYA)">Catholic Senior Youth Association (CYA)</option>
-              <option value="Catholic Young Adults Association (CYAA)">Catholic Young Adults Association (CYAA)</option>
-              <option value="Most Sacred Heart of Jesus">Most Sacred Heart of Jesus</option>
-              <option value="Sodality of Our Lady">Sodality of Our Lady</option>
-              <option value="St Anne">St Anne</option>
-              <option value="St Joseph">St Joseph</option>
-              <option value="Couples Association">Couples Association</option>
-              <option value="Focolare">Focolare</option>
-              <option value="Women's Forum">Women's Forum</option>
-              <option value="Association of Altar Servers">Association of Altar Servers</option>
-            </select>
-          </div>
+      <div className="form-group">
+        <label htmlFor="section">Parish Section</label>
+        <div className="input-container">
+          <Users className="input-icon" size={20} />
+          <select
+            id="section"
+            name="section"
+            value={formData.section}
+            onChange={handleInputChange}
+            className="modern-input"
+          >
+            <option value="">Select section (optional)</option>
+            <option value="st-gabriel">St Gabriel</option>
+            <option value="st-augustine">St Augustine</option>
+            <option value="st-mary-magdalena">St Mary Magdalena</option>
+            <option value="st-michael">St Michael</option>
+            <option value="st-stephen">St Stephen</option>
+            <option value="st-francis-of-assisi">St Francis of Assisi</option>
+            <option value="st-monica">St Monica</option>
+            <option value="st-theresa">St Theresa</option>
+            <option value="st-bernadette">St Bernadette</option>
+            <option value="st-philomina">St Philomina</option>
+            <option value="st-peter">St Peter</option>
+            <option value="st-bernard">St Bernard</option>
+            <option value="st-veronica">St Veronica</option>
+            <option value="st-paul">St Paul</option>
+            <option value="st-luke">St Luke</option>
+            <option value="st-basil">St Basil</option>
+            <option value="st-anthony">St Anthony</option>
+          </select>
+
         </div>
+      </div>
+
+
+      <div className="form-group">
+        <label htmlFor="association">Association (Select your primary group)</label>
+        <div className="input-container">
+          <Users className="input-icon" size={20} />
+          <select
+            id="association"
+            name="association"
+            value={formData.association}
+            onChange={handleInputChange}
+            className="modern-input"
+          >
+            <option value="">Select association (optional)</option>
+            <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
+            <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
+            <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
+            <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
+            <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
+            <option value="sodality-our-lady">Sodality of Our Lady</option>
+            <option value="st-anne">St Anne</option>
+            <option value="st-joseph">St Joseph</option>
+            <option value="couples-association">Couples Association</option>
+            <option value="focolare">Focolare</option>
+            <option value="womens-forum">Women's Forum</option>
+            <option value="association-altar-servers">Association of Altar Servers</option>
+          </select>
+
+        </div>
+        <small className="form-help">Select the main parish group you belong to</small>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="committeePosition">Committee Position (If any)</label>
+        <div className="input-container">
+          <Shield className="input-icon" size={20} />
+          <select
+            id="committeePosition"
+            name="committeePosition"
+            value={formData.committeePosition}
+            onChange={handleInputChange}
+            className="modern-input"
+          >
+            <option value="">Member / Parishioner</option>
+            <option value="Chairperson">Chairperson</option>
+            <option value="Vice Chairperson">Vice Chairperson</option>
+            <option value="Secretary">Secretary</option>
+            <option value="Vice Secretary">Vice Secretary</option>
+            <option value="Treasurer">Treasurer</option>
+            <option value="Organizing Secretary">Organizing Secretary</option>
+            <option value="Committee Member">Committee Member</option>
+          </select>
+        </div>
+        <small className="form-help">Select your leadership position within the association</small>
       </div>
 
       <div className="form-group">
@@ -691,12 +750,6 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
                 </div>
               )}
 
-              {success && (
-                <div className="message success-message-modern">
-                  <CheckCircle size={20} />
-                  <span>{success}</span>
-                </div>
-              )}
 
               {/* Navigation Buttons */}
               <div className="form-navigation">

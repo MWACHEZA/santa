@@ -1,8 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Video, Calendar, Clock, Users } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Video, Calendar, Clock, Users, Upload, X, FileVideo, Tags, Play } from 'lucide-react';
+import { useDropzone } from 'react-dropzone';
 import { LiveStream, VideoArchive } from '../../contexts/AdminContext';
-import './VideoManager.css';
+import { useToast } from '../../contexts/ToastContext';
 import { api } from '../../services/api';
+import './VideoManager.css';
+
+interface VideoCategory {
+  id: string;
+  name: string;
+  description: string;
+}
 
 const VideoManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'streams' | 'archive'>('streams');
@@ -13,7 +21,16 @@ const VideoManager: React.FC = () => {
 
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [videoArchive, setVideoArchive] = useState<VideoArchive[]>([]);
-  const [playerItem, setPlayerItem] = useState<VideoArchive | null>(null);
+  const [categories, setCategories] = useState<VideoCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<LiveStream | VideoArchive | null>(null);
+  
+  // Upload State
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -21,12 +38,91 @@ const VideoManager: React.FC = () => {
     url: '',
     thumbnail: '',
     scheduledTime: '',
-    category: 'mass' as VideoArchive['category'],
+    category: '' as string,
     duration: '',
-    isLive: false
+    isLive: false,
+    isPublished: true
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    description: ''
+  });
+
+  const { success: toastSuccess, error: toastError } = useToast();
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await api.categories.getByType('video');
+      if (res.success) {
+        setCategories(res.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch categories:', err);
+    }
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [streamsRes, archiveRes] = await Promise.all([
+        api.videos.getStreams(),
+        api.videos.getArchive()
+      ]);
+      
+      if (streamsRes.success) {
+        setLiveStreams((streamsRes.data?.items || streamsRes.data || []).map((s: any) => ({
+          ...s,
+          streamUrl: s.stream_url || s.streamUrl,
+          isLive: s.is_live ?? s.isLive,
+          scheduledTime: s.scheduled_time || s.scheduledTime,
+          totalViews: s.total_views || s.totalViews,
+          createdBy: s.created_by || s.createdBy,
+          createdAt: s.created_at || s.createdAt
+        })));
+      } else {
+        console.error('Streams fetch unsuccessful:', streamsRes);
+      }
+      
+      if (archiveRes.success) {
+        setVideoArchive((archiveRes.data?.items || archiveRes.data || []).map((v: any) => ({
+          ...v,
+          videoUrl: v.video_url || v.videoUrl,
+          isPublished: v.is_published ?? v.isPublished,
+          publishedAt: v.published_at || v.publishedAt,
+          createdBy: v.created_by || v.createdBy,
+          createdAt: v.created_at || v.createdAt
+        })));
+      } else {
+        console.error('Archive fetch unsuccessful:', archiveRes);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch video data:', err);
+      toastError(err.message || 'Failed to connect to video service', 'Video Management');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toastError]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    fetchData();
+    fetchCategories();
+  }, [fetchData, fetchCategories]);
+
+  // Dropzone Setup
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      setSelectedFile(file);
+      // Create a temporary URL to load the video and get its duration
+      const url = URL.createObjectURL(file);
+      if (videoRef.current) {
+        videoRef.current.src = url;
+      }
+    }
+  }, []);
 
   const tryUpload = async (file: File, type?: 'image' | 'video') => {
     try {
@@ -95,103 +191,135 @@ const VideoManager: React.FC = () => {
     loadData();
   }, []);
 
+
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'video/*': [] },
+    multiple: false
+  });
+
+  const handleVideoMetadata = () => {
+    if (videoRef.current) {
+      const durationInSeconds = Math.floor(videoRef.current.duration);
+      const hours = Math.floor(durationInSeconds / 3600);
+      const minutes = Math.floor((durationInSeconds % 3600) / 60);
+      const seconds = durationInSeconds % 60;
+      
+      const formattedDuration = [
+        hours.toString().padStart(2, '0'),
+        minutes.toString().padStart(2, '0'),
+        seconds.toString().padStart(2, '0')
+      ].join(':');
+      
+      setFormData(prev => ({ ...prev, duration: formattedDuration }));
+    }
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await api.categories.create({
+        ...categoryFormData,
+        type: 'video'
+      });
+      if (res.success) {
+        toastSuccess('Category added successfully', 'Video Management');
+        fetchCategories();
+        setCategoryFormData({ name: '', description: '' });
+      }
+    } catch (err) {
+      toastError('Failed to add category', 'Video Management');
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (window.confirm('Delete this category?')) {
+      try {
+        await api.categories.delete(id);
+        toastSuccess('Category deleted', 'Video Management');
+        fetchCategories();
+      } catch (err) {
+        toastError('Failed to delete category', 'Video Management');
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProcessing(true);
-    setMessage(null);
+    setIsUploading(true);
+    
     try {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        api.setAuthToken(token);
+      let finalUrl = formData.url;
+      let finalThumbnail = formData.thumbnail;
+
+      // Handle File Upload for Archive
+      if (activeTab === 'archive' && selectedFile && !editingItem) {
+        setUploadProgress(10);
+        const uploadRes = await api.upload.uploadSingle(selectedFile, 'videos');
+        if (uploadRes.success) {
+          finalUrl = uploadRes.data.url;
+          finalThumbnail = uploadRes.data.thumbnailUrl || '';
+          setUploadProgress(90);
+        } else {
+          throw new Error('Upload failed');
+        }
       }
-      let thumbnailUrl = formData.thumbnail;
-      if (thumbnailFile) {
-        const up = await tryUpload(thumbnailFile, 'image');
-        thumbnailUrl = (up.data as any)?.url || (up.data as any)?.file?.url || (up.data as any)?.path || (up as any)?.url || thumbnailUrl;
-      }
+
       if (activeTab === 'streams') {
-        const payload = {
+        const streamData = {
           title: formData.title,
           description: formData.description,
           streamUrl: formData.url,
-          scheduledTime: formData.scheduledTime,
-          thumbnail: thumbnailUrl,
           isLive: formData.isLive,
+          scheduledTime: formData.scheduledTime
         };
-        if (editingItem && 'streamUrl' in editingItem) {
-          const res = await api.videos.updateStream(editingItem.id, payload);
+        
+        if (editingItem) {
+          const res = await api.videos.updateStream(editingItem.id, streamData);
           if (res.success) {
-            setMessage({ type: 'success', text: 'Stream updated' });
-          } else {
-            throw new Error(res.message || 'Failed to update stream');
+            toastSuccess('Live stream updated successfully', 'Video Management');
+            fetchData();
           }
         } else {
-          const res = await api.videos.createStream(payload);
-          if (!res.success) throw new Error(res.message || 'Failed to create stream');
-          setMessage({ type: 'success', text: 'Stream created' });
+          const res = await api.videos.createStream(streamData);
+          if (res.success) {
+            toastSuccess('New live stream added', 'Video Management');
+            fetchData();
+          }
         }
-        const streamsRes = await api.videos.getStreams();
-        const streams: any[] = (streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []);
-        setLiveStreams(streams.map(s => ({
-          id: String(s.id),
-          title: s.title,
-          description: s.description ?? '',
-          streamUrl: s.streamUrl ?? s.stream_url ?? '',
-          isLive: !!(s.isLive ?? s.is_live),
-          scheduledTime: s.scheduledTime ?? s.scheduled_time ?? new Date().toISOString(),
-          viewers: s.viewers ?? 0,
-          thumbnail: s.thumbnail ?? s.thumbnail_url ?? '',
-          createdBy: s.createdBy ?? 'system',
-          createdAt: s.createdAt ?? s.created_at ?? new Date().toISOString()
-        })));
       } else {
-        let videoUrl = formData.url;
-        if (videoFile) {
-          const upv = await tryUpload(videoFile, 'video');
-          videoUrl = (upv.data as any)?.url || (upv.data as any)?.file?.url || (upv.data as any)?.path || (upv as any)?.url || videoUrl;
-        }
-        const payload = {
+        const videoData = {
           title: formData.title,
           description: formData.description,
-          videoUrl,
+          videoUrl: finalUrl,
+          thumbnail: finalThumbnail,
+          duration: formData.duration,
           category: formData.category,
-          duration: formData.duration || undefined,
-          thumbnail: thumbnailUrl || undefined,
+          isPublished: formData.isPublished
         };
-        if (editingItem && !('streamUrl' in editingItem)) {
-          const res = await api.videos.updateVideo(editingItem.id, payload);
+        
+        if (editingItem) {
+          const res = await api.videos.updateVideo(editingItem.id, videoData);
           if (res.success) {
-            setMessage({ type: 'success', text: 'Video updated' });
-          } else {
-            throw new Error(res.message || 'Failed to update video');
+            toastSuccess('Archive video updated successfully', 'Video Management');
+            fetchData();
           }
         } else {
-          const res = await api.videos.createVideo(payload);
-          if (!res.success) throw new Error(res.message || 'Failed to create video');
-          setMessage({ type: 'success', text: 'Video added' });
+          const res = await api.videos.createVideo(videoData);
+          if (res.success) {
+            toastSuccess('New video added to archive', 'Video Management');
+            fetchData();
+          }
         }
-        const archiveRes = await api.videos.getArchive({ published: true });
-        const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
-        setVideoArchive(videos.map(v => ({
-          id: String(v.id),
-          title: v.title,
-          description: v.description ?? '',
-          videoUrl: v.videoUrl ?? v.video_url ?? '',
-          thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
-          duration: v.duration ?? '',
-          publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
-          views: v.views ?? 0,
-          category: (v.category ?? 'mass'),
-          createdBy: v.createdBy ?? 'system',
-          createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
-          isPublished: !!(v.isPublished ?? v.is_published ?? true)
-        })));
       }
       resetForm();
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
+      console.error('Save error:', err);
+      toastError('Failed to save video information', 'Video Management');
     } finally {
-      setProcessing(false);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -202,10 +330,12 @@ const VideoManager: React.FC = () => {
       url: '',
       thumbnail: '',
       scheduledTime: '',
-      category: 'mass',
+      category: '',
       duration: '',
-      isLive: false
+      isLive: false,
+      isPublished: true
     });
+    setSelectedFile(null);
     setShowAddForm(false);
     setEditingItem(null);
     setThumbnailFile(null);
@@ -220,11 +350,12 @@ const VideoManager: React.FC = () => {
         title: item.title,
         description: item.description,
         url: item.streamUrl,
-        thumbnail: item.thumbnail,
-        scheduledTime: item.scheduledTime,
+        scheduledTime: item.scheduledTime ? new Date(item.scheduledTime).toISOString().slice(0, 16) : '',
         category: 'mass',
         duration: '',
-        isLive: item.isLive
+        thumbnail: '',
+        isLive: item.isLive,
+        isPublished: true
       });
     } else {
       // It's a VideoArchive
@@ -232,11 +363,12 @@ const VideoManager: React.FC = () => {
         title: item.title,
         description: item.description,
         url: item.videoUrl,
-        thumbnail: item.thumbnail,
         scheduledTime: '',
-        category: item.category,
         duration: item.duration,
-        isLive: false
+        category: item.category,
+        thumbnail: '',
+        isLive: false,
+        isPublished: item.isPublished
       });
     }
     setShowAddForm(true);
@@ -244,98 +376,60 @@ const VideoManager: React.FC = () => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this item?')) {
-      setProcessing(true);
-      setMessage(null);
       try {
         if (activeTab === 'streams') {
-          const res = await api.videos.deleteStream(id);
-          if (!res.success) throw new Error(res.message || 'Failed to delete stream');
-          const streamsRes = await api.videos.getStreams();
-          const streams: any[] = (streamsRes.data?.items) || (streamsRes.data?.streams) || (Array.isArray(streamsRes.data) ? streamsRes.data : []);
-          setLiveStreams(streams.map(s => ({
-            id: String(s.id),
-            title: s.title,
-            description: s.description ?? '',
-            streamUrl: s.streamUrl ?? s.stream_url ?? '',
-            isLive: !!(s.isLive ?? s.is_live),
-            scheduledTime: s.scheduledTime ?? s.scheduled_time ?? new Date().toISOString(),
-            viewers: s.viewers ?? 0,
-            thumbnail: s.thumbnail ?? s.thumbnail_url ?? '',
-            createdBy: s.createdBy ?? 'system',
-            createdAt: s.createdAt ?? s.created_at ?? new Date().toISOString()
-          })));
+          await api.videos.deleteStream(id);
         } else {
-          const res = await api.videos.deleteVideo(id);
-          if (!res.success) throw new Error(res.message || 'Failed to delete video');
-          const archiveRes = await api.videos.getArchive({ published: true });
-          const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
-          setVideoArchive(videos.map(v => ({
-            id: String(v.id),
-            title: v.title,
-            description: v.description ?? '',
-            videoUrl: v.videoUrl ?? v.video_url ?? '',
-            thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
-            duration: v.duration ?? '',
-            publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
-            views: v.views ?? 0,
-            category: (v.category ?? 'mass'),
-            createdBy: v.createdBy ?? 'system',
-            createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
-            isPublished: !!(v.isPublished ?? v.is_published ?? true)
-          })));
+          await api.videos.deleteVideo(id);
         }
-        setMessage({ type: 'success', text: 'Deleted successfully' });
+        toastSuccess('Item deleted successfully', 'Video Management');
+        fetchData();
       } catch (err) {
-        setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Delete failed' });
-      } finally {
-        setProcessing(false);
+        toastError('Failed to delete item', 'Video Management');
       }
     }
   };
 
   const togglePublished = async (id: string) => {
-    setProcessing(true);
-    setMessage(null);
+    const video = videoArchive.find(v => v.id === id);
+    if (!video) return;
+
     try {
-      const current = videoArchive.find(v => v.id === id);
-      const res = await api.videos.updateVideo(id, { isPublished: !(current?.isPublished ?? true) });
-      if (!res.success) throw new Error(res.message || 'Failed to update publish status');
-      const archiveRes = await api.videos.getArchive({ published: true });
-      const videos: any[] = (archiveRes.data?.items) || (archiveRes.data?.videos) || (Array.isArray(archiveRes.data) ? archiveRes.data : []);
-      setVideoArchive(videos.map(v => ({
-        id: String(v.id),
-        title: v.title,
-        description: v.description ?? '',
-        videoUrl: v.videoUrl ?? v.video_url ?? '',
-        thumbnail: v.thumbnail ?? v.thumbnail_url ?? '',
-        duration: v.duration ?? '',
-        publishedDate: v.publishedDate ?? v.published_date ?? new Date().toISOString().split('T')[0],
-        views: v.views ?? 0,
-        category: (v.category ?? 'mass'),
-        createdBy: v.createdBy ?? 'system',
-        createdAt: v.createdAt ?? v.created_at ?? new Date().toISOString(),
-        isPublished: !!(v.isPublished ?? v.is_published ?? true)
-      })));
-      setMessage({ type: 'success', text: 'Publish status updated' });
+      const newState = !video.isPublished;
+      await api.videos.updateVideo(id, { isPublished: newState });
+      toastSuccess(newState ? 'Video published' : 'Video set to draft', 'Video Management');
+      fetchData();
     } catch (err) {
-      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
-    } finally {
-      setProcessing(false);
+      toastError('Failed to update status', 'Video Management');
     }
   };
 
   return (
     <div className="video-manager">
+      {/* Hidden Video for duration calculation */}
+      <video 
+        ref={videoRef} 
+        style={{ display: 'none' }} 
+        onLoadedMetadata={handleVideoMetadata}
+      />
+
       <div className="video-manager-header">
-        <h2>Video Management</h2>
-        <button 
-          className="btn btn-primary"
-          onClick={() => setShowAddForm(true)}
-          disabled={processing}
-        >
-          <Plus size={20} />
-          Add {activeTab === 'streams' ? 'Stream' : 'Video'}
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button 
+            className="btn btn-secondary"
+            onClick={() => setShowCategoryModal(true)}
+          >
+            <Tags size={20} />
+            Manage Categories
+          </button>
+          <button 
+            className="btn btn-primary"
+            onClick={() => setShowAddForm(true)}
+          >
+            <Plus size={20} />
+            Add {activeTab === 'streams' ? 'Stream' : 'Video'}
+          </button>
+        </div>
       </div>
       {message && (
         <div className={`message ${message.type}`}>
@@ -378,26 +472,7 @@ const VideoManager: React.FC = () => {
                     required
                   />
                 </div>
-                
-                <div className="form-group">
-                  <label>Thumbnail (optional)</label>
-                  {formData.thumbnail && !thumbnailFile && (
-                    <img src={formData.thumbnail} alt="thumbnail" style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: 8, marginBottom: 8 }} />
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
-                  />
-                  <div className="url-input">
-                    <label>Or enter thumbnail URL:</label>
-                    <input
-                      type="url"
-                      value={formData.thumbnail}
-                      onChange={(e) => setFormData({...formData, thumbnail: e.target.value})}
-                    />
-                  </div>
-                </div>
+
               </div>
 
               <div className="form-group">
@@ -409,25 +484,68 @@ const VideoManager: React.FC = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label>{activeTab === 'streams' ? 'Stream URL' : 'Video URL or Upload'}</label>
-                {activeTab === 'archive' && (
-                  <input
-                    type="file"
-                    accept="video/*"
-                    onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                  />
-                )}
-                <div className="url-input">
+              {activeTab === 'streams' ? (
+                <div className="form-group">
+                  <label>Stream URL</label>
                   <input
                     type="url"
                     value={formData.url}
                     onChange={(e) => setFormData({...formData, url: e.target.value})}
-                    placeholder={activeTab === 'archive' ? 'https://example.com/video.mp4 (optional if uploading)' : 'https://example.com/live'}
-                    required={activeTab === 'streams'}
+                    required
                   />
                 </div>
-              </div>
+              ) : !editingItem && (
+                <div className="video-upload-section">
+                  <label>Upload Video</label>
+                  {!selectedFile ? (
+                    <div 
+                      {...getRootProps()} 
+                      className={`video-dropzone ${isDragActive ? 'active' : ''}`}
+                    >
+                      <input {...getInputProps()} />
+                      <Upload size={48} />
+                      {isDragActive ? (
+                        <p>Drop the video here...</p>
+                      ) : (
+                        <p>Drag & drop a video here, or click to select</p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="selected-file-info">
+                      <div className="file-details">
+                        <FileVideo size={32} className="text-primary" />
+                        <div>
+                          <p className="file-name">{selectedFile.name}</p>
+                          <p className="file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                        </div>
+                      </div>
+                      {!isUploading && (
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedFile(null)}
+                          className="btn btn-sm btn-danger"
+                        >
+                          <X size={16} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {isUploading && (
+                    <div className="upload-progress-container">
+                      <div className="progress-bar-bg">
+                        <div 
+                          className="progress-bar-fill" 
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <div className="progress-text">
+                        <span>Uploading...</span>
+                        <span>{uploadProgress}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {activeTab === 'streams' ? (
                 <div className="form-row">
@@ -458,33 +576,44 @@ const VideoManager: React.FC = () => {
                     <label>Category</label>
                     <select
                       value={formData.category}
-                      onChange={(e) => setFormData({...formData, category: e.target.value as VideoArchive['category']})}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      required
                     >
-                      <option value="mass">Mass</option>
-                      <option value="event">Event</option>
-                      <option value="sermon">Sermon</option>
-                      <option value="special">Special</option>
+                      <option value="">Select Category</option>
+                      {categories.map(cat => (
+                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                      ))}
                     </select>
                   </div>
                   
                   <div className="form-group">
-                    <label>Duration (HH:MM:SS)</label>
-                    <input
-                      type="text"
-                      value={formData.duration}
-                      onChange={(e) => setFormData({...formData, duration: e.target.value})}
-                      placeholder="1:15:30"
-                    />
+                    <label className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={formData.isPublished}
+                        onChange={(e) => setFormData({...formData, isPublished: e.target.checked})}
+                      />
+                      Publish Immediately
+                    </label>
                   </div>
                 </div>
               )}
 
               <div className="form-actions">
-                <button type="button" onClick={resetForm} className="btn btn-secondary">
+                <button 
+                  type="button" 
+                  onClick={resetForm} 
+                  className="btn btn-secondary"
+                  disabled={isUploading}
+                >
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={processing}>
-                  {processing ? (editingItem ? 'Updating...' : 'Saving...') : `${editingItem ? 'Update' : 'Add'} ${activeTab === 'streams' ? 'Stream' : 'Video'}`}
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={isUploading || (activeTab === 'archive' && !selectedFile && !editingItem)}
+                >
+                  {isUploading ? 'Saving...' : (editingItem ? 'Update' : 'Add')} {activeTab === 'streams' ? 'Stream' : 'Video'}
                 </button>
               </div>
             </form>
@@ -507,7 +636,13 @@ const VideoManager: React.FC = () => {
                 {liveStreams.map(stream => (
                   <div key={stream.id} className={`video-item ${stream.isLive ? 'live' : ''}`}>
                     <div className="video-thumbnail">
-                      <img src={stream.thumbnail} alt={stream.title} />
+                      {stream.thumbnail ? (
+                        <img src={stream.thumbnail} alt={stream.title} />
+                      ) : (
+                        <div className="thumbnail-placeholder-admin">
+                          <Video size={32} />
+                        </div>
+                      )}
                       {stream.isLive && (
                         <div className="live-badge">
                           <span className="live-dot"></span>
@@ -536,6 +671,13 @@ const VideoManager: React.FC = () => {
                       </div>
                       
                       <div className="video-actions">
+                        <button 
+                          className="btn btn-sm btn-info"
+                          onClick={() => setPreviewVideo(stream)}
+                          title="Preview"
+                        >
+                          <Eye size={16} />
+                        </button>
                         <button 
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleEdit(stream)}
@@ -570,10 +712,19 @@ const VideoManager: React.FC = () => {
                 {videoArchive.map(video => (
                   <div key={video.id} className={`video-item ${!video.isPublished ? 'unpublished' : ''}`}>
                     <div className="video-thumbnail">
-                      <img src={video.thumbnail} alt={video.title} />
+                      {video.thumbnail ? (
+                        <img src={video.thumbnail} alt={video.title} />
+                      ) : (
+                        <div className="video-placeholder">
+                          <Video size={48} />
+                        </div>
+                      )}
                       <div className="video-duration">{video.duration}</div>
                       {!video.isPublished && (
-                        <div className="unpublished-badge">DRAFT</div>
+                        <div className="status-badge draft">DRAFT</div>
+                      )}
+                      {video.isPublished && (
+                        <div className="status-badge published">PUBLISHED</div>
                       )}
                     </div>
                     
@@ -584,7 +735,7 @@ const VideoManager: React.FC = () => {
                       <div className="video-meta">
                         <div className="meta-item">
                           <Calendar size={16} />
-                          {new Date(video.publishedAt || video.createdAt).toLocaleDateString()}
+                          {video.publishedAt ? new Date(video.publishedAt).toLocaleDateString() : new Date(video.createdAt).toLocaleDateString()}
                         </div>
                         <div className="meta-item">
                           <Eye size={16} />
@@ -597,18 +748,18 @@ const VideoManager: React.FC = () => {
                       
                       <div className="video-actions">
                         <button 
+                          className="btn btn-sm btn-info"
+                          onClick={() => setPreviewVideo(video)}
+                          title="Preview"
+                        >
+                          <Play size={16} />
+                        </button>
+                        <button 
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleEdit(video)}
                           disabled={processing}
                         >
                           <Edit size={16} />
-                        </button>
-                        <button 
-                          className="btn btn-sm btn-primary"
-                          onClick={() => setPlayerItem(video)}
-                          title="Play"
-                        >
-                          Play
                         </button>
                         <button 
                           className={`btn btn-sm ${video.isPublished ? 'btn-warning' : 'btn-success'}`}
@@ -643,28 +794,105 @@ const VideoManager: React.FC = () => {
           </div>
         )}
       </div>
-      {playerItem && (
-        <div className="video-form-modal" onClick={() => setPlayerItem(null)}>
-          <div className="video-form" onClick={(e) => e.stopPropagation()}>
-            <h3>Playing: {playerItem.title}</h3>
-            {/youtube|youtu\.be/.test(playerItem.videoUrl) ? (
-              <iframe
-                src={playerItem.videoUrl}
-                title={playerItem.title}
-                style={{ width: '100%', height: 360, border: 0, borderRadius: 8 }}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <video
-                controls
-                src={playerItem.videoUrl}
-                style={{ width: '100%', borderRadius: 8 }}
-              />
-            )}
-            <div className="form-actions" style={{ marginTop: 12 }}>
-              <a href={playerItem.videoUrl} download target="_blank" rel="noreferrer" className="btn btn-primary">Download</a>
-              <button className="btn btn-secondary" onClick={() => setPlayerItem(null)}>Close</button>
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="video-form-modal">
+          <div className="video-form category-modal">
+            <div className="category-manager-header">
+              <h3>Manage Video Categories</h3>
+              <button 
+                className="btn btn-sm btn-danger"
+                onClick={() => setShowCategoryModal(false)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCategorySubmit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Category Name</label>
+                  <input
+                    type="text"
+                    value={categoryFormData.name}
+                    onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})}
+                    placeholder="e.g. Choir Performances"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Description</label>
+                  <input
+                    type="text"
+                    value={categoryFormData.description}
+                    onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})}
+                    placeholder="Brief description"
+                  />
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary">
+                <Plus size={16} /> Add Category
+              </button>
+            </form>
+
+            <div className="category-table-container">
+              <table className="category-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} style={{ textAlign: 'center' }}>No categories found</td>
+                    </tr>
+                  ) : (
+                    categories.map(cat => (
+                      <tr key={cat.id}>
+                        <td>{cat.name}</td>
+                        <td>{cat.description}</td>
+                        <td>
+                          <button 
+                            className="btn btn-sm btn-danger"
+                            onClick={() => handleDeleteCategory(cat.id)}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Preview Modal */}
+      {previewVideo && (
+        <div className="video-form-modal" onClick={() => setPreviewVideo(null)}>
+          <div className="video-player-container admin-player" onClick={e => e.stopPropagation()}>
+            <button className="close-player" onClick={() => setPreviewVideo(null)}>
+              <X size={24} />
+            </button>
+            <div className="video-wrapper">
+              <video 
+                src={'videoUrl' in previewVideo ? previewVideo.videoUrl : previewVideo.streamUrl} 
+                controls 
+                autoPlay 
+                className="main-video"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="player-info">
+              <h3>{previewVideo.title}</h3>
+              <p>{previewVideo.description}</p>
             </div>
           </div>
         </div>

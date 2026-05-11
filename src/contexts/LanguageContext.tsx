@@ -60,6 +60,8 @@ const translations = {
     'ministries.womens': 'Women\'s League',
     'ministries.mens': 'Men\'s Guild',
     'ministries.prayer': 'Prayer Groups',
+    'ministries.meetings': 'Meeting Schedule',
+    'ministries.contact': 'Contact Person',
     
     // Sacraments
     'sacraments.title': 'Sacraments',
@@ -262,6 +264,8 @@ const translations = {
     'ministries.womens': 'Umanyano Labesifazane',
     'ministries.mens': 'Umanyano Lamadoda',
     'ministries.prayer': 'Amaqembu Okukhuleka',
+    'ministries.meetings': 'Izikhathi Zokuhlangana',
+    'ministries.contact': 'Othintana Naye',
     
     // Sacraments
     'sacraments.title': 'Izakramente',
@@ -464,6 +468,8 @@ const translations = {
     'ministries.womens': 'Sangano reVakadzi',
     'ministries.mens': 'Sangano reVarume',
     'ministries.prayer': 'Mapoka eKunyengetera',
+    'ministries.meetings': 'Nguva Dzekusangana',
+    'ministries.contact': 'Munhu weKubata',
     
     // Sacraments
     'sacraments.title': 'Zvisakramente',

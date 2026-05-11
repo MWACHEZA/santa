@@ -158,14 +158,24 @@
 
 .map-container {
   background: white;
+  border: 8px solid white;
+  outline: 1px solid #e5e7eb;
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  overflow: hidden !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 450px; /* Strong, explicit height for perfect Leaflet bounds */
 }
 
 .church-map {
-  border-radius: 12px;
+  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
+  border-radius: 4px;
 }
 
 .map-popup h4 {
@@ -353,19 +363,7 @@
     grid-template-columns: 1fr;
   }
   
-  .map-container {
-    margin: 0 -1rem 2rem -1rem;
-  }
-  
-  .church-map {
-    border-radius: 0;
-  }
-  
-  .reporter-section {
-    margin: 2rem -1rem;
-    padding: 2rem 1rem;
-    border-radius: 0;
-  }
+
 }
 
 @media (max-width: 480px) {

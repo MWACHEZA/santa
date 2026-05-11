@@ -11,20 +11,21 @@ const Home: React.FC = () => {
     getActiveTheme, 
     saintOfDay, 
     liturgicalInfo, 
-    getActiveMinistries, 
     getSectionImages,
-    getPublishedImages 
+    getPublishedImages,
+    getLatestPriestMessage,
+    liveStreams
   } = useAdmin();
   const [currentSlide, setCurrentSlide] = useState(0);
   const totalSlides = 3;
 
   // Get data from admin context
   const activeTheme = getActiveTheme();
-  const activeMinistries = getActiveMinistries().slice(0, 3); // Show only first 3
   const massTimeImages = getSectionImages('mass_times');
   const confessionTimeImages = getSectionImages('confession_times');
   const catechismTimeImages = getSectionImages('catechism_times');
   const parishGalleryImages = getPublishedImages().slice(0, 6); // Show only first 6
+  const latestPriestMessage = getLatestPriestMessage();
 
   // Auto-advance slider
   useEffect(() => {
@@ -46,13 +47,13 @@ const Home: React.FC = () => {
         {/* Background Image Slider */}
         <div className="hero-slider">
           <div className={`slide slide-1 ${currentSlide === 0 ? 'active' : ''}`}>
-            <img src="/api/placeholder/1920/1080" alt="St. Patrick's Church exterior view" />
+            <img src="/images/PIC1.png" alt="St. Patrick's Church exterior view" />
           </div>
           <div className={`slide slide-2 ${currentSlide === 1 ? 'active' : ''}`}>
-            <img src="/api/placeholder/1920/1080" alt="Sunday Mass celebration" />
+            <img src="/images/PIC2.png" alt="Sunday Mass celebration" />
           </div>
           <div className={`slide slide-3 ${currentSlide === 2 ? 'active' : ''}`}>
-            <img src="/api/placeholder/1920/1080" alt="Parish community gathering" />
+            <img src="/images/PIC3.png" alt="Parish community gathering" />
           </div>
         </div>
         
@@ -89,8 +90,29 @@ const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* Live Stream Alert Section */}
+      {liveStreams && liveStreams.some((s: any) => s.isLive) && (
+        <section className="live-alert-section">
+          <div className="container">
+            <div className="live-alert-content">
+              <div className="live-pulse"></div>
+              <div className="live-text">
+                <h3>{t('live.happening_now')}</h3>
+                <p>{liveStreams.find((s: any) => s.isLive)?.title}</p>
+              </div>
+              <Link to="/watch-mass" className="btn btn-primary btn-small">
+                Watch Live Now
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Physical Spacer to prevent overlap */}
+      <div className="home-content-spacer" style={{ height: '100px', width: '100%', background: '#f8f9fa' }}></div>
+
       {/* Spiritual Content Section */}
-      <section className="spiritual-content section-padding">
+      <section className="spiritual-content section-padding" style={{ position: 'relative', zIndex: 10, background: '#f8f9fa' }}>
         <div className="container">
           <div className="grid grid-3">
             {/* Theme of the Year */}
@@ -160,7 +182,7 @@ const Home: React.FC = () => {
               {saintOfDay ? (
                 <div className="saint-content">
                   <div className="saint-image">
-                    <img src={saintOfDay.imageUrl} alt={saintOfDay.name} />
+                    <img src={saintOfDay.imageUrl} alt={saintOfDay.name} style={{ objectFit: 'contain', backgroundColor: '#f4f4f4' }} />
                   </div>
                   <div className="saint-name">{saintOfDay.name}</div>
                   <div className="saint-title">{saintOfDay.title}</div>
@@ -168,9 +190,11 @@ const Home: React.FC = () => {
                   <p className="saint-description">
                     {saintOfDay.description}
                   </p>
-                  <div className="saint-quote">
-                    <em>"{saintOfDay.quote}"</em>
-                  </div>
+                  {saintOfDay.quote && (
+                    <div className="saint-quote">
+                      <em>"{saintOfDay.quote}"</em>
+                    </div>
+                  )}
                   <div className="saint-prayer">
                     <strong>Prayer:</strong> {saintOfDay.prayer}
                   </div>
@@ -185,52 +209,122 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* From Priest's Desk Section */}
-      <section className="priests-desk section-padding">
-        <div className="container">
-          <div className="priests-desk-content">
-            <div className="priests-desk-header">
-              <div className="priest-avatar">
-                <img src="/api/placeholder/120/120" alt="Father rodney simainza" />
+      {/* From Priest's Desk Section - Only show if there is a message */}
+      {latestPriestMessage && (
+        <section className="priests-desk section-padding">
+          <div className="container">
+            <div className="priests-desk-content">
+              <div className="priests-desk-header">
+                <div className="priest-avatar">
+                  {latestPriestMessage.authorImageUrl ? (
+                    <img src={latestPriestMessage.authorImageUrl} alt={`Fr. ${latestPriestMessage.authorFirstName} ${latestPriestMessage.authorLastName}`} />
+                  ) : (
+                    <div 
+                      className="priest-avatar-fallback"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(135deg, #2d5016, #1e3510)',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        fontSize: '1.2rem',
+                        borderRadius: '50%',
+                        border: '2px solid white',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      {latestPriestMessage.authorFirstName ? latestPriestMessage.authorFirstName[0].toUpperCase() : 'F'}
+                      {latestPriestMessage.authorLastName ? latestPriestMessage.authorLastName[0].toUpperCase() : 'R'}
+                    </div>
+                  )}
+                </div>
+                <div className="priest-info">
+                  <h2>From the Priest's Desk</h2>
+                  <p className="priest-name">
+                    {latestPriestMessage.authorFirstName 
+                      ? `Fr. ${latestPriestMessage.authorFirstName} ${latestPriestMessage.authorLastName}` 
+                      : 'Fr. Rodney Simainza'}
+                  </p>
+                  <p className="priest-title">Parish Priest</p>
+                </div>
               </div>
-              <div className="priest-info">
-                <h2>From the Priest's Desk</h2>
-                <p className="priest-name">Fr. Rodney Simainza</p>
-                <p className="priest-title">Parish Priest</p>
-              </div>
-            </div>
-            
-            <div className="priests-message card">
-              <div className="message-content">
-                <h3>A Message of Hope and Unity</h3>
-                <p className="message-date">December 30, 2024</p>
-                <div className="message-text">
-                  <p>
-                    Dear beloved parishioners and friends,
-                  </p>
-                  <p>
-                    As we approach the end of this year and look forward to 2025, I am filled with gratitude for the many blessings God has bestowed upon our parish community. Despite the challenges we have faced, our faith has remained strong, and our unity has grown deeper.
-                  </p>
-                  <p>
-                    The theme for 2025, "Hope does not disappoint" (Romans 5:5), reminds us that our hope is anchored in Christ. In the coming year, let us continue to be instruments of God's love and mercy in our community. Let us reach out to those in need, welcome the stranger, and be beacons of hope in our neighborhood.
-                  </p>
-                  <p>
-                    I encourage each of you to participate actively in our parish life - through our ministries, our liturgical celebrations, and our community outreach programs. Together, we can make St. Patrick's a true home for all who seek God's love.
-                  </p>
-                  <p>
-                    May God bless you and your families abundantly in the coming year.
-                  </p>
-                  <p className="message-signature">
-                    In Christ,<br/>
-                    <strong>Fr Rodeney Simainza</strong><br/>
-                    Parish Priest
-                  </p>
+              
+              <div className="priests-message card">
+                <div className="message-content">
+                  <h3>{latestPriestMessage.title}</h3>
+                  <p className="message-date">{new Date(latestPriestMessage.date).toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}</p>
+
+                  {(latestPriestMessage.imageUrl || (latestPriestMessage as any).image_url) && (
+                    <div
+                      className="priest-msg-image-container"
+                      style={{
+                        width: '100%',
+                        height: '350px',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        borderRadius: '12px',
+                        marginBottom: '1.5rem',
+                        background: '#1a1a1a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.1)',
+                      }}
+                    >
+                      {/* Blurred background backup layer */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '-10px',
+                          left: '-10px',
+                          right: '-10px',
+                          bottom: '-10px',
+                          backgroundImage: `url(${latestPriestMessage.imageUrl || (latestPriestMessage as any).image_url})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          filter: 'blur(12px) brightness(0.6)',
+                          opacity: 0.65,
+                          zIndex: 1,
+                        }}
+                      />
+                      {/* Contained sharp image foreground layer */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundImage: `url(${latestPriestMessage.imageUrl || (latestPriestMessage as any).image_url})`,
+                          backgroundSize: 'contain',
+                          backgroundPosition: 'center',
+                          backgroundRepeat: 'no-repeat',
+                          zIndex: 2,
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="message-text">
+                    <div dangerouslySetInnerHTML={{ __html: latestPriestMessage.content }} />
+                    <p className="message-signature">
+                      In Christ,<br/>
+                      <strong>{latestPriestMessage.authorFirstName 
+                        ? `Fr. ${latestPriestMessage.authorFirstName} ${latestPriestMessage.authorLastName}` 
+                        : 'Fr. Rodney Simainza'}</strong><br/>
+                      Parish Priest
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Quick Info Section - Mass Times & Contact */}
       <section className="quick-info section-padding">
@@ -349,76 +443,29 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Ministry Highlights */}
-      <section className="ministry-highlights section-padding">
-        <div className="container">
-          <h2 className="text-center mb-4">{t('nav.ministries')}</h2>
-          <div className="grid grid-3">
-            {activeMinistries.map((ministry) => (
-              <div key={ministry.id} className="card ministry-card">
-                <div className="ministry-image">
-                  <img src={ministry.imageUrl} alt={ministry.name} />
-                </div>
-                <div className="ministry-content">
-                  <h4>{ministry.name}</h4>
-                  <p>{ministry.description}</p>
-                  <div className="ministry-details">
-                    <p><strong>Contact:</strong> {ministry.contactPerson}</p>
-                    <p><strong>Meeting:</strong> {ministry.meetingTime}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-4">
-            <Link to="/ministries" className="btn btn-primary">
-              View All Ministries
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {/* Community Gallery Preview */}
-      <section className="gallery-preview bg-light section-padding">
-        <div className="container">
-          <h2 className="text-center mb-4">Parish Life Gallery</h2>
-          <div className="gallery-grid">
-            {parishGalleryImages.length > 0 ? (
-              parishGalleryImages.map((image) => (
+      {parishGalleryImages.length > 0 && (
+        <section className="gallery-preview bg-light section-padding">
+          <div className="container">
+            <h2 className="text-center mb-4">Parish Life Gallery</h2>
+            <div className="gallery-grid">
+              {parishGalleryImages.map((image) => (
                 <div key={image.id} className="gallery-item">
                   <img src={image.url} alt={image.title} />
                   <div className="gallery-overlay">
                     <span>{image.title}</span>
                   </div>
                 </div>
-              ))
-            ) : (
-              <>
-                <div className="gallery-item">
-                  <div className="gallery-placeholder">
-                    <span>Palm Sunday</span>
-                  </div>
-                </div>
-                <div className="gallery-item">
-                  <div className="gallery-placeholder">
-                    <span>Baptism</span>
-                  </div>
-                </div>
-                <div className="gallery-item">
-                  <div className="gallery-placeholder">
-                    <span>CYA Youth</span>
-                  </div>
-                </div>
-              </>
-            )}
+              ))}
+            </div>
+            <div className="text-center mt-4">
+              <Link to="/gallery" className="btn btn-primary">
+                View Full Pictures
+              </Link>
+            </div>
           </div>
-          <div className="text-center mt-4">
-            <Link to="/gallery" className="btn btn-primary">
-              View Full Pictures
-            </Link>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Parish History Section */}
       <section className="parish-history section-padding">
@@ -482,8 +529,9 @@ const Home: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
             
-            <div className="history-highlights">
+          <div className="history-highlights">
               <h3>Parish Highlights</h3>
               <div className="highlights-grid">
                 <div className="highlight-item">
@@ -509,7 +557,6 @@ const Home: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
       </section>
 
       {/* Quick Info Section */}

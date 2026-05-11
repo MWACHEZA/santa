@@ -105,6 +105,32 @@ video, canvas {
   overflow-clip-margin: content-box;
 }
 
+/* Override for card images that must stay contained */
+.image-container img,
+.msg-image-container img,
+div[style*="overflow: hidden"]:not(.leaflet-container):not(.leaflet-pane):not(.leaflet-tile-container) img,
+div[style*="overflow:hidden"]:not(.leaflet-container):not(.leaflet-pane):not(.leaflet-tile-container) img {
+  height: 100% !important;
+  width: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Prevent any other global responsive rules from stretching Leaflet tiles and markers */
+.leaflet-container img.leaflet-tile {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: none !important;
+}
+.leaflet-container img.leaflet-marker-icon {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: none !important;
+}
+
 /* Focus styles for accessibility */
 button:focus,
 a:focus,

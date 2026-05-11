@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api, apiClient } from '../services/api';
 
-export type UserRole = 'admin' | 'secretary' | 'priest' | 'reporter' | 'parishioner' | 'vice_secretary' | 'treasurer' | 'committee_member' | 'council_member';
+export type UserRole = 'admin' | 'secretary' | 'priest' | 'reporter' | 'parishioner' | 'vice_secretary' | 'committee_member' | 'council_member' | 'treasurer';
 
 export interface User {
   id: string;
@@ -11,21 +11,22 @@ export interface User {
   firstName?: string;
   lastName?: string;
   role: UserRole;
-  mustChangePassword?: boolean;
-  profilePictureUrl?: string;
+
+  mustChangePassword?: boolean | null;
+
   dateOfBirth?: string;
-  gender?: 'male' | 'female';
+  gender?: 'male' | 'female' | null;
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
-  
-  // Parish Membership Information (optional for parishioners)
   association?: string;
-  section?: string;
+  isCommitteeMember?: boolean | null;
   committeePosition?: string;
-  isCommitteeMember?: boolean;
+  section?: string;
+  profilePicture?: string;
+  profilePictureUrl?: string;
   
-  // Sacramental Information (for parishioners)
+  // Sacramental & Marital Fields
   isBaptized?: boolean | null;
   baptismDate?: string;
   baptismVenue?: string;
@@ -33,20 +34,18 @@ export interface User {
   isConfirmed?: boolean | null;
   confirmationDate?: string;
   confirmationVenue?: string;
-  
   receivesCommunion?: boolean | null;
   firstCommunionDate?: string;
-  
   isMarried?: boolean | null;
   marriageDate?: string;
   marriageVenue?: string;
   spouseName?: string;
   
-  // Priest-specific Information (for priests only)
+  // Ordination (for priests)
   ordinationDate?: string;
   ordinationVenue?: string;
   ordainedBy?: string;
-  
+
   createdAt?: string;
   updatedAt?: string;
 }
@@ -65,512 +64,215 @@ interface RegistrationData {
   emergencyContact?: string;
   emergencyPhone?: string;
   section?: string;
-  association?: string; // Single association (for Register.tsx)
-  associations?: string[]; // Multiple associations (for ModernRegister.tsx)
-  profilePicture?: File | null;
+
+  association?: string;
+  committeePosition?: string;
+
   role?: UserRole;
+  profilePicture?: File | null;
+  
+  // Sacramental Info
+  isBaptized?: boolean;
+  baptismDate?: string;
+  baptismVenue?: string;
+  isConfirmed?: boolean;
+  confirmationDate?: string;
+  confirmationVenue?: string;
+  receivesCommunion?: boolean;
+  firstCommunionDate?: string;
+  isMarried?: boolean;
+  marriageDate?: string;
+  marriageVenue?: string;
+  spouseName?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (identifier: string, password: string) => Promise<{ success: boolean; role?: UserRole; message?: string; mustChangePassword?: boolean }>;
-  register: (data: RegistrationData) => Promise<{ success: boolean; message: string }>;
+  login: (identifier: string, password: string) => Promise<{ 
+    success: boolean; 
+    role?: UserRole; 
+    message?: string; 
+    mustChangePassword?: boolean | null 
+  }>;
+  register: (data: RegistrationData | FormData) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
-  refreshProfile: () => Promise<void>;
-  saveProfile: (updates: Partial<User>) => Promise<{ success: boolean; message: string }>;
-  // Admin user management helpers
-  listUsers: () => User[];
-  createUser: (u: Omit<User, 'id'> & { password: string }) => Promise<{ success: boolean; message: string }>;
-  updateUser: (id: string, updates: Partial<User>) => Promise<{ success: boolean; message: string }>;
+
+  listUsers: () => Promise<User[]>;
+  createUser: (u: Omit<User, 'id'> & { password: string }) => Promise<{ success: boolean; message: string; data?: User }>;
+  updateUser: (id: string, updates: Partial<User> | FormData) => Promise<{ success: boolean; message: string }>;
   deleteUser: (id: string) => Promise<{ success: boolean; message: string }>;
   resetPassword: (id: string) => Promise<{ success: boolean; message: string }>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; message: string }>;
+
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Type for default users with password (for development only)
-// interface DefaultUser extends User {
-//   password: string;
-// }
-
-// Default users with more realistic test accounts
-type StoredUser = User & { password: string };
-
-const defaultUsers: StoredUser[] = [
-  // Admin account (full access)
-  { 
-    id: '1',
-    username: 'admin', 
-    password: 'admin123', 
-    role: 'admin' as UserRole,
-    email: 'admin@stpatricks.org',
-    firstName: 'Admin',
-    lastName: 'User',
-    phone: '+263 77 123 4567',
-    dateOfBirth: '1980-01-15',
-    address: 'Church Office, Makokoba Township, Bulawayo',
-    emergencyContact: 'Parish Office',
-    emergencyPhone: '+263 77 000 0001',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  // Parishioner account (basic access)
-  { 
-    id: '2',
-    username: 'parishioner', 
-    password: 'parishioner123', 
-    role: 'parishioner' as UserRole,
-    email: 'john.doe@example.com',
-    firstName: 'John',
-    lastName: 'Doe',
-    phone: '+263 77 765 4321',
-    dateOfBirth: '1985-06-20',
-    address: '123 Main Street, Makokoba Township, Bulawayo',
-    emergencyContact: 'Jane Doe',
-    emergencyPhone: '+263 77 765 4322',
-    createdAt: '2024-01-02T00:00:00Z',
-    updatedAt: '2024-01-02T00:00:00Z'
-  },
-  // Priest account
-  { 
-    id: '3',
-    username: 'priest', 
-    password: 'priest123', 
-    role: 'priest' as UserRole,
-    email: 'father.michael@stpatricks.org',
-    firstName: 'Father Michael',
-    lastName: 'O\'Connor',
-    phone: '+263 77 123 9876',
-    dateOfBirth: '1975-03-10',
-    address: 'Parish House, St. Patrick\'s Catholic Church, Bulawayo',
-    emergencyContact: 'Bishop\'s Office',
-    emergencyPhone: '+263 77 000 0002',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  // Secretary account
-  { 
-    id: '4',
-    username: 'secretary', 
-    password: 'secretary123', 
-    role: 'secretary' as UserRole,
-    email: 'mary.secretary@stpatricks.org',
-    firstName: 'Mary',
-    lastName: 'Chikwanha',
-    phone: '+263 77 987 6543',
-    dateOfBirth: '1990-08-25',
-    address: '456 Church Avenue, Makokoba Township, Bulawayo',
-    emergencyContact: 'Peter Chikwanha',
-    emergencyPhone: '+263 77 987 6544',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  },
-  // Reporter account
-  { 
-    id: '5',
-    username: 'reporter', 
-    password: 'reporter123', 
-    role: 'reporter' as UserRole,
-    email: 'sarah.reporter@stpatricks.org',
-    firstName: 'Sarah',
-    lastName: 'Moyo',
-    phone: '+263 77 555 1234',
-    dateOfBirth: '1992-12-05',
-    address: '789 Community Road, Makokoba Township, Bulawayo',
-    emergencyContact: 'David Moyo',
-    emergencyPhone: '+263 77 555 1235',
-    createdAt: '2024-01-01T00:00:00Z',
-    updatedAt: '2024-01-01T00:00:00Z'
-  }
-];
-
-const parseNullableBoolean = (value: any): boolean | null | undefined => {
-  if (value === undefined) return undefined;
-  if (value === null || value === '') return null;
-  if (typeof value === 'boolean') return value;
-  if (typeof value === 'number') return value === 1;
-  if (typeof value === 'string') {
-    const normalized = value.toLowerCase();
-    if (['true', '1'].includes(normalized)) return true;
-    if (['false', '0'].includes(normalized)) return false;
-  }
-  return null;
-};
-
-const transformApiUser = (apiUser: any): User => ({
-  id: String(apiUser.id ?? apiUser.user_number ?? apiUser.userNumber ?? ''),
-  username: apiUser.username,
-  email: apiUser.email ?? apiUser.emailAddress ?? undefined,
-  phone: apiUser.phone ?? apiUser.phoneNumber ?? undefined,
-  firstName: apiUser.firstName ?? apiUser.first_name ?? undefined,
-  lastName: apiUser.lastName ?? apiUser.last_name ?? undefined,
-  role: apiUser.role,
-  mustChangePassword: apiUser.mustChangePassword ?? apiUser.must_change_password ?? undefined,
-  profilePictureUrl: apiUser.profilePictureUrl ?? apiUser.profile_picture_url ?? undefined,
-  dateOfBirth: apiUser.dateOfBirth ?? apiUser.date_of_birth ?? undefined,
-  gender: apiUser.gender ?? undefined,
-  address: apiUser.address ?? undefined,
-  emergencyContact: apiUser.emergencyContact ?? apiUser.emergency_contact ?? undefined,
-  emergencyPhone: apiUser.emergencyPhone ?? apiUser.emergency_phone ?? undefined,
-  association: apiUser.association ?? apiUser.associationName ?? undefined,
-  section: apiUser.section ?? apiUser.sectionName ?? undefined,
-  isBaptized: parseNullableBoolean(apiUser.isBaptized ?? apiUser.is_baptized),
-  baptismDate: apiUser.baptismDate ?? apiUser.baptism_date ?? undefined,
-  baptismVenue: apiUser.baptismVenue ?? apiUser.baptism_venue ?? undefined,
-  isConfirmed: parseNullableBoolean(apiUser.isConfirmed ?? apiUser.is_confirmed),
-  confirmationDate: apiUser.confirmationDate ?? apiUser.confirmation_date ?? undefined,
-  confirmationVenue: apiUser.confirmationVenue ?? apiUser.confirmation_venue ?? undefined,
-  receivesCommunion: parseNullableBoolean(apiUser.receivesCommunion ?? apiUser.receives_communion),
-  firstCommunionDate: apiUser.firstCommunionDate ?? apiUser.first_communion_date ?? undefined,
-  isMarried: parseNullableBoolean(apiUser.isMarried ?? apiUser.is_married),
-  marriageDate: apiUser.marriageDate ?? apiUser.marriage_date ?? undefined,
-  marriageVenue: apiUser.marriageVenue ?? apiUser.marriage_venue ?? undefined,
-  spouseName: apiUser.spouseName ?? apiUser.spouse_name ?? undefined,
-  ordinationDate: apiUser.ordinationDate ?? apiUser.ordination_date ?? undefined,
-  ordinationVenue: apiUser.ordinationVenue ?? apiUser.ordination_venue ?? undefined,
-  ordainedBy: apiUser.ordainedBy ?? apiUser.ordained_by ?? undefined,
-  createdAt: apiUser.createdAt ?? apiUser.created_at ?? undefined,
-  updatedAt: apiUser.updatedAt ?? apiUser.updated_at ?? undefined,
-});
-
-// Local user store helpers (persisted in localStorage)
-const USER_STORE_KEY = 'userStore';
-function loadUsers(): StoredUser[] {
-  try {
-    const raw = localStorage.getItem(USER_STORE_KEY);
-    if (raw) return JSON.parse(raw);
-    localStorage.setItem(USER_STORE_KEY, JSON.stringify(defaultUsers));
-    return defaultUsers;
-  } catch {
-    return defaultUsers;
-  }
-}
-function saveUsers(users: StoredUser[]) {
-  localStorage.setItem(USER_STORE_KEY, JSON.stringify(users));
-}
-function findUserByIdentifier(users: StoredUser[], identifier: string): StoredUser | undefined {
-  const trimmedId = identifier.trim();
-  const idLower = trimmedId.toLowerCase();
-  
-  return users.find(u =>
-    u.username.toLowerCase() === idLower ||
-    (u.email?.toLowerCase() === idLower) ||
-    (u.phone?.replace(/\s+/g, '') === trimmedId.replace(/\s+/g, ''))
-  );
-}
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
-  const [adminUsers, setAdminUsers] = useState<User[]>([]);
-
-  const persistUser = useCallback((rawUser: any | null) => {
-    if (!rawUser) {
-      setUser(null);
-      localStorage.removeItem('currentUser');
-      return null;
-    }
-    const mappedUser = transformApiUser(rawUser);
-    setUser(mappedUser);
-    localStorage.setItem('currentUser', JSON.stringify(mappedUser));
-    return mappedUser;
-  }, []);
-
-  const refreshProfile = useCallback(async () => {
-    try {
-      const response = await api.auth.getProfile();
-      if (response.success && response.data?.user) {
-        persistUser(response.data.user);
-      }
-    } catch (error) {
-      console.error('Profile sync error:', error);
-    }
-  }, [persistUser]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const initializeAuth = async () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        if (token) {
+      const token = localStorage.getItem('authToken');
+      const storedUser = localStorage.getItem('currentUser');
+      
+      if (token && storedUser) {
+        try {
           api.setAuthToken(token);
-          await refreshProfile();
-        } else {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          localStorage.removeItem('authToken');
           localStorage.removeItem('currentUser');
-          setUser(null);
         }
-      } catch (error) {
-        console.error('Auth initialization failed:', error);
-        localStorage.removeItem('authToken');
-        persistUser(null);
-      } finally {
-        setIsLoading(false);
+
       }
+      setIsLoading(false);
     };
 
     initializeAuth();
-  }, [persistUser, refreshProfile]);
 
-  useEffect(() => {
-    const loadUsersFromApi = async () => {
-      try {
-        const res = await api.users.getAll();
-        const arr: any[] = (res.data?.users) || (Array.isArray(res.data) ? res.data : []);
-        setAdminUsers(arr.map(transformApiUser));
-      } catch {}
-    };
-    if (user && (user.role === 'admin' || user.role === 'secretary' || user.role === 'priest' || user.role === 'reporter')) {
-      loadUsersFromApi();
-    } else {
-      setAdminUsers(loadUsers().map(({ password, ...u }) => u));
-    }
-  }, [user]);
+  }, []);
 
-  const login = async (identifier: string, password: string): Promise<{ success: boolean; role?: UserRole; message?: string; mustChangePassword?: boolean }> => {
+  const login = async (identifier: string, password: string) => {
     setIsLoading(true);
-    const trimmedIdentifier = identifier.trim();
-    const normalizedIdentifier = trimmedIdentifier.toLowerCase();
-    const trimmedPassword = password.trim();
-
     try {
-      // Try username, then email, then phone for identifier-based login
-      const attempts: Record<string, string>[] = [
-        { username: identifier },
-        { email: identifier },
-        { phone: identifier }
-      ];
-      for (const payload of attempts) {
-        try {
-          const response = await apiClient.post('/auth/login', { ...payload, password });
-          if (response.success && (response as any).data?.user) {
-            const { user: apiUser, token, refreshToken } = (response as any).data;
-            if (token) {
-              api.setAuthToken(token);
-              localStorage.setItem('authToken', token);
-            }
-            if (refreshToken) {
-              localStorage.setItem('refreshToken', refreshToken);
-            }
-            const mappedUser = persistUser(apiUser);
-            const mustChange = mappedUser?.mustChangePassword === true || trimmedPassword === 'Password';
-            if (mustChange && mappedUser) {
-              localStorage.setItem('pendingPasswordChangeUser', mappedUser.username);
-              return { success: true, role: mappedUser.role, message: 'Password change required', mustChangePassword: true };
-            }
-            return { success: true, role: mappedUser?.role, message: `Welcome ${mappedUser?.firstName || mappedUser?.username || 'back'}!` };
-          }
-        } catch (err) {
-          // Continue to next attempt
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const users = loadUsers();
-      const foundUser = findUserByIdentifier(users, normalizedIdentifier) || findUserByIdentifier(users, trimmedIdentifier);
-      const isPasswordValid = foundUser && foundUser.password === trimmedPassword;
-
-      if (foundUser && isPasswordValid) {
-        const mappedUser = persistUser(foundUser);
-        if (mappedUser) {
-          const mustChange = mappedUser.mustChangePassword === true || trimmedPassword === 'Password';
-          if (mustChange) {
-            localStorage.setItem('pendingPasswordChangeUser', mappedUser.username);
-            return { success: true, role: mappedUser.role, message: 'Password change required', mustChangePassword: true };
-          }
-          return { success: true, role: mappedUser.role, message: `Welcome ${mappedUser.firstName || mappedUser.username}!` };
-        }
-      }
-
-      return {
-        success: false,
-        message: 'Invalid credentials. Please check your email/phone and password.'
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (data: RegistrationData): Promise<{ success: boolean; message: string }> => {
-    try {
-      setIsLoading(true);
-      
-      // Handle profile picture upload if present
-      let profilePictureUrl = undefined;
-      if (data.profilePicture) {
-        try {
-          const uploadResponse = await api.upload.uploadSingle(data.profilePicture, 'profile');
-          if (uploadResponse.success && uploadResponse.data?.url) {
-            profilePictureUrl = uploadResponse.data.url;
-          }
-        } catch (uploadError) {
-          console.warn('Profile picture upload failed, continuing without it:', uploadError);
-        }
-      }
-      
-      const response = await api.auth.register({
-        username: data.username, // Use provided username instead of email prefix
-        email: data.email,
-        password: data.password,
-        role: 'parishioner',
-        firstName: data.firstName,
-        lastName: data.lastName,
-        middleName: data.middleName || undefined,
-        phone: data.phone,
-        dateOfBirth: data.dateOfBirth || undefined,
-        gender: data.gender || undefined,
-        address: data.address || undefined,
-        emergencyContact: data.emergencyContact || undefined,
-        emergencyPhone: data.emergencyPhone || undefined,
-        section: data.section || undefined,
-        association: Array.isArray(data.associations) ? data.associations[0] : data.association || undefined,
-        profilePicture: profilePictureUrl || undefined
-      });
-
-      if (response.success) {
-        // Also persist locally in userStore for development/non-API flow
-        const users = loadUsers();
-        const newUser: StoredUser = {
-          id: (Date.now()).toString(),
-          username: (data.email?.split('@')[0] || data.phone || `${data.firstName}${data.lastName}`).toLowerCase(),
-          email: data.email,
-          phone: data.phone,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          role: 'parishioner',
-          password: data.password,
-          mustChangePassword: false,
-          profilePictureUrl: profilePictureUrl || undefined,
-          dateOfBirth: data.dateOfBirth || undefined,
-          address: data.address || undefined,
-          emergencyContact: data.emergencyContact || undefined,
-          emergencyPhone: data.emergencyPhone || undefined,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        users.push(newUser);
-        saveUsers(users);
+      const res = await api.auth.login({ username: identifier, password });
+      if (res.success && res.data) {
+        const { user: rawUser, token } = res.data;
         
-        return {
-          success: true,
-          message: 'Registration successful! Please sign in with your credentials.'
+        // Map snake_case to camelCase
+        const userData: User = {
+          ...rawUser,
+          firstName: rawUser.first_name,
+          lastName: rawUser.last_name,
+          phone: rawUser.phone,
+          mustChangePassword: rawUser.must_change_password
         };
-      } else {
-        return {
-          success: false,
-          message: response.message || 'Registration failed. Please try again.'
+
+        setUser(userData);
+        api.setAuthToken(token);
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        setIsLoading(false);
+        return { 
+          success: true, 
+          role: userData.role,
+          mustChangePassword: userData.mustChangePassword
         };
       }
-    } catch (error) {
-      console.error('Registration error:', error);
-      return {
-        success: false,
-        message: 'Registration failed. Please check your internet connection and try again.'
-      };
-    } finally {
       setIsLoading(false);
+      return { success: false, message: res.message || 'Login failed' };
+    } catch (err: any) {
+      setIsLoading(false);
+      return { success: false, message: err.message || 'An error occurred during login' };
+
     }
   };
 
-  const logout = () => {
-    persistUser(null);
+  const register = async (data: RegistrationData | FormData) => {
+    try {
+
+      const res = await api.auth.register(data as any);
+      if (res.success) {
+        return { success: true, message: 'Registration successful' };
+
+      }
+      return { success: false, message: res.message || 'Registration failed' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Registration failed' };
+    }
+  };
+
+
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+    } catch (err) {
+      console.warn('Logout request failed, but clearing local session anyway');
+    }
     api.setAuthToken(null);
     localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('pendingPasswordChangeUser');
-    // Clear any admin context data as well
-    localStorage.removeItem('adminUser');
-    localStorage.removeItem('adminToken');
-    // Force reload to clear all state and redirect to login
-    globalThis.location.href = '/login';
+    localStorage.removeItem('currentUser');
+    setUser(null);
   };
 
-  const saveProfile = async (updates: Partial<User>) => {
+  const listUsers = async () => {
     try {
-      const response = await api.auth.updateProfile(updates);
-      if (response.success && response.data?.user) {
-        persistUser(response.data.user);
-        return { success: true, message: response.message || 'Profile updated successfully' };
-      }
-      return { success: false, message: response.message || 'Failed to update profile' };
-    } catch (error) {
-      console.error('Profile update error:', error);
-      return {
-        success: false,
-        message: 'Failed to update profile. Please try again.'
+      const res = await api.users.getAll();
+      return res.data?.users || [];
+    } catch (err) {
+      return [];
+    }
+  };
+
+  const createUser = async (u: Omit<User, 'id'> & { password: string }) => {
+    try {
+      const res = await api.users.create(u as any);
+      return { 
+        success: res.success, 
+        message: res.message || (res.success ? 'User created' : 'Failed to create user'),
+        data: res.data
       };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to create user' };
     }
   };
 
-  const listUsers = (): User[] => adminUsers;
-  const createUser = async (u: Omit<User, 'id'> & { password: string }): Promise<{ success: boolean; message: string }> => {
+  const updateUser = async (id: string, updates: Partial<User> | FormData) => {
     try {
-      const res = await api.users.create({
-        username: u.username,
-        email: u.email,
-        phone: u.phone,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        role: u.role,
-        password: u.password
-      });
-      if (res.success) {
-        const list = await api.users.getAll();
-        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
-        setAdminUsers(arr.map(transformApiUser));
-        return { success: true, message: res.message || 'User created' };
-      }
-      return { success: false, message: res.message || 'Failed to create user' };
-    } catch (error) {
-      return { success: false, message: 'Failed to create user. Please try again.' };
-    }
-  };
-  const updateUser = async (id: string, updates: Partial<User>): Promise<{ success: boolean; message: string }> => {
-    try {
-      const res = await api.users.update(id, updates);
-      if (res.success) {
-        const list = await api.users.getAll();
-        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
-        setAdminUsers(arr.map(transformApiUser));
-        if (user && user.id === id) {
-          const updatedUser = { ...user, ...updates, updatedAt: new Date().toISOString() };
-          setUser(updatedUser);
+      let res;
+      if (user && user.id === id) {
+        res = await api.auth.updateProfile(updates);
+        if (res.success && res.data?.user) {
+          const updatedUser = {
+            ...user,
+            ...res.data.user,
+            firstName: res.data.user.firstName || res.data.user.first_name,
+            lastName: res.data.user.lastName || res.data.user.last_name,
+          };
+          setUser(updatedUser as User);
           localStorage.setItem('currentUser', JSON.stringify(updatedUser));
         }
-        return { success: true, message: res.message || 'User updated' };
+      } else {
+        res = await api.users.update(id, updates);
       }
-      return { success: false, message: res.message || 'Failed to update user' };
-    } catch (error) {
-      return { success: false, message: 'Failed to update user. Please try again.' };
+      return { success: res.success, message: res.message || (res.success ? 'User updated' : 'Failed to update user') };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to update user' };
     }
   };
-  const deleteUser = async (id: string): Promise<{ success: boolean; message: string }> => {
+
+  const deleteUser = async (id: string) => {
     try {
       const res = await api.users.delete(id);
-      if (res.success) {
-        const list = await api.users.getAll();
-        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
-        setAdminUsers(arr.map(transformApiUser));
-        return { success: true, message: res.message || 'User deleted' };
-      }
-      return { success: false, message: res.message || 'Failed to delete user' };
-    } catch (error) {
-      return { success: false, message: 'Failed to delete user. Please try again.' };
+      return { success: res.success, message: res.message || (res.success ? 'User deleted' : 'Failed to delete user') };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to delete user' };
     }
   };
-  const resetPassword = async (id: string): Promise<{ success: boolean; message: string }> => {
+
+  const resetPassword = async (id: string) => {
     try {
-      const res = await api.users.resetPassword(id, 'Password');
-      if (res.success) {
-        const list = await api.users.getAll();
-        const arr: any[] = (list.data?.users) || (Array.isArray(list.data) ? list.data : []);
-        setAdminUsers(arr.map(transformApiUser));
-        return { success: true, message: res.message || "Password reset to 'Password' and must change on next login" };
-      }
-      return { success: false, message: res.message || 'Failed to reset password' };
-    } catch (error) {
-      return { success: false, message: 'Failed to reset password. Please try again.' };
+      // For admin reset, we'll provide a temporary password
+      const tempPassword = 'Password';
+      const res = await api.users.resetPassword(id, tempPassword);
+      return { success: res.success, message: res.message || (res.success ? `Password reset to ${tempPassword}` : 'Failed to reset password') };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to reset password' };
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const res = await api.auth.changePassword({ currentPassword, newPassword });
+      return { success: res.success, message: res.message || (res.success ? 'Password changed successfully' : 'Failed to change password') };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Failed to change password' };
+
     }
   };
 
@@ -581,13 +283,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     register,
     logout,
-    refreshProfile,
-    saveProfile,
     listUsers,
     createUser,
     updateUser,
     deleteUser,
     resetPassword,
+    changePassword,
   };
 
   return (
@@ -604,4 +305,3 @@ export const useAuth = () => {
   }
   return context;
 };
-// User and UserRole types are already defined at the top of the file

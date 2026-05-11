@@ -1,193 +1,84 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Heart, Cross, Crown, Star, Sun, Moon, Clock, Image, Church, Calendar } from 'lucide-react';
+
+import { Heart, Cross, Crown, Star, Sun, Moon, Clock, Image, Church, BookOpen, Calendar, ExternalLink } from 'lucide-react';
+import { api } from '../services/api';
+import { useAdmin } from '../contexts/AdminContext';
+
 import './Prayers.css';
 
 const Prayers: React.FC = () => {
   const { t } = useLanguage();
-  
-  // Get current date for liturgical readings
-  const getCurrentDate = () => {
-    const today = new Date();
-    return {
-      date: today.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
-      }),
-      liturgicalSeason: getLiturgicalSeason(today),
-      liturgicalColor: getLiturgicalColor(today)
+  const { liturgicalInfo } = useAdmin();
+  const [prayers, setPrayers] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>(['All']);
+  const [activeCategory, setActiveCategory] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [prayersRes, categoriesRes] = await Promise.all([
+          api.liturgicalPrayers.getAll(),
+          api.categories.getByType('prayer')
+        ]);
+
+        if (prayersRes.success) {
+          setPrayers(prayersRes.data?.prayers || prayersRes.data?.items || prayersRes.data || []);
+        }
+
+        if (categoriesRes.success) {
+          const cats = categoriesRes.data?.items || categoriesRes.data || [];
+          const catNames = cats.map((c: any) => c.name);
+          setCategories(['All', ...catNames]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch prayer data', err);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  };
+
+    fetchData();
+  }, []);
   
-  const getLiturgicalSeason = (date: Date) => {
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    
-    // Simplified liturgical calendar
-    if ((month === 12 && day >= 1) || (month === 1 && day <= 6)) return 'Advent/Christmas';
-    if (month >= 2 && month <= 4) return 'Lent/Easter';
-    if (month >= 5 && month <= 11) return 'Ordinary Time';
-    return 'Ordinary Time';
-  };
-  
-  const getLiturgicalColor = (date: Date) => {
-    const season = getLiturgicalSeason(date);
-    switch (season) {
-      case 'Advent/Christmas': return 'Purple/White';
-      case 'Lent/Easter': return 'Purple/White';
-      default: return 'Green';
-    }
-  };
-  
-  const currentLiturgy = getCurrentDate();
-  
-  // Sample daily readings - in real implementation, this would come from a liturgical API
-  const todaysReadings = {
-    firstReading: {
-      reference: 'Isaiah 55:10-11',
-      text: 'Thus says the LORD: Just as from the heavens the rain and snow come down and do not return there till they have watered the earth, making it fertile and fruitful, giving seed to the one who sows and bread to the one who eats, so shall my word be that goes forth from my mouth; my word shall not return to me void, but shall do my will, achieving the end for which I sent it.'
-    },
-    psalm: {
-      reference: 'Psalm 65:10, 11, 12-13, 14',
-      response: 'The seed that falls on good ground will yield a fruitful harvest.',
-      text: 'You have visited the land and watered it; greatly have you enriched it. God\'s watercourses are filled; you have prepared the grain.'
-    },
-    gospel: {
-      reference: 'Matthew 13:1-23',
-      text: 'On that day, Jesus went out of the house and sat down by the sea. Such large crowds gathered around him that he got into a boat and sat down, and the whole crowd stood along the shore. And he spoke to them at length in parables, saying: "A sower went out to sow..."'
-    }
+  // Use liturgical data from context
+  const activeReadings = liturgicalInfo?.readings;
+
+  // Build a CSS-usable liturgical color for the card background
+  const getLiturgicalBg = () => {
+    const c = (liturgicalInfo?.color || '').toLowerCase();
+    if (c === '#ffd700' || c === 'white' || c === 'gold') return 'linear-gradient(135deg, #6b5a1e, #b8960c)';
+    if (c === '#702963' || c === 'purple') return 'linear-gradient(135deg, #4a1a5e, #702963)';
+    if (c === '#d22b2b' || c === 'red') return 'linear-gradient(135deg, #7f0f0f, #d22b2b)';
+    if (c === 'rose') return 'linear-gradient(135deg, #8a2252, #c05682)';
+    // Default: ordinary time green
+    return 'linear-gradient(135deg, var(--primary-green), var(--primary-green-light))';
   };
 
-  const prayers = [
-    {
-      id: 1,
-      title: 'Our Father',
-      icon: <Cross size={24} />,
-      text: `Our Father, who art in heaven,
-hallowed be thy name.
-Thy kingdom come,
-thy will be done,
-on earth as it is in heaven.
-Give us this day our daily bread,
-and forgive us our trespasses,
-as we forgive those who trespass against us.
-And lead us not into temptation,
-but deliver us from evil.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Traditional'
-    },
-    {
-      id: 2,
-      title: 'Hail Mary',
-      icon: <Crown size={24} />,
-      text: `Hail Mary, full of grace,
-the Lord is with thee.
-Blessed art thou amongst women,
-and blessed is the fruit of thy womb, Jesus.
-Holy Mary, Mother of God,
-pray for us sinners,
-now and at the hour of our death.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Marian'
-    },
-    {
-      id: 3,
-      title: 'Glory Be',
-      icon: <Star size={24} />,
-      text: `Glory be to the Father,
-and to the Son,
-and to the Holy Spirit.
-As it was in the beginning,
-is now, and ever shall be,
-world without end.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Traditional'
-    },
-    {
-      id: 4,
-      title: 'Prayer to St. Patrick',
-      icon: <Heart size={24} />,
-      text: `Saint Patrick, patron of Ireland and our parish,
-you brought the light of Christ to a pagan land.
-Help us to be missionaries in our own time,
-sharing the Gospel through our words and actions.
-Intercede for us that we may grow in faith,
-hope, and charity.
-May your example inspire us to serve God
-with courage and dedication.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Saints'
-    },
-    {
-      id: 5,
-      title: 'Morning Prayer',
-      icon: <Sun size={24} />,
-      text: `O God, our Creator and Father,
-as we begin this new day,
-we offer you our hearts and minds.
-Guide our steps and bless our work.
-Help us to see you in all we meet
-and to serve you in all we do.
-May this day bring glory to your name
-and peace to our souls.
-Through Christ our Lord.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Daily'
-    },
-    {
-      id: 6,
-      title: 'Evening Prayer',
-      icon: <Moon size={24} />,
-      text: `Loving God, as this day comes to an end,
-we thank you for your countless blessings.
-Forgive us for any wrongs we have done
-and help us to forgive others.
-Watch over our families and loved ones
-as we rest in your peace.
-May your angels guard us through the night
-and bring us safely to tomorrow's light.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Daily'
-    },
-    {
-      id: 7,
-      title: 'Prayer for Our Parish',
-      icon: <Church size={24} />,
-      text: `Heavenly Father,
-bless our parish community of St. Patrick's.
-Unite us in love and service to you.
-Guide our priests, deacons, and lay ministers.
-Help us to welcome all who seek you
-and to be instruments of your peace.
-May our parish be a beacon of hope
-in Makokoba and beyond.
-Through Christ our Lord.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Parish'
-    },
-    {
-      id: 8,
-      title: 'Prayer Before Meals',
-      icon: <Heart size={24} />,
-      text: `Bless us, O Lord,
-and these thy gifts,
-which we are about to receive
-from thy bounty,
-through Christ our Lord.
-Amen.`,
-      image: '/api/placeholder/300/200',
-      category: 'Daily'
-    }
-  ];
+  const getLiturgicalAccent = () => {
+    const c = (liturgicalInfo?.color || '').toLowerCase();
+    if (c === '#ffd700' || c === 'white' || c === 'gold') return '#f5d060';
+    if (c === '#702963' || c === 'purple') return '#d9a0f0';
+    if (c === '#d22b2b' || c === 'red') return '#f08080';
+    if (c === 'rose') return '#f0a0c8';
+    return 'var(--gold)';
+  };
+
+  const currentLiturgy = {
+    date: new Date().toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }),
+    liturgicalSeason: liturgicalInfo?.season || 'Ordinary Time',
+    subSeason: liturgicalInfo?.subSeason,
+    liturgicalColor: liturgicalInfo?.color?.toLowerCase() === '#ffd700' ? 'White / Gold' : 
+                     liturgicalInfo?.color?.toLowerCase() === '#702963' ? 'Purple' :
+                     liturgicalInfo?.color?.toLowerCase() === '#d22b2b' ? 'Red' :
+                     liturgicalInfo?.color || 'Green'
+  };
 
   const prayerSchedule = [
     { time: '6:00 AM', prayer: 'Morning Prayer & Lauds', days: 'Daily' },
@@ -198,12 +89,24 @@ Amen.`,
     { time: '8:00 PM', prayer: 'Night Prayer (Compline)', days: 'Daily' }
   ];
 
-  const categories = ['All', 'Traditional', 'Marian', 'Saints', 'Daily', 'Parish'];
-  const [activeCategory, setActiveCategory] = React.useState('All');
+  const getPrayerIcon = (category: string) => {
+    switch (category?.toLowerCase()) {
+      case 'traditional': return <Cross size={24} />;
+      case 'marian': return <Crown size={24} />;
+      case 'saints': return <Star size={24} />;
+      case 'daily': return <Sun size={24} />;
+      case 'parish': return <Church size={24} />;
+      default: return <Heart size={24} />;
+    }
+  };
+
+  const isPrayerPublished = (prayer: any) => {
+    return prayer.isPublished !== false && prayer.is_active !== false && prayer.isActive !== false;
+  };
 
   const filteredPrayers = activeCategory === 'All' 
-    ? prayers 
-    : prayers.filter(prayer => prayer.category === activeCategory);
+    ? prayers.filter(p => isPrayerPublished(p))
+    : prayers.filter(prayer => (prayer.category || '').toLowerCase() === activeCategory.toLowerCase() && isPrayerPublished(prayer));
 
   return (
     <div className="prayers section-padding">
@@ -215,43 +118,69 @@ Amen.`,
           </p>
         </div>
 
-        {/* Daily Readings Section */}
-        <section className="daily-readings card">
+        {/* Daily Readings Section — dynamically styled with liturgical colour */}
+        <section
+          className="daily-readings card"
+          style={{ background: getLiturgicalBg(), borderLeftColor: getLiturgicalAccent() }}
+        >
           <div className="readings-header">
-            <Calendar className="readings-icon" />
+            <Calendar className="readings-icon" size={32} style={{ color: getLiturgicalAccent() }} />
             <div className="readings-info">
-              <h2>{t('prayers.daily_readings')}</h2>
-              <p className="liturgy-date">{currentLiturgy.date}</p>
+              <h2>{liturgicalInfo?.liturgicalNote || liturgicalInfo?.season || t('prayers.daily_readings')}</h2>
+              <p className="liturgy-date" style={{ color: getLiturgicalAccent() }}>{currentLiturgy.date}</p>
               <div className="liturgy-details">
                 <span className="liturgy-season">{currentLiturgy.liturgicalSeason}</span>
-                <span className="liturgy-color">{t('prayers.liturgical_color')}: {currentLiturgy.liturgicalColor}</span>
+                <span className="liturgy-color">🎨 Liturgical Colour: <strong>{currentLiturgy.liturgicalColor}</strong></span>
               </div>
             </div>
           </div>
 
           <div className="readings-content">
-            <div className="reading-section">
-              <h3>{t('prayers.first_reading')}</h3>
-              <p className="reading-reference">{todaysReadings.firstReading.reference}</p>
-              <div className="reading-text">{todaysReadings.firstReading.text}</div>
-            </div>
+            {activeReadings ? (
+              <>
+                <div className="reading-section" style={{ borderLeftColor: getLiturgicalAccent() }}>
+                  <h3 style={{ color: getLiturgicalAccent() }}>📖 {t('prayers.first_reading')}</h3>
+                  <p className="reading-reference">{activeReadings.firstReading}</p>
+                  <p className="reading-subtext">Click "View Full Text on USCCB" below to read the full passage.</p>
+                </div>
 
-            <div className="reading-section">
-              <h3>{t('prayers.psalm')}</h3>
-              <p className="reading-reference">{todaysReadings.psalm.reference}</p>
-              <p className="psalm-response"><strong>{t('prayers.response')}:</strong> {todaysReadings.psalm.response}</p>
-              <div className="reading-text">{todaysReadings.psalm.text}</div>
-            </div>
+                <div className="reading-section" style={{ borderLeftColor: getLiturgicalAccent() }}>
+                  <h3 style={{ color: getLiturgicalAccent() }}>🎵 {t('prayers.psalm')}</h3>
+                  <p className="reading-reference">{activeReadings.psalm}</p>
+                </div>
 
-            <div className="reading-section">
-              <h3>{t('prayers.gospel')}</h3>
-              <p className="reading-reference">{todaysReadings.gospel.reference}</p>
-              <div className="reading-text">{todaysReadings.gospel.text}</div>
-            </div>
+                {activeReadings.secondReading && (
+                  <div className="reading-section" style={{ borderLeftColor: getLiturgicalAccent() }}>
+                    <h3 style={{ color: getLiturgicalAccent() }}>📖 {t('prayers.second_reading') || 'Second Reading'}</h3>
+                    <p className="reading-reference">{activeReadings.secondReading}</p>
+                  </div>
+                )}
 
-            <div className="readings-footer">
-              <p><strong>{t('prayers.reflection')}:</strong> Today's readings invite us to reflect on how God's Word takes root in our hearts and bears fruit in our daily lives.</p>
-            </div>
+                <div className="reading-section" style={{ borderLeftColor: getLiturgicalAccent() }}>
+                  <h3 style={{ color: getLiturgicalAccent() }}>✝️ {t('prayers.gospel')}</h3>
+                  <p className="reading-reference">{activeReadings.gospel}</p>
+                </div>
+
+                <div className="readings-footer" style={{ borderLeftColor: getLiturgicalAccent() }}>
+                  {liturgicalInfo?.liturgicalNote && (
+                    <p className="liturgical-note"><strong>📅 Celebration:</strong> {liturgicalInfo.liturgicalNote}</p>
+                  )}
+                  {liturgicalInfo?.historicalNote && (
+                    <p className="historical-note"><strong>📜 History:</strong> {liturgicalInfo.historicalNote}</p>
+                  )}
+                  <p><strong>🙏 {t('prayers.reflection')}:</strong> Today's readings invite us to reflect on how God's Word takes root in our hearts and bears fruit in our daily lives.</p>
+                  {liturgicalInfo?.usccbLink && (
+                    <a href={liturgicalInfo.usccbLink} target="_blank" rel="noopener noreferrer" className="usccb-btn" style={{ background: getLiturgicalAccent(), color: '#1a1a1a' }}>
+                      View Full Text on USCCB <ExternalLink size={14} />
+                    </a>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="readings-loading">
+                <p>Loading today's readings...</p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -269,43 +198,57 @@ Amen.`,
         </div>
 
         {/* Prayer Grid */}
+        {filteredPrayers.length === 0 && !isLoading && (
+          <div className="no-prayers">
+            <Heart size={48} />
+            <h3>No Prayers Found</h3>
+            <p>No prayers have been published in this category yet.</p>
+          </div>
+        )}
         <div className="prayer-grid">
-          {filteredPrayers.map((prayer) => (
-            <div key={prayer.id} className="prayer-card card">
-              <div className="prayer-image-container">
-                <img 
-                  src={prayer.image} 
-                  alt={prayer.title}
-                  className="prayer-image"
-                />
-                <div className="prayer-image-overlay">
-                  <Image size={32} />
+          {filteredPrayers.map((prayer) => {
+            const imgSrc = prayer.imageUrl || prayer.image_url || null;
+            return (
+              <div key={prayer.id} className="prayer-card card">
+                {/* Only show image block if there's a valid URL */}
+                {imgSrc && (
+                  <div className="prayer-image-container">
+                    <img
+                      src={imgSrc}
+                      alt={prayer.title}
+                      className="prayer-image"
+                      onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none'; }}
+                    />
+                    <div className="prayer-image-overlay">
+                      <Image size={32} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="prayer-content-wrapper">
+                  <div className="prayer-header">
+                    <div className="prayer-icon">
+                      {getPrayerIcon(prayer.category)}
+                    </div>
+                    <div>
+                      <h3>{prayer.title}</h3>
+                      <span className="prayer-category">{prayer.category}</span>
+                    </div>
+                  </div>
+
+                  <div className="prayer-text">
+                    <p>{prayer.text}</p>
+                  </div>
                 </div>
               </div>
-              
-              <div className="prayer-content-wrapper">
-                <div className="prayer-header">
-                  <div className="prayer-icon">
-                    {prayer.icon}
-                  </div>
-                  <div>
-                    <h3>{prayer.title}</h3>
-                    <span className="prayer-category">{prayer.category}</span>
-                  </div>
-                </div>
-                
-                <div className="prayer-text">
-                  <p>{prayer.text}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Prayer Schedule */}
-        <div className="prayer-schedule card">
-          <div className="prayer-header">
-            <Clock className="prayer-icon" />
+        <div className="prayer-schedule card" style={{ background: getLiturgicalBg(), borderLeftColor: getLiturgicalAccent() }}>
+          <div className="prayer-schedule-header">
+            <Clock size={28} style={{ color: getLiturgicalAccent() }} />
             <h3>Daily Prayer Schedule</h3>
           </div>
           <p className="schedule-description">
@@ -313,8 +256,8 @@ Amen.`,
           </p>
           <div className="schedule-grid">
             {prayerSchedule.map((item, index) => (
-              <div key={index} className="schedule-item">
-                <div className="schedule-time">
+              <div key={index} className="schedule-item" style={{ borderLeftColor: getLiturgicalAccent() }}>
+                <div className="schedule-time" style={{ color: getLiturgicalAccent() }}>
                   <strong>{item.time}</strong>
                 </div>
                 <div className="schedule-details">
@@ -326,7 +269,7 @@ Amen.`,
           </div>
           <div className="schedule-note">
             <p>
-              <strong>Note:</strong> Prayer times may vary during special liturgical seasons. 
+              <strong>📌 Note:</strong> Prayer times may vary during special liturgical seasons.
               Please check the parish bulletin for any changes.
             </p>
           </div>
