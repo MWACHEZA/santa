@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const db = require('../config/database-simple');
 const { authenticateToken } = require('../middleware/auth');
+const { logAction } = require('../utils/logger');
 const { 
   validateUserRegistration, 
   validateUserLogin, 
@@ -261,6 +262,20 @@ router.post('/register', authUpload.single('profilePicture'), validateUserRegist
     if (newUser[0]) {
       delete newUser[0].passwordHash;
     }
+
+    // Log successful registration
+    try {
+      await logAction({
+        userId: userId,
+        action: 'REGISTER',
+        entityType: 'user',
+        entityId: userId,
+        details: `User registered successfully: ${username} (${role})`,
+        ipAddress: req.ip
+      });
+    } catch (logErr) {
+      console.error('Failed to log registration action:', logErr);
+    }
     
     res.status(201).json({
       success: true,
@@ -292,6 +307,16 @@ router.post('/login', validateUserLogin, handleValidationErrors, async (req, res
     );
     
     if (users.length === 0) {
+      try {
+        await logAction({
+          userId: null,
+          action: 'LOGIN_FAILED',
+          entityType: 'user',
+          entityId: null,
+          details: `Failed login attempt for username: ${username} - User not found`,
+          ipAddress: req.ip
+        });
+      } catch {}
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -301,6 +326,16 @@ router.post('/login', validateUserLogin, handleValidationErrors, async (req, res
     const user = users[0];
     
     if (!user.isActive) {
+      try {
+        await logAction({
+          userId: user.id,
+          action: 'LOGIN_FAILED',
+          entityType: 'user',
+          entityId: user.id,
+          details: `Failed login attempt for deactivated user: ${user.username}`,
+          ipAddress: req.ip
+        });
+      } catch {}
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated'
@@ -311,6 +346,16 @@ router.post('/login', validateUserLogin, handleValidationErrors, async (req, res
     const isValidPassword = await bcrypt.compare(password, user.passwordHash);
     
     if (!isValidPassword) {
+      try {
+        await logAction({
+          userId: user.id,
+          action: 'LOGIN_FAILED',
+          entityType: 'user',
+          entityId: user.id,
+          details: `Failed login attempt (incorrect password) for user: ${user.username}`,
+          ipAddress: req.ip
+        });
+      } catch {}
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -328,6 +373,20 @@ router.post('/login', validateUserLogin, handleValidationErrors, async (req, res
     
     // Remove password from response
     delete user.passwordHash;
+
+    // Log successful login
+    try {
+      await logAction({
+        userId: user.id,
+        action: 'LOGIN',
+        entityType: 'user',
+        entityId: user.id,
+        details: `User logged in successfully: ${user.username} (${user.role})`,
+        ipAddress: req.ip
+      });
+    } catch (logErr) {
+      console.error('Failed to log login action:', logErr);
+    }
     
     res.json({
       success: true,
