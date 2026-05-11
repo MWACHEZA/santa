@@ -19,13 +19,13 @@ const News: React.FC = () => {
 
   // Get data
   const parishNews = getPublishedParishNews();
-  const dioceseNews = externalNews.filter((n: any) => n.source === 'diocese');
-  const vaticanNews = externalNews.filter((n: any) => n.source === 'vatican');
-  const zimbabweNews = externalNews.filter((n: any) => n.source === 'zimbabwe_catholic');
+  const dioceseNews = externalNews.filter(n => n.source === 'diocese');
+  const vaticanNews = externalNews.filter(n => n.source === 'vatican');
+  const zimbabweNews = externalNews.filter(n => n.source === 'zimbabwe_catholic');
   const archiveNews = getNewsArchiveByYear(selectedYear);
 
   // Available years for archive
-  const availableYears = Array.from(new Set(newsArchive.map((n: any) => n.year))).sort((a: any, b: any) => b - a);
+  const availableYears = Array.from(new Set(newsArchive.map(n => n.year))).sort((a, b) => b - a);
 
   // Fetch external news on component mount and tab change
   useEffect(() => {
@@ -151,7 +151,7 @@ const News: React.FC = () => {
               <h2>Parish News</h2>
               {parishNews.length > 0 ? (
                 <div className="news-grid">
-                  {parishNews.map((article: any) => renderNewsCard(article, false))}
+                  {parishNews.map(article => renderNewsCard(article, false))}
                 </div>
               ) : (
                 <div className="empty-state">
@@ -168,7 +168,7 @@ const News: React.FC = () => {
               <h2>Archdiocese of Bulawayo News</h2>
               {dioceseNews.length > 0 ? (
                 <div className="news-grid">
-                  {dioceseNews.map((article: any) => renderNewsCard(article, true))}
+                  {dioceseNews.map(article => renderNewsCard(article, true))}
                 </div>
               ) : (
                 <div className="empty-state">
@@ -185,7 +185,7 @@ const News: React.FC = () => {
               <h2>Vatican News</h2>
               {vaticanNews.length > 0 ? (
                 <div className="news-grid">
-                  {vaticanNews.map((article: any) => renderNewsCard(article, true))}
+                  {vaticanNews.map(article => renderNewsCard(article, true))}
                 </div>
               ) : (
                 <div className="empty-state">
@@ -202,7 +202,7 @@ const News: React.FC = () => {
               <h2>Zimbabwe Catholic Bishops Conference</h2>
               {zimbabweNews.length > 0 ? (
                 <div className="news-grid">
-                  {zimbabweNews.map((article: any) => renderNewsCard(article, true))}
+                  {zimbabweNews.map(article => renderNewsCard(article, true))}
                 </div>
               ) : (
                 <div className="empty-state">
@@ -224,7 +224,7 @@ const News: React.FC = () => {
                     onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                     className="year-selector"
                   >
-                    {availableYears.map((year: any) => (
+                    {availableYears.map(year => (
                       <option key={year} value={year}>{year}</option>
                     ))}
                   </select>
@@ -232,7 +232,7 @@ const News: React.FC = () => {
               </div>
               {archiveNews.length > 0 ? (
                 <div className="news-grid">
-                  {archiveNews.map((article: any) => (
+                  {archiveNews.map(article => (
                     <div key={article.id} className="news-card archive-card">
                       {article.imageUrl && (
                         <div className="news-image">

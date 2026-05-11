@@ -333,7 +333,8 @@ export type Permission =
   | 'mass_schedule' | 'sacraments' | 'prayers'
   | 'readings' | 'overview' | 'priest_desk'
   | 'analytics' | 'prayer_intentions' | 'gallery'
-  | 'news' | 'images' | 'ministries' | 'videos' | 'finances' | 'audit_logs' | 'section_images';
+  | 'news' | 'images' | 'ministries' | 'videos' | 'finances' | 'audit_logs'
+  | 'section_images' | 'users';
 
 interface AdminContextType {
   // Authentication
@@ -485,7 +486,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'announcements', 'events', 'contact', 'theme', 'mass_schedule',
     'sacraments', 'prayers', 'readings', 'overview', 'priest_desk',
     'analytics', 'prayer_intentions', 'gallery', 'news', 'images',
-    'ministries', 'videos', 'finances', 'audit_logs'
+    'ministries', 'videos', 'finances', 'audit_logs', 'section_images', 'users'
   ],
   secretary: [
     'announcements', 'events', 'contact', 'theme', 'mass_schedule',
@@ -554,6 +555,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     contentStats: [],
     popularContent: []
   });
+
 
   const fetchAuditLogs = useCallback(async (params?: any) => {
     try {
@@ -979,6 +981,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [user, refreshAllData]);
 
 
+
   const hasPermission = useCallback((permission: Permission): boolean => {
     if (!user) return false;
     if (user.role === 'admin' || user.role === 'priest') return true;
@@ -992,6 +995,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if ((permission === 'events' || permission === 'announcements') && (isSecretary || user.role === 'secretary' || user.role === 'vice_secretary')) return true;
     const permissions = ROLE_PERMISSIONS[user.role] || [];
 
+
     // Check if basic role permission exists
     if (!permissions.includes(permission)) return false;
 
@@ -1004,6 +1008,180 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     return true;
   }, [user]);
+
+
+  const loadInitialData = useCallback(async () => {
+    try {
+      const [annRes, evtRes, galRes, minRes, newsRes, contactRes, schedRes, sacRes, prayRes, featRes] = await Promise.allSettled([
+        api.announcements.getAll(),
+        api.events.getAll(),
+        api.gallery.getAll(),
+        api.ministries.getAll(),
+        api.news.getAll(),
+        api.contact.get(),
+        api.schedule.getAll(),
+        api.sacraments.getAll(),
+        api.prayers.getAll(),
+        api.gallery.getFeatured?.() ?? Promise.resolve({ success: false })
+      ]);
+
+      if (annRes.status === 'fulfilled' && annRes.value?.success) {
+        const serverAnnouncements: any[] = (annRes.value.data?.announcements) || (Array.isArray(annRes.value.data) ? annRes.value.data : []);
+        const mapped: Announcement[] = serverAnnouncements.map(a => ({
+          id: a.id,
+          title: a.title,
+          message: a.content ?? '',
+          type: a.type === 'urgent' ? 'urgent' : a.type === 'event' || a.type === 'mass' ? 'event' : 'info',
+          isActive: !!a.is_active,
+          createdAt: a.created_at ?? new Date().toISOString(),
+          expiresAt: a.end_date ?? undefined
+        }));
+        setAnnouncements(mapped);
+      }
+
+      if (evtRes.status === 'fulfilled' && evtRes.value?.success) {
+        const serverEvents: any[] = (evtRes.value.data?.events) || (Array.isArray(evtRes.value.data) ? evtRes.value.data : []);
+        const mappedEvts: Event[] = serverEvents.map(e => ({
+          id: e.id,
+          title: e.title,
+          description: e.description ?? '',
+          date: e.event_date ?? e.created_at ?? new Date().toISOString(),
+          time: e.start_time ?? '',
+          location: e.location ?? '',
+          category: (e.category_name === 'mass' ? 'mass' : 'social'),
+          isPublished: !!e.is_published,
+          createdAt: e.created_at ?? new Date().toISOString()
+        }));
+        setEvents(mappedEvts);
+      }
+
+      if (galRes.status === 'fulfilled' && galRes.value?.success) {
+        const serverImages: any[] = (galRes.value.data?.images) || (Array.isArray(galRes.value.data) ? galRes.value.data : []);
+        const mappedImgs: GalleryImage[] = serverImages.map(i => ({
+          id: i.id,
+          title: i.title ?? '',
+          description: i.description ?? '',
+          url: i.image_url ?? i.thumbnail_url ?? '',
+          category: 'events',
+          uploadedAt: i.upload_date ?? i.created_at ?? new Date().toISOString(),
+          isPublished: true
+        }));
+        setGalleryImages(mappedImgs);
+      }
+
+      if (minRes.status === 'fulfilled' && (minRes.value as any)?.success) {
+        const arr: any[] = ((minRes.value as any).data?.ministries) || (Array.isArray((minRes.value as any).data) ? (minRes.value as any).data : []);
+        const mapped: Ministry[] = arr.map(m => ({
+          category: m.category ?? 'general',
+          id: m.id,
+          name: m.name,
+          description: m.description ?? '',
+          imageUrl: m.image_url ?? '',
+          contactPerson: m.leader_name ?? m.leader_contact ?? '',
+          meetingTime: m.meeting_schedule ?? '',
+          isActive: m.is_active ?? true,
+          createdAt: m.created_at ?? new Date().toISOString()
+        }));
+        setMinistries(mapped);
+      }
+
+      if (newsRes.status === 'fulfilled' && (newsRes.value as any)?.success) {
+        const arr: any[] = ((newsRes.value as any).data?.news) || (Array.isArray((newsRes.value as any).data) ? (newsRes.value as any).data : []);
+        const mapped: ParishNews[] = arr.map(n => ({
+          id: n.id,
+          title: n.title,
+          summary: n.summary ?? '',
+          content: n.content ?? '',
+          category: n.category ?? undefined,
+          imageUrl: n.image_url ?? undefined,
+          author: n.author_name ?? n.author ?? '',
+          authorRole: (n.author_role ?? 'reporter'),
+          publishedAt: n.published_at ?? n.created_at ?? new Date().toISOString(),
+          isArchived: !!n.is_archived,
+          isPublished: !!n.is_published,
+          createdAt: n.created_at ?? new Date().toISOString()
+        }));
+        setParishNews(mapped);
+      }
+
+      if (contactRes.status === 'fulfilled' && (contactRes.value as any)?.success) {
+        const c: any = (contactRes.value as any).data || {};
+        setContactInfo({
+          address: c.address ?? undefined,
+          phone: Array.isArray(c.phone) ? c.phone : c.phone ? [c.phone] : undefined,
+          email: Array.isArray(c.email) ? c.email : c.email ? [c.email] : undefined,
+          officeHours: {
+            weekdays: (c.office_hours?.weekdays) ?? '',
+            saturday: (c.office_hours?.saturday) ?? '',
+            sunday: (c.office_hours?.sunday) ?? ''
+          },
+          staff: Array.isArray(c.staff) ? c.staff.map((s: any) => ({ name: s.name, position: s.position, phone: s.phone, email: s.email })) : []
+        });
+      }
+
+      if (schedRes.status === 'fulfilled' && (schedRes.value as any)?.success) {
+        const entries: any[] = ((schedRes.value as any).data?.schedule) || (Array.isArray((schedRes.value as any).data) ? (schedRes.value as any).data : []);
+        const byDay: Record<string, string[]> = {};
+        entries.forEach(e => {
+          const day = (e.day ?? e.day_of_week ?? '').toLowerCase();
+          const time = e.time ?? e.start_time ?? '';
+          if (!byDay[day]) byDay[day] = [];
+          if (time) byDay[day].push(time);
+        });
+        setMassSchedule({
+          weekdays: (byDay['monday'] || byDay['tuesday'] || byDay['wednesday'] || byDay['thursday'] || byDay['friday']) ? 'See daily schedule' : '',
+          saturday: (byDay['saturday'] || []).join(', '),
+          sunday: byDay['sunday'] || [],
+          confession: (entries.filter(e => (e.type ?? '').toLowerCase() === 'confession').map((e: any) => e.time)) || []
+        });
+      }
+
+      if (sacRes.status === 'fulfilled' && (sacRes.value as any)?.success) {
+        const arr: any[] = ((sacRes.value as any).data?.sacraments) || (Array.isArray((sacRes.value as any).data) ? (sacRes.value as any).data : []);
+        const mapped: Sacrament[] = arr.map(s => ({
+          id: s.id,
+          name: s.name,
+          description: s.description ?? '',
+          imageUrl: s.image_url ?? '',
+          requirements: Array.isArray(s.requirements) ? s.requirements : (typeof s.requirements === 'string' ? s.requirements.split(',').map((x: string) => x.trim()).filter(Boolean) : []),
+          contactInfo: s.contact_info ?? s.contact ?? '',
+          isActive: s.is_active ?? true,
+          createdAt: s.created_at ?? new Date().toISOString()
+        }));
+        setSacraments(mapped);
+      }
+
+      if (prayRes.status === 'fulfilled' && (prayRes.value as any)?.success) {
+        const arr: any[] = ((prayRes.value as any).data?.intentions) || (Array.isArray((prayRes.value as any).data) ? (prayRes.value as any).data : []);
+        const mapped: PrayerIntention[] = arr.map(p => ({
+          id: p.id,
+          name: p.requester_name ?? '',
+          email: p.requester_email ?? undefined,
+          intention: p.intention ?? '',
+          isUrgent: !!(p.is_urgent ?? p.urgent),
+          isPublic: !!(p.is_public ?? false),
+          submittedAt: p.submitted_at ?? p.created_at ?? new Date().toISOString(),
+          status: (p.is_approved ? 'approved' : 'pending')
+        }));
+        setPrayerIntentions(mapped);
+      }
+
+      if (featRes.status === 'fulfilled' && (featRes.value as any)?.success) {
+        const arr: any[] = ((featRes.value as any).data?.images) || [];
+        const mapped: SectionImage[] = arr.map((i: any) => ({
+          id: i.id,
+          section: 'parish_gallery',
+          title: i.title ?? '',
+          imageUrl: i.image_url ?? i.thumbnail_url ?? '',
+          isActive: true,
+          createdAt: i.created_at ?? new Date().toISOString()
+        }));
+        setSectionImages(mapped);
+      }
+    } catch (err) {
+    }
+  }, []);
+
 
 
   // Announcement methods
@@ -1445,7 +1623,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     console.log(`Fetching news from ${source}...`);
     setIsLoading(true);
     try {
-
       const res = await api.news.getExternal(source);
       let mapped: ExternalNews[] = [];
       if (res && (res as any).success) {
@@ -1541,7 +1718,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     } catch (error) {
       console.error(`Failed to fetch ${source} news:`, error);
-
+    } finally {
+      setIsLoading(false);
     }
   }, [setExternalNews]);
 

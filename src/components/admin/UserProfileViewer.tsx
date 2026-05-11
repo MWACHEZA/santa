@@ -10,14 +10,12 @@ import '../EnhancedProfile.css';
 interface UserProfileViewerProps {
   user: User;
   onUserUpdate?: (updatedUser: User) => void;
-  onClose?: () => void;
   isReadOnly?: boolean;
 }
 
 const UserProfileViewer: React.FC<UserProfileViewerProps> = ({ 
   user, 
   onUserUpdate, 
-  onClose,
   isReadOnly = false 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -114,7 +112,7 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
       const updatedUser = {
         ...user,
         ...formData,
-        gender: formData.gender as 'male' | 'female' | null,
+        gender: formData.gender as 'male' | 'female' | undefined,
         updatedAt: new Date().toISOString()
       };
 
@@ -308,27 +306,6 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                 </button>
               </>
             )}
-            {onClose && (
-              <button 
-                className="action-btn close-btn"
-                onClick={onClose}
-                title="Close Profile"
-              >
-                <X size={20} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {isReadOnly && onClose && (
-          <div className="profile-actions">
-            <button 
-              className="action-btn close-btn"
-              onClick={onClose}
-              title="Close Profile"
-            >
-              <X size={20} />
-            </button>
           </div>
         )}
       </div>

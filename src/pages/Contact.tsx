@@ -4,7 +4,6 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { MapPin, Phone, Mail, Clock, Send, User, MessageSquare } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { api } from '../services/api';
 import './Contact.css';
 
 // Fix for default markers in react-leaflet
@@ -32,30 +31,16 @@ const Contact: React.FC = () => {
   const handleReporterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    setSubmitMessage('');
     
-    try {
-      const res = await api.contact.submitReporterApplication({
-        name: reporterForm.name,
-        surname: reporterForm.surname,
-        email: reporterForm.email,
-        message: reporterForm.message
-      });
-      
-      if (res.success) {
-        setSubmitMessage('Thank you for your interest in becoming a church reporter! Your application has been sent successfully.');
-        setReporterForm({ name: '', surname: '', email: '', message: '' });
-      } else {
-        setSubmitMessage(res.message || 'Failed to submit application. Please try again.');
-      }
-    } catch (err: any) {
-      console.error('Submit application error:', err);
-      setSubmitMessage('Failed to submit application. Please try again later.');
-    } finally {
+    // Simulate form submission
+    setTimeout(() => {
+      setSubmitMessage('Thank you for your interest in becoming a church reporter! We will contact you soon.');
+      setReporterForm({ name: '', surname: '', email: '', message: '' });
       setIsSubmitting(false);
+      
       // Clear message after 5 seconds
       setTimeout(() => setSubmitMessage(''), 5000);
-    }
+    }, 1000);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -128,7 +113,7 @@ const Contact: React.FC = () => {
             <MapContainer 
               center={churchPosition} 
               zoom={15} 
-              style={{ height: '100%', width: '100%' }}
+              style={{ height: '400px', width: '100%' }}
               className="church-map"
             >
               <TileLayer

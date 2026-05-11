@@ -14,7 +14,7 @@ export interface User {
   mustChangePassword?: boolean;
   profilePictureUrl?: string;
   dateOfBirth?: string;
-  gender?: 'male' | 'female' | null;
+  gender?: 'male' | 'female';
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
@@ -22,6 +22,8 @@ export interface User {
   // Parish Membership Information (optional for parishioners)
   association?: string;
   section?: string;
+  committeePosition?: string;
+  isCommitteeMember?: boolean;
   
   // Sacramental Information (for parishioners)
   isBaptized?: boolean | null;
@@ -47,8 +49,6 @@ export interface User {
   
   createdAt?: string;
   updatedAt?: string;
-  committeePosition?: string;
-  isCommitteeMember?: boolean;
 }
 
 interface RegistrationData {

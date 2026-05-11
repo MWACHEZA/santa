@@ -60,7 +60,7 @@ const UserLogin: React.FC = () => {
         <div className="login-header">
           <div className="login-logo">
             <img 
-              src="/logo.svg" 
+              src="/api/placeholder/80/80" 
               alt="St. Patrick's Logo" 
               className="logo-img"
             />

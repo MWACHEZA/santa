@@ -5,7 +5,7 @@ import {
   FileText, Plus, Trash2, Edit2, CheckCircle, 
   XCircle, Calendar, Image as ImageIcon, MessageSquare, Upload, X 
 } from 'lucide-react';
-import { api } from '../../services/api';
+import api from '../../services/api';
 
 const PriestDeskManager: React.FC = () => {
   const { priestMessages, addPriestMessage, updatePriestMessage, deletePriestMessage, logAdminAction } = useAdmin();

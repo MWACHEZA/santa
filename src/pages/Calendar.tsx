@@ -41,11 +41,7 @@ const Calendar: React.FC = () => {
 
   const getEventsForDate = (day: number) => {
     const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return publishedEvents.filter(event => {
-      // Normalize event date to YYYY-MM-DD for comparison
-      const eventDate = event.date.includes('T') ? event.date.split('T')[0] : event.date;
-      return eventDate === dateStr;
-    });
+    return publishedEvents.filter(event => event.date === dateStr);
   };
 
   const getUpcomingEvents = () => {

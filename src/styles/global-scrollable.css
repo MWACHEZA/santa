@@ -73,13 +73,10 @@ main {
   
   /* Ensure navigation remains scrollable on tablets */
   .admin-sidebar,
+  .side-nav,
   .sidebar-nav {
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-  }
-  
-  .side-nav {
-    overflow: hidden !important;
   }
 }
 
@@ -102,6 +99,7 @@ main {
   
   /* Mobile navigation scrolling enhancements */
   .admin-sidebar,
+  .side-nav,
   .sidebar-nav,
   .side-nav-content {
     overflow-y: auto !important;
@@ -129,15 +127,11 @@ main {
   }
   
   /* Small mobile navigation scrolling */
-  .admin-sidebar {
+  .admin-sidebar,
+  .side-nav {
     width: 280px !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-  }
-  
-  .side-nav {
-    width: 280px !important;
-    overflow: hidden !important; /* Keep outer container fixed */
   }
   
   .sidebar-nav,
@@ -265,21 +259,10 @@ pre, code {
   box-sizing: border-box;
 }
 
-/* Prevent any element from blocking scrolling - Exclude components that require overflow: hidden for image cropping and card styling, and maps that need strict clipping */
-*:not(.modern-auth):not(.auth-container):not(.loading-container):not(.no-scroll):not(.no-scroll *):not(.ministry-img-container):not(.ministry-img-container *):not(.image-preview):not(.image-preview *):not(.theme-preview):not(.theme-preview *):not(.ministry-image):not(.ministry-image *):not(.gallery-item):not(.gallery-item *):not(.card-image):not(.card-image *):not(.no-forced-overflow):not(.no-forced-overflow *):not(.map-container):not(.map-container *):not(.leaflet-container):not(.leaflet-container *):not(.leaflet-pane):not(.leaflet-pane *):not(.leaflet-tile-container):not(.leaflet-tile-container *) {
+/* Prevent any element from blocking scrolling */
+*:not(.modern-auth):not(.auth-container):not(.loading-container) {
   max-height: none !important;
   overflow: visible !important;
-}
-
-/* Strict scroll lock for when side navigation is open */
-body.no-scroll,
-body.no-scroll #root,
-body.no-scroll .App,
-body.no-scroll main {
-  overflow: hidden !important;
-  height: 100vh !important;
-  max-height: 100vh !important;
-  touch-action: none;
 }
 
 /* Special handling for admin pages */
@@ -303,6 +286,7 @@ body.no-scroll main {
 .navigation,
 .nav-container,
 .admin-sidebar,
+.side-nav,
 .sidebar-nav,
 .side-nav-content {
   overflow-y: auto !important;

@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { Plus, Edit, Trash2, Save, X, Calendar, BookOpen, Heart } from 'lucide-react';
-import { useAdmin, type Prayer } from '../../contexts/AdminContext';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useToast } from '../../contexts/ToastContext';
-import { api } from '../../services/api';
 import './PrayerManager.css';
+
+interface Prayer {
+  id: number;
+  title: string;
+  text: string;
+  category: string;
+  image?: string;
+  createdAt?: string;
+  isPublished?: boolean;
+}
 
 interface DailyReading {
   id: string;
@@ -27,24 +34,34 @@ interface DailyReading {
 
 const PrayerManager: React.FC = () => {
   const { t } = useLanguage();
-  const { 
-    prayers, 
-    addPrayer, 
-    updatePrayer, 
-    deletePrayer, 
-    prayerCategories, 
-    addCategory,
-    isLoading: contextLoading 
-  } = useAdmin();
-  const { success, error, info } = useToast();
-  
   const [activeTab, setActiveTab] = useState<'prayers' | 'readings'>('prayers');
-  const [selectedPrayer, setSelectedPrayer] = useState<any | null>(null);
+  const [prayers, setPrayers] = useState<Prayer[]>([
+    {
+      id: 1,
+      title: 'Our Father',
+      text: 'Our Father, who art in heaven, hallowed be thy name. Thy kingdom come, thy will be done, on earth as it is in heaven. Give us this day our daily bread, and forgive us our trespasses, as we forgive those who trespass against us. And lead us not into temptation, but deliver us from evil. Amen.',
+      category: 'Traditional',
+      createdAt: '2024-01-01T00:00:00Z',
+      isPublished: true
+    },
+    {
+      id: 2,
+      title: 'Hail Mary',
+      text: 'Hail Mary, full of grace, the Lord is with thee. Blessed art thou among women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.',
+      category: 'Marian',
+      createdAt: '2024-01-01T00:00:00Z',
+      isPublished: true
+    }
+  ]);
+
+  const [categories, setCategories] = useState<string[]>([
+    'Traditional', 'Marian', 'Saints', 'Daily', 'Parish', 'Seasonal', 'Devotional'
+  ]);
+
+  const [selectedPrayer, setSelectedPrayer] = useState<Prayer | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showAddCategory, setShowAddCategory] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [prayerToDelete, setPrayerToDelete] = useState<string | null>(null);
   
   const [readings, setReadings] = useState<DailyReading[]>([
     {
@@ -67,89 +84,75 @@ const PrayerManager: React.FC = () => {
     }
   ]);
 
-  const [editingPrayer, setEditingPrayer] = useState<any | null>(null);
+  const [editingPrayer, setEditingPrayer] = useState<Prayer | null>(null);
   const [editingReading, setEditingReading] = useState<DailyReading | null>(null);
   const [showPrayerForm, setShowPrayerForm] = useState(false);
   const [showReadingForm, setShowReadingForm] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleAddPrayer = () => {
     setEditingPrayer({
+      id: Date.now(),
       title: '',
       text: '',
-      category: prayerCategories[0] || 'Traditional',
+      category: categories[0] || 'Parish',
+      createdAt: new Date().toISOString(),
       isPublished: true
     });
     setShowPrayerForm(true);
   };
 
-  const handleSavePrayer = async (prayer: any) => {
-    setIsSubmitting(true);
-    try {
-      if (prayer.id) {
-        await updatePrayer(prayer.id, prayer);
-        success('Prayer updated successfully');
-      } else {
-        await addPrayer(prayer);
-        success('Prayer added successfully');
-      }
-      setEditingPrayer(null);
-      setShowPrayerForm(false);
-      setSelectedPrayer(null);
-    } catch (err) {
-      error('Failed to save prayer');
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
+  const handleSavePrayer = (prayer: Prayer) => {
+    if (prayer.id && prayers.find(p => p.id === prayer.id)) {
+      setPrayers(prayers.map(p => p.id === prayer.id ? prayer : p));
+    } else {
+      setPrayers([...prayers, { ...prayer, id: Date.now(), createdAt: new Date().toISOString() }]);
     }
+    setEditingPrayer(null);
+    setShowPrayerForm(false);
+    // Save to localStorage
+    localStorage.setItem('prayerCategories', JSON.stringify(categories));
+    localStorage.setItem('prayers', JSON.stringify(prayers));
   };
 
-  const confirmDeletePrayer = (id: string) => {
-    setPrayerToDelete(id);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDeletePrayer = async () => {
-    if (!prayerToDelete) return;
-    
-    setIsSubmitting(true);
-    try {
-      await deletePrayer(prayerToDelete);
-      success('Prayer deleted successfully');
-      if (selectedPrayer?.id === prayerToDelete) {
+  const handleDeletePrayer = (id: number) => {
+    if (window.confirm('Are you sure you want to delete this prayer?')) {
+      setPrayers(prayers.filter(p => p.id !== id));
+      if (selectedPrayer?.id === id) {
         setSelectedPrayer(null);
       }
-      setShowDeleteConfirm(false);
-      setPrayerToDelete(null);
-    } catch (err) {
-      error('Failed to delete prayer');
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleAddCategory = async () => {
-    if (newCategoryName.trim() && !prayerCategories.includes(newCategoryName.trim())) {
-      try {
-        await addCategory(newCategoryName.trim(), 'prayer');
-        success(`Category "${newCategoryName}" added`);
-        setNewCategoryName('');
-        setShowAddCategory(false);
-      } catch (err) {
-        error('Failed to add category');
-        console.error('Failed to add prayer category', err);
-      }
+  const handleAddCategory = () => {
+    if (newCategoryName.trim() && !categories.includes(newCategoryName.trim())) {
+      const updatedCategories = [...categories, newCategoryName.trim()];
+      setCategories(updatedCategories);
+      localStorage.setItem('prayerCategories', JSON.stringify(updatedCategories));
+      setNewCategoryName('');
+      setShowAddCategory(false);
     }
   };
 
   const handleDeleteCategory = (categoryToDelete: string) => {
-    info('Category deletion is currently disabled to protect existing data.');
+    if (window.confirm(`Are you sure you want to delete the "${categoryToDelete}" category? Prayers in this category will need to be recategorized.`)) {
+      const updatedCategories = categories.filter(cat => cat !== categoryToDelete);
+      setCategories(updatedCategories);
+      localStorage.setItem('prayerCategories', JSON.stringify(updatedCategories));
+    }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, prayerId: string) => {
-    // Image upload logic... (can be refined to use actual upload API)
-    info('Image upload feature will be available in the next update.');
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, prayerId: number) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageUrl = e.target?.result as string;
+        setPrayers(prayers.map(p => 
+          p.id === prayerId ? { ...p, image: imageUrl } : p
+        ));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleAddReading = () => {
@@ -173,7 +176,6 @@ const PrayerManager: React.FC = () => {
     }
     setEditingReading(null);
     setShowReadingForm(false);
-    success('Daily reading saved');
   };
 
   // Filter prayers by selected category
@@ -241,7 +243,7 @@ const PrayerManager: React.FC = () => {
                 </span>
               </div>
               
-              {prayerCategories.map((category) => (
+              {categories.map((category) => (
                 <div 
                   key={category} 
                   className={`category-item ${selectedCategory === category ? 'selected' : ''}`}
@@ -297,9 +299,9 @@ const PrayerManager: React.FC = () => {
                     className={`prayer-card ${selectedPrayer?.id === prayer.id ? 'selected' : ''}`}
                     onClick={() => setSelectedPrayer(prayer)}
                   >
-                    {prayer.imageUrl && (
+                    {prayer.image && (
                       <div className="prayer-image">
-                        <img src={prayer.imageUrl} alt={prayer.title} />
+                        <img src={prayer.image} alt={prayer.title} />
                       </div>
                     )}
                     <div className="prayer-header">
@@ -373,7 +375,7 @@ const PrayerManager: React.FC = () => {
                 </label>
                 <button
                   className="btn btn-danger"
-                  onClick={() => confirmDeletePrayer(selectedPrayer.id)}
+                  onClick={() => handleDeletePrayer(selectedPrayer.id)}
                 >
                   <Trash2 size={18} />
                   Delete Prayer
@@ -420,50 +422,16 @@ const PrayerManager: React.FC = () => {
             </div>
           )}
 
-          {/* Delete Confirmation Modal */}
-          {showDeleteConfirm && (
-            <div className="modal-overlay">
-              <div className="modal confirm-modal">
-                <div className="modal-header">
-                  <h3>Confirm Deletion</h3>
-                  <button className="btn-close" onClick={() => setShowDeleteConfirm(false)}>
-                    <X size={20} />
-                  </button>
-                </div>
-                <div className="modal-content">
-                  <p>Are you sure you want to delete this prayer? This action cannot be undone.</p>
-                  <div className="form-actions">
-                    <button 
-                      className="btn btn-secondary" 
-                      onClick={() => setShowDeleteConfirm(false)}
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      className="btn btn-danger" 
-                      onClick={handleDeletePrayer}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Deleting...' : 'Delete Prayer'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Prayer Form Modal */}
           {showPrayerForm && (
             <PrayerForm
               prayer={editingPrayer}
-              categories={prayerCategories}
+              categories={categories}
               onSave={handleSavePrayer}
               onCancel={() => {
                 setShowPrayerForm(false);
                 setEditingPrayer(null);
               }}
-              isSubmitting={isSubmitting}
             />
           )}
         </div>
@@ -538,52 +506,35 @@ const PrayerManager: React.FC = () => {
 
 // Prayer Form Component
 const PrayerForm: React.FC<{
-  prayer: any | null;
+  prayer: Prayer | null;
   categories: string[];
-  onSave: (prayer: any) => void;
+  onSave: (prayer: Prayer) => void;
   onCancel: () => void;
-  isSubmitting?: boolean;
-}> = ({ prayer, categories, onSave, onCancel, isSubmitting = false }) => {
-  const [formData, setFormData] = useState<any>(
+}> = ({ prayer, categories, onSave, onCancel }) => {
+  const [formData, setFormData] = useState<Prayer>(
     prayer || {
+      id: 0,
       title: '',
       text: '',
-      category: categories[0] || 'Traditional',
+      category: categories[0] || 'Parish',
+      createdAt: new Date().toISOString(),
       isPublished: true
     }
   );
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.title.trim() && formData.text.trim()) {
-      setUploading(true);
-      try {
-        let finalImageUrl = formData.imageUrl || '';
-        if (imageFile) {
-          const uploadRes = await api.upload.uploadSingle(imageFile, 'prayers');
-          if (uploadRes.success && uploadRes.data) {
-            finalImageUrl = uploadRes.data.url || uploadRes.data.fileUrl || uploadRes.data.path;
-          }
-        }
-        onSave({ ...formData, imageUrl: finalImageUrl });
-      } catch (err) {
-        console.error('Failed to upload prayer image:', err);
-      } finally {
-        setUploading(false);
-      }
+      onSave(formData);
     }
   };
-
-  const isFormDisabled = isSubmitting || uploading;
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
           <h3>{prayer?.id ? 'Edit Prayer' : 'Add New Prayer'}</h3>
-          <button className="close-btn" onClick={onCancel} disabled={isFormDisabled}>
+          <button className="close-btn" onClick={onCancel}>
             <X size={20} />
           </button>
         </div>
@@ -597,7 +548,6 @@ const PrayerForm: React.FC<{
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Enter prayer title"
               required
-              disabled={isFormDisabled}
             />
           </div>
           
@@ -607,7 +557,6 @@ const PrayerForm: React.FC<{
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
-              disabled={isFormDisabled}
             >
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
@@ -623,19 +572,17 @@ const PrayerForm: React.FC<{
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setImageFile(file);
                   const reader = new FileReader();
                   reader.onload = (event) => {
-                    setFormData({ ...formData, imageUrl: event.target?.result as string });
+                    setFormData({ ...formData, image: event.target?.result as string });
                   };
                   reader.readAsDataURL(file);
                 }
               }}
-              disabled={isFormDisabled}
             />
-            {formData.imageUrl && (
+            {formData.image && (
               <div className="image-preview">
-                <img src={formData.imageUrl} alt="Prayer preview" style={{ maxWidth: '200px', maxHeight: '150px' }} />
+                <img src={formData.image} alt="Prayer preview" style={{ maxWidth: '200px', maxHeight: '150px' }} />
               </div>
             )}
           </div>
@@ -648,7 +595,6 @@ const PrayerForm: React.FC<{
               placeholder="Enter the full prayer text"
               rows={8}
               required
-              disabled={isFormDisabled}
             />
           </div>
 
@@ -658,25 +604,18 @@ const PrayerForm: React.FC<{
                 type="checkbox"
                 checked={formData.isPublished}
                 onChange={(e) => setFormData({ ...formData, isPublished: e.target.checked })}
-                disabled={isFormDisabled}
               />
               Publish this prayer (make it visible to parishioners)
             </label>
           </div>
           
           <div className="form-actions">
-            <button type="button" className="btn btn-secondary" onClick={onCancel} disabled={isFormDisabled}>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary" disabled={isFormDisabled}>
-              {isFormDisabled ? (
-                <>Saving...</>
-              ) : (
-                <>
-                  <Save size={20} />
-                  Save Prayer
-                </>
-              )}
+            <button type="submit" className="btn btn-primary">
+              <Save size={20} />
+              Save Prayer
             </button>
           </div>
         </form>

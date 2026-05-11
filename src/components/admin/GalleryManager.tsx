@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin, GalleryImage } from '../../contexts/AdminContext';
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Image as ImageIcon, Tag, FileText } from 'lucide-react';
-import { useToast } from '../../contexts/ToastContext';
-import GalleryCategoryManager from './GalleryCategoryManager';
-import { api } from '../../services/api';
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, Image as ImageIcon } from 'lucide-react';
 import './GalleryManager.css';
 
 const GalleryManager: React.FC = () => {
@@ -11,47 +8,39 @@ const GalleryManager: React.FC = () => {
     galleryImages, 
     addImage, 
     updateImage, 
-    deleteImage,
-    galleryCategories,
-    fetchCategories
+    deleteImage 
   } = useAdmin();
-  const { success: toastSuccess, error: toastError } = useToast();
   
   const [showForm, setShowForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'gallery' | 'categories'>('gallery');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     url: '',
-    category: galleryCategories[0] || 'general',
+    category: 'choir' as string,
     isPublished: true
   });
-  const [isUploading, setIsUploading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const categories = [
+    { value: 'all', label: 'All Categories' },
+    { value: 'choir', label: 'Parish Choir' },
+    { value: 'youth', label: 'Youth Group' },
+    { value: 'outreach', label: 'Community Outreach' },
+    { value: 'mass', label: 'Mass & Liturgy' },
+    { value: 'events', label: 'Parish Events' }
+  ];
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.url) {
-      toastError('Please upload an image first', 'Gallery');
-      return;
-    }
-    setIsUploading(true);
     
-    try {
-      if (editingId) {
-        await updateImage(editingId, formData);
-        toastSuccess('Image updated successfully', 'Gallery');
-      } else {
-        await addImage(formData);
-        toastSuccess('New image added to gallery', 'Gallery');
-      }
-      resetForm();
-    } catch (err) {
-      toastError('Failed to save image', 'Error');
-    } finally {
-      setIsUploading(false);
+    if (editingId) {
+      updateImage(editingId, formData);
+    } else {
+      addImage(formData);
     }
+    
+    resetForm();
   };
 
   const resetForm = () => {
@@ -59,10 +48,9 @@ const GalleryManager: React.FC = () => {
       title: '',
       description: '',
       url: '',
-      category: galleryCategories[0] || 'general',
+      category: 'choir',
       isPublished: true
     });
-    setUploadPreview('');
     setShowForm(false);
     setEditingId(null);
   };
@@ -75,187 +63,49 @@ const GalleryManager: React.FC = () => {
       category: image.category,
       isPublished: image.isPublished
     });
-    setUploadPreview(image.url || '');
     setEditingId(image.id);
     setShowForm(true);
   };
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this image?')) {
-      try {
-        deleteImage(id);
-        toastSuccess('Image deleted from gallery', 'Gallery');
-      } catch (err) {
-        toastError('Failed to delete image', 'Error');
-      }
+      deleteImage(id);
     }
   };
 
   const togglePublished = (id: string, isPublished: boolean) => {
-    try {
-      updateImage(id, { isPublished: !isPublished });
-      toastSuccess(isPublished ? 'Image unpublished' : 'Image published', 'Status Update');
-    } catch (err) {
-      toastError('Failed to update status', 'Error');
-    }
+    updateImage(id, { isPublished: !isPublished });
   };
 
-  const [uploadPreview, setUploadPreview] = useState<string>('');
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Show local preview immediately
-    const reader = new FileReader();
-    reader.onload = (ev) => setUploadPreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-
-    // Upload to server and save the real URL
-    setIsUploadingFile(true);
-    try {
-      const uploadRes = await api.upload.uploadSingle(file, 'gallery');
-      if (uploadRes.success && uploadRes.data) {
-        const serverUrl = uploadRes.data.url || uploadRes.data.fileUrl || uploadRes.data.path;
-        setFormData((prev: any) => ({ ...prev, url: serverUrl }));
-      } else {
-        toastError('Image upload failed', 'Gallery');
-      }
-    } catch (err) {
-      console.error('Image upload error:', err);
-      toastError('Failed to upload image', 'Gallery');
-    } finally {
-      setIsUploadingFile(false);
+    if (file) {
+      // In a real application, you would upload to a server
+      // For demo purposes, we'll create a local URL
+      const url = URL.createObjectURL(file);
+      setFormData({ ...formData, url });
     }
   };
 
   const filteredImages = selectedCategory === 'all' 
     ? galleryImages 
-    : galleryImages.filter(img => (img.category || '').toLowerCase() === selectedCategory.toLowerCase());
+    : galleryImages.filter(img => img.category === selectedCategory);
 
   const getCategoryColor = (category: string) => {
-    if (!category) return '#6c757d';
-    
-    const colors: Record<string, string> = {
-      'Mass & Liturgy': '#2d5016',
-      'Parish Events': '#f39c12',
-      'Youth Group': '#45b7d1',
-      'Parish Choir': '#4ecdc4',
-      'Community Outreach': '#f093fb'
+    const colors = {
+      choir: '#4ecdc4',
+      youth: '#45b7d1',
+      outreach: '#f093fb',
+      mass: '#2d5016',
+      events: '#f39c12'
     };
-    
-    // Case-insensitive matching for hardcoded ones
-    const matchedKey = Object.keys(colors).find(
-      key => key.toLowerCase() === category.toLowerCase()
-    );
-    if (matchedKey) return colors[matchedKey];
-    
-    // Generate a beautiful stable pastel/vibrant color based on the category name
-    let hash = 0;
-    for (let i = 0; i < category.length; i++) {
-      hash = category.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    // Saturation = 65%, Lightness = 40% for strong readability of white text
-    return `hsl(${hue}, 65%, 40%)`;
+    return colors[category as keyof typeof colors] || '#6c757d';
   };
-
 
   return (
     <div className="gallery-manager">
-      {/* Scoped styles — enforced regardless of external CSS */}
-      <style>{`
-        .gallery-grid {
-          display: grid !important;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
-          gap: 1.5rem !important;
-          align-items: start !important;
-        }
-        .gallery-card {
-          overflow: hidden !important;
-          display: flex !important;
-          flex-direction: column !important;
-          border-radius: 16px !important;
-          background: white !important;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important;
-          border: 1px solid #e5e7eb !important;
-        }
-        .gallery-card .image-container {
-          width: 100% !important;
-          height: 200px !important;
-          min-height: 200px !important;
-          max-height: 200px !important;
-          overflow: hidden !important;
-          flex-shrink: 0 !important;
-          flex-grow: 0 !important;
-          position: relative !important;
-          display: block !important;
-          background: #f0f4f0 !important;
-        }
-        .gallery-card .image-container img {
-          position: absolute !important;
-          top: 0 !important;
-          left: 0 !important;
-          width: 100% !important;
-          height: 100% !important;
-          object-fit: cover !important;
-          object-position: center !important;
-        }
-        .gallery-card .image-info {
-          padding: 1.25rem !important;
-          flex: 1 !important;
-        }
-      `}</style>
-      {/* Tab Bar */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid #e5e7eb', paddingBottom: '0' }}>
-        <button
-          onClick={() => setActiveTab('gallery')}
-          style={{
-            padding: '0.65rem 1.5rem',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'gallery' ? '3px solid #2d5016' : '3px solid transparent',
-            color: activeTab === 'gallery' ? '#2d5016' : '#6b7280',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          <ImageIcon size={16} /> Gallery
-        </button>
-        <button
-          onClick={() => setActiveTab('categories')}
-          style={{
-            padding: '0.65rem 1.5rem',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'categories' ? '3px solid #2d5016' : '3px solid transparent',
-            color: activeTab === 'categories' ? '#2d5016' : '#6b7280',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
-        >
-          <Tag size={16} /> Manage Categories
-        </button>
-      </div>
-
-      {activeTab === 'categories' && <GalleryCategoryManager />}
-
-      {activeTab === 'gallery' && (
-      <>
       <div className="manager-header">
         <h2>Manage Gallery</h2>
-
         <button 
           className="btn btn-primary"
           onClick={() => setShowForm(true)}
@@ -267,22 +117,18 @@ const GalleryManager: React.FC = () => {
 
       <div className="gallery-filters">
         <div className="filter-tabs">
-          <button
-            className={`filter-tab ${selectedCategory === 'all' ? 'active' : ''}`}
-            onClick={() => setSelectedCategory('all')}
-          >
-            All Categories
-          </button>
-          {galleryCategories.map(category => (
+          {categories.map(category => (
             <button
-              key={category}
-              className={`filter-tab ${selectedCategory === category ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(category)}
+              key={category.value}
+              className={`filter-tab ${selectedCategory === category.value ? 'active' : ''}`}
+              onClick={() => setSelectedCategory(category.value)}
             >
-              {category}
-              <span className="count">
-                {galleryImages.filter(img => (img.category || '').toLowerCase() === category.toLowerCase()).length}
-              </span>
+              {category.label}
+              {category.value !== 'all' && (
+                <span className="count">
+                  {galleryImages.filter(img => img.category === category.value).length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -323,17 +169,13 @@ const GalleryManager: React.FC = () => {
               <div className="form-group">
                 <label htmlFor="image-upload">Image Upload</label>
                 <div className="image-upload-area">
-                  {(uploadPreview || formData.url) ? (
+                  {formData.url ? (
                     <div className="image-preview">
-                      <img src={uploadPreview || formData.url} alt="Preview" />
-                      {isUploadingFile && (
-                        <div className="upload-overlay-status">Uploading...</div>
-                      )}
+                      <img src={formData.url} alt="Preview" />
                       <button 
                         type="button" 
                         className="remove-image"
-                        onClick={() => { setFormData({ ...formData, url: '' }); setUploadPreview(''); }}
-                        disabled={isUploadingFile}
+                        onClick={() => setFormData({ ...formData, url: '' })}
                       >
                         ×
                       </button>
@@ -341,7 +183,7 @@ const GalleryManager: React.FC = () => {
                   ) : (
                     <div className="upload-placeholder">
                       <Upload size={48} />
-                      <p>{isUploadingFile ? 'Uploading...' : 'Click to upload image'}</p>
+                      <p>Click to upload image or enter URL below</p>
                     </div>
                   )}
                   <input
@@ -350,17 +192,25 @@ const GalleryManager: React.FC = () => {
                     accept="image/*"
                     onChange={handleImageUpload}
                     style={{ display: 'none' }}
-                    disabled={isUploadingFile}
                   />
                   <button 
                     type="button"
                     className="upload-btn"
                     onClick={() => document.getElementById('image-upload')?.click()}
-                    disabled={isUploadingFile}
                   >
-                    <Plus size={18} />
-                    {isUploadingFile ? 'Uploading...' : 'Choose File'}
+                    Choose File
                   </button>
+                </div>
+                
+                <div className="url-input">
+                  <label htmlFor="url">Or enter image URL:</label>
+                  <input
+                    type="url"
+                    id="url"
+                    value={formData.url}
+                    onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
                 </div>
               </div>
 
@@ -370,12 +220,13 @@ const GalleryManager: React.FC = () => {
                   <select
                     id="category"
                     value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
                   >
-                    {galleryCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    {galleryCategories.length === 0 && <option value="general">General</option>}
+                    <option value="choir">Parish Choir</option>
+                    <option value="youth">Youth Group</option>
+                    <option value="outreach">Community Outreach</option>
+                    <option value="mass">Mass & Liturgy</option>
+                    <option value="events">Parish Events</option>
                   </select>
                 </div>
 
@@ -392,22 +243,11 @@ const GalleryManager: React.FC = () => {
               </div>
 
               <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={resetForm} disabled={isUploading || isUploadingFile}>
+                <button type="button" className="btn btn-secondary" onClick={resetForm}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={isUploading || isUploadingFile || !formData.url}>
-                  {isUploading ? (
-                    <>
-                      <div className="spinner-border spinner-border-sm me-2" role="status"></div>
-                      Processing...
-                    </>
-                  ) : isUploadingFile ? (
-                    <>Uploading image...</>
-                  ) : (
-                    <>
-                      {editingId ? 'Update' : 'Add'} Image
-                    </>
-                  )}
+                <button type="submit" className="btn btn-primary">
+                  {editingId ? 'Update' : 'Add'} Image
                 </button>
               </div>
             </form>
@@ -415,7 +255,7 @@ const GalleryManager: React.FC = () => {
         </div>
       )}
 
-      <div className="gallery-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+      <div className="gallery-grid">
         {filteredImages.length === 0 ? (
           <div className="empty-state">
             <ImageIcon size={48} />
@@ -423,70 +263,24 @@ const GalleryManager: React.FC = () => {
             <p>
               {selectedCategory === 'all' 
                 ? 'Upload your first image to get started'
-                : `No images in the ${selectedCategory} category`
+                : `No images in the ${categories.find(c => c.value === selectedCategory)?.label} category`
               }
             </p>
           </div>
         ) : (
           filteredImages.map((image) => (
-            <div key={image.id} className="gallery-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: '16px', background: 'white', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
-              {/* Premium image container: entire image fits, gaps are filled with a gorgeous matching blur */}
-              <div
-                style={{
-                  width: '100%',
-                  height: '200px',
-                  minHeight: '200px',
-                  maxHeight: '200px',
-                  flexShrink: 0,
-                  flexGrow: 0,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  background: '#1a1a1a', // premium dark background
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
+            <div key={image.id} className="gallery-card">
+              <div className="image-container">
                 {image.url ? (
-                  <>
-                    {/* Blurred background backup layer */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '-10px',
-                        left: '-10px',
-                        right: '-10px',
-                        bottom: '-10px',
-                        backgroundImage: `url(${image.url})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        filter: 'blur(12px) brightness(0.6)',
-                        opacity: 0.65,
-                        zIndex: 1,
-                      }}
-                    />
-                    {/* Contained sharp image foreground layer */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        inset: 0,
-                        backgroundImage: `url(${image.url})`,
-                        backgroundSize: 'contain',
-                        backgroundPosition: 'center',
-                        backgroundRepeat: 'no-repeat',
-                        zIndex: 2,
-                      }}
-                    />
-                  </>
+                  <img src={image.url} alt={image.title} />
                 ) : (
-                  <div className="image-placeholder" style={{ zIndex: 2 }}>
+                  <div className="image-placeholder">
                     <ImageIcon size={32} />
                     <span>No Image</span>
                   </div>
                 )}
-
                 
-                <div className="image-overlay" style={{ zIndex: 10 }}>
+                <div className="image-overlay">
                   <div className="image-actions">
                     <button
                       className="action-btn"
@@ -521,7 +315,7 @@ const GalleryManager: React.FC = () => {
                       className="category-badge"
                       style={{ backgroundColor: getCategoryColor(image.category) }}
                     >
-                      {image.category}
+                      {categories.find(c => c.value === image.category)?.label}
                     </span>
                     <span className={`status-badge ${image.isPublished ? 'published' : 'unpublished'}`}>
                       {image.isPublished ? 'Published' : 'Draft'}
@@ -543,8 +337,6 @@ const GalleryManager: React.FC = () => {
           ))
         )}
       </div>
-      </>
-      )}
     </div>
   );
 };

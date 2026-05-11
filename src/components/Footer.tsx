@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import { MapPin, Phone, Mail, Heart, Globe, Camera, Video } from 'lucide-react';
+import { MapPin, Phone, Mail, Heart, Facebook, Instagram, Youtube } from 'lucide-react';
 import './Footer.css';
 
 const Footer: React.FC = () => {
@@ -76,7 +76,7 @@ const Footer: React.FC = () => {
                   className="social-link facebook"
                   aria-label="Follow us on Facebook"
                 >
-                  <Globe size={20} />
+                  <Facebook size={20} />
                 </a>
                 <a 
                   href="https://instagram.com/stpatricksmakokoba" 
@@ -85,7 +85,7 @@ const Footer: React.FC = () => {
                   className="social-link instagram"
                   aria-label="Follow us on Instagram"
                 >
-                  <Camera size={20} />
+                  <Instagram size={20} />
                 </a>
                 <a 
                   href="https://youtube.com/@stpatricksmakokoba" 
@@ -94,7 +94,7 @@ const Footer: React.FC = () => {
                   className="social-link youtube"
                   aria-label="Subscribe to our YouTube channel"
                 >
-                  <Video size={20} />
+                  <Youtube size={20} />
                 </a>
               </div>
             </div>
@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
 
         <div className="footer-bottom">
           <div className="footer-bottom-content">
-            <p>&copy; {new Date().getFullYear()} St. Patrick's Catholic Church, Makokoba. {t('footer.all_rights')}.</p>
+            <p>&copy; 2025 St. Patrick's Catholic Church, Makokoba. {t('footer.all_rights')}.</p>
             <div className="footer-bottom-links">
               <span>{t('footer.archdiocese')}</span>
               <Heart size={16} className="heart-icon" />

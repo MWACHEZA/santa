@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useAdmin, AuditLog } from '../../contexts/AdminContext';
+import { useAdmin } from '../../contexts/AdminContext';
 import { 
   History, Search, Filter, Download, User, 
   Tag, Calendar, Clock, ChevronLeft, ChevronRight, 

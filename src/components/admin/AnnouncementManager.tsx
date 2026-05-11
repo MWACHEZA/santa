@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAdmin, Announcement } from '../../contexts/AdminContext';
 import { Plus, Edit, Trash2, Eye, EyeOff, AlertTriangle, Info, Calendar } from 'lucide-react';
-import { useToast } from '../../contexts/ToastContext';
 import './AnnouncementManager.css';
 
 const AnnouncementManager: React.FC = () => {
@@ -9,10 +8,8 @@ const AnnouncementManager: React.FC = () => {
     announcements, 
     addAnnouncement, 
     updateAnnouncement, 
-    deleteAnnouncement,
-    logAdminAction
+    deleteAnnouncement 
   } = useAdmin();
-  const { success: toastSuccess, error: toastError } = useToast();
   
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -24,25 +21,16 @@ const AnnouncementManager: React.FC = () => {
     expiresAt: ''
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      if (editingId) {
-        await updateAnnouncement(editingId, formData);
-        await logAdminAction('UPDATE_ANNOUNCEMENT', 'announcement', editingId, `Updated announcement: ${formData.title}`);
-        toastSuccess('Announcement updated successfully', 'Announcements');
-      } else {
-        await addAnnouncement(formData);
-        await logAdminAction('CREATE_ANNOUNCEMENT', 'announcement', 'new', `Created announcement: ${formData.title}`);
-        toastSuccess('New announcement created', 'Announcements');
-      }
-      resetForm();
-    } catch (err: any) {
-      console.error('Submit error:', err);
-      const errorMessage = err.message || 'Failed to save announcement. Please check if the server is running.';
-      toastError(errorMessage, 'Error');
+    if (editingId) {
+      updateAnnouncement(editingId, formData);
+    } else {
+      addAnnouncement(formData);
     }
+    
+    resetForm();
   };
 
   const resetForm = () => {
@@ -71,20 +59,12 @@ const AnnouncementManager: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this announcement?')) {
-      try {
-        deleteAnnouncement(id);
-        logAdminAction('DELETE_ANNOUNCEMENT', 'announcement', id, `Deleted announcement ID: ${id}`);
-        toastSuccess('Announcement deleted', 'Announcements');
-      } catch (err) {
-        toastError('Failed to delete announcement', 'Error');
-      }
+      deleteAnnouncement(id);
     }
   };
 
   const toggleActive = (id: string, isActive: boolean) => {
     updateAnnouncement(id, { isActive: !isActive });
-    logAdminAction('TOGGLE_ANNOUNCEMENT', 'announcement', id, `${isActive ? 'Deactivated' : 'Activated'} announcement ID: ${id}`);
-    toastSuccess(isActive ? 'Announcement deactivated' : 'Announcement activated', 'Status Update');
   };
 
   const getTypeIcon = (type: string) => {
