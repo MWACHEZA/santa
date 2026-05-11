@@ -48,6 +48,7 @@ const testConnection = async () => {
 
 // Initialize database tables
 const initializeDatabase = async () => {
+  let client;
   let dbClient;
   try {
     console.log('Initializing database...');
@@ -365,6 +366,22 @@ const initializeDatabase = async () => {
       )
     `);
     await addColumnIfNotExists('contact_info', 'emergency_phone', 'VARCHAR(20)');
+
+    // Priest messages table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS priest_messages (
+        id VARCHAR(36) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        is_published BOOLEAN DEFAULT false,
+        image_url TEXT,
+        author_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     await addColumnIfNotExists('priest_messages', 'image_url', 'TEXT');
     await addColumnIfNotExists('priest_messages', 'is_published', 'BOOLEAN DEFAULT false');
     await addColumnIfNotExists('contact_info', 'office_hours_weekdays', 'VARCHAR(100)');
@@ -536,7 +553,7 @@ const initializeDatabase = async () => {
     await dbClient.query('CREATE INDEX IF NOT EXISTS idx_themes_year ON themes_of_year(year)');
 
     // Add updated_at triggers
-    const tables = ['users', 'media_files', 'categories', 'sections', 'associations', 'announcements', 'events', 'news', 'gallery', 'contact_info', 'mass_schedule', 'ministries', 'sacraments', 'audit_logs', 'themes_of_year'];
+    const tables = ['users', 'media_files', 'categories', 'sections', 'associations', 'announcements', 'events', 'news', 'gallery', 'contact_info', 'mass_schedule', 'ministries', 'sacraments', 'audit_logs', 'themes_of_year', 'priest_messages'];
     for (const table of tables) {
       await dbClient.query(`DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table}`);
       await dbClient.query(`
