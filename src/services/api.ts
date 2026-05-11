@@ -946,3 +946,5 @@ export const api = {
   healthCheck,
   setAuthToken,
 };
+
+export default api;
