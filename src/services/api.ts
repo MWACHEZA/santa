@@ -1,5 +1,7 @@
-// API Service for St. Patrick's Catholic Church
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 
+  (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')
+    ? 'https://santa-backend-3y5e.onrender.com/api'
+    : 'http://localhost:5000/api');
 
 // Types
 export interface ApiResponse<T = any> {
