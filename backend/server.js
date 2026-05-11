@@ -4,7 +4,8 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 const db = require('./config/database-simple');
 const authRoutes = require('./routes/auth');
@@ -208,6 +209,13 @@ const startServer = async () => {
     // Test database connection
     await db.execute('SELECT 1');
     console.log('✅ Database connected successfully');
+    
+    // Initialize full database schema and seed default data automatically
+    const dbFull = require('./config/database');
+    console.log('🔄 Initializing database schema...');
+    await dbFull.initializeDatabase();
+    console.log('🌱 Seeding default categories and users...');
+    await dbFull.insertDefaultData();
     
     // Ensure extended profile table exists
     await ensureUserProfilesTable();

@@ -1,5 +1,6 @@
 const { Pool, Client } = require('pg');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const useConnectionString = !!process.env.DATABASE_URL;
 
@@ -131,6 +132,31 @@ const initializeDatabase = async () => {
     await createEnumType('schedule_language', ['english', 'isindebele', 'both']);
     await createEnumType('schedule_type', ['mass', 'confession', 'adoration', 'rosary']);
 
+    // Media files table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS media_files (
+        id VARCHAR(36) PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        original_filename VARCHAR(255) NOT NULL,
+        file_path VARCHAR(500) NOT NULL,
+        file_url VARCHAR(500) NOT NULL,
+        file_type VARCHAR(50) NOT NULL,
+        mime_type VARCHAR(100) NOT NULL,
+        file_size INT NOT NULL,
+        width INT,
+        height INT,
+        duration INT,
+        uploaded_by VARCHAR(36),
+        alt_text VARCHAR(255),
+        caption VARCHAR(255),
+        description TEXT,
+        is_public BOOLEAN DEFAULT true,
+        is_featured BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Users table
     await dbClient.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -161,6 +187,9 @@ const initializeDatabase = async () => {
         marriage_date DATE NULL,
         marriage_venue VARCHAR(255) NULL,
         spouse_name VARCHAR(100) NULL,
+        section_id VARCHAR(36) NULL,
+        association_id VARCHAR(36) NULL,
+        profile_picture_id VARCHAR(36) NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_login TIMESTAMP NULL
@@ -171,6 +200,9 @@ const initializeDatabase = async () => {
     await dbClient.query('CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)');
 
     // Dynamically migrate existing users table if columns are missing
+    await addColumnIfNotExists('users', 'section_id', 'VARCHAR(36) NULL');
+    await addColumnIfNotExists('users', 'association_id', 'VARCHAR(36) NULL');
+    await addColumnIfNotExists('users', 'profile_picture_id', 'VARCHAR(36) NULL');
     await addColumnIfNotExists('users', 'is_baptized', 'BOOLEAN DEFAULT false');
     await addColumnIfNotExists('users', 'baptism_date', 'DATE NULL');
     await addColumnIfNotExists('users', 'baptism_venue', 'VARCHAR(255) NULL');
@@ -195,6 +227,33 @@ const initializeDatabase = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         UNIQUE (name, type)
+      )
+    `);
+
+    // Sections table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS sections (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        leader_id VARCHAR(36),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Associations table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS associations (
+        id VARCHAR(36) PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        description TEXT,
+        coordinator_id VARCHAR(36),
+        section_id VARCHAR(36) REFERENCES sections(id) ON DELETE SET NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
@@ -466,7 +525,7 @@ const initializeDatabase = async () => {
     await dbClient.query('CREATE INDEX IF NOT EXISTS idx_themes_year ON themes_of_year(year)');
 
     // Add updated_at triggers
-    const tables = ['users', 'categories', 'announcements', 'events', 'news', 'gallery', 'contact_info', 'mass_schedule', 'ministries', 'sacraments', 'audit_logs', 'themes_of_year'];
+    const tables = ['users', 'media_files', 'categories', 'sections', 'associations', 'announcements', 'events', 'news', 'gallery', 'contact_info', 'mass_schedule', 'ministries', 'sacraments', 'audit_logs', 'themes_of_year'];
     for (const table of tables) {
       await dbClient.query(`DROP TRIGGER IF EXISTS update_${table}_updated_at ON ${table}`);
       await dbClient.query(`
@@ -555,6 +614,43 @@ const insertDefaultData = async () => {
         VALUES ($1, $2, $3, $4, true)
         ON CONFLICT (name, type) DO NOTHING
       `, [uuidv4(), category.name, category.type, category.description]);
+    }
+
+    // Seed default sections
+    const defaultSections = [
+      'St Gabriel', 'St Augustine', 'St Mary Magdalena', 'St Michael', 'St Stephen',
+      'St Francis of Assisi', 'St Monica', 'St Theresa', 'St Bernadette', 'St Philomina',
+      'St Peter', 'St Bernard', 'St Veronica', 'St Paul', 'St Luke', 'St Basil', 'St Anthony'
+    ];
+
+    for (const name of defaultSections) {
+      const [existing] = await module.exports.execute('SELECT id FROM sections WHERE name = $1 LIMIT 1', [name]);
+      if (existing.length === 0) {
+        const { v4: uuidv4 } = require('uuid');
+        await module.exports.execute(`
+          INSERT INTO sections (id, name, description)
+          VALUES ($1, $2, $3)
+        `, [uuidv4(), name, `${name} Section`]);
+      }
+    }
+
+    // Seed default associations
+    const defaultAssociations = [
+      'Missionary Childhood (MCA)', 'Catholic Junior Youth Association (CJA)',
+      'Catholic Senior Youth Association (CYA)', 'Catholic Young Adults Association (CYAA)',
+      'Most Sacred Heart of Jesus', 'Sodality of Our Lady', 'St Anne', 'St Joseph',
+      'Couples Association', 'Focolare', "Women's Forum", 'Association of Altar Servers'
+    ];
+
+    for (const name of defaultAssociations) {
+      const [existing] = await module.exports.execute('SELECT id FROM associations WHERE name = $1 LIMIT 1', [name]);
+      if (existing.length === 0) {
+        const { v4: uuidv4 } = require('uuid');
+        await module.exports.execute(`
+          INSERT INTO associations (id, name, description)
+          VALUES ($1, $2, $3)
+        `, [uuidv4(), name, `${name} Association`]);
+      }
     }
 
     // Insert default contact info
