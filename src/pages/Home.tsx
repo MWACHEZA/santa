@@ -477,7 +477,7 @@ const Home: React.FC = () => {
               <div className="timeline-item">
                 <div className="timeline-year">1965</div>
                 <div className="timeline-image">
-                  <img src="/api/placeholder/400/300" alt="St. Patrick's Church foundation in 1965" />
+                  <img src="/images/PIC1.png" alt="St. Patrick's Church foundation in 1965" />
                 </div>
                 <div className="timeline-content">
                   <h4>Foundation</h4>
@@ -488,7 +488,7 @@ const Home: React.FC = () => {
               <div className="timeline-item">
                 <div className="timeline-year">1970s</div>
                 <div className="timeline-image">
-                  <img src="/api/placeholder/400/300" alt="Parish community in the 1970s" />
+                  <img src="/images/PIC2.png" alt="Parish community in the 1970s" />
                 </div>
                 <div className="timeline-content">
                   <h4>Community Growth</h4>
@@ -499,7 +499,7 @@ const Home: React.FC = () => {
               <div className="timeline-item">
                 <div className="timeline-year">1980s</div>
                 <div className="timeline-image">
-                  <img src="/api/placeholder/400/300" alt="Independence era celebrations" />
+                  <img src="/images/PIC3.png" alt="Independence era celebrations" />
                 </div>
                 <div className="timeline-content">
                   <h4>Independence Era</h4>
@@ -510,7 +510,7 @@ const Home: React.FC = () => {
               <div className="timeline-item">
                 <div className="timeline-year">1990s-2000s</div>
                 <div className="timeline-image">
-                  <img src="/api/placeholder/400/300" alt="Ministry expansion activities" />
+                  <img src="/images/SYNOD IMAGE.png" alt="Ministry expansion activities" />
                 </div>
                 <div className="timeline-content">
                   <h4>Ministry Expansion</h4>
@@ -521,7 +521,7 @@ const Home: React.FC = () => {
               <div className="timeline-item">
                 <div className="timeline-year">2010s-Present</div>
                 <div className="timeline-image">
-                  <img src="/api/placeholder/400/300" alt="Modern parish activities" />
+                  <img src="/images/logo.png" alt="Modern parish activities" />
                 </div>
                 <div className="timeline-content">
                   <h4>Modern Era</h4>

@@ -305,7 +305,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
       <div className="register-card">
         <div className="register-header">
           <div className="church-logo">
-            <img src="/api/placeholder/60/60" alt="St. Patrick's Catholic Church" />
+            <img src="/images/logo.png" alt="St. Patrick's Catholic Church" />
           </div>
           <h2>Join Our Parish Community</h2>
           <p>Register to become a member of St. Patrick's Catholic Church</p>
