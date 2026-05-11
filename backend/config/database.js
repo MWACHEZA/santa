@@ -48,7 +48,6 @@ const testConnection = async () => {
 
 // Initialize database tables
 const initializeDatabase = async () => {
-  let client;
   let dbClient;
   try {
     console.log('Initializing database...');
@@ -58,26 +57,38 @@ const initializeDatabase = async () => {
       dbClient = new Client(dbConfig);
       await dbClient.connect();
     } else {
-      client = new Client({
-        host: dbConfig.host,
-        port: dbConfig.port,
-        user: dbConfig.user,
-        password: dbConfig.password,
-        database: 'postgres' // Connect to default postgres db first
-      });
-      await client.connect();
-
-      // Create database if it doesn't exist
-      const res = await client.query(`SELECT 1 FROM pg_database WHERE datname = '${dbConfig.database || 'st_patricks_db'}'`);
-      if (res.rowCount === 0) {
-        console.log(`Creating database ${dbConfig.database || 'st_patricks_db'}...`);
-        await client.query(`CREATE DATABASE ${dbConfig.database || 'st_patricks_db'}`);
+      // Try connecting directly to the target database first
+      try {
+        console.log(`Connecting directly to database ${dbConfig.database}...`);
+        dbClient = new Client(dbConfig);
+        await dbClient.connect();
+      } catch (directError) {
+        // If it failed because the database does not exist, try creating it
+        if (directError.code === '3D000' || directError.message.includes('does not exist')) {
+          console.log(`Database does not exist. Attempting to create database ${dbConfig.database}...`);
+          const client = new Client({
+            host: dbConfig.host,
+            port: dbConfig.port,
+            user: dbConfig.user,
+            password: dbConfig.password,
+            database: 'postgres'
+          });
+          try {
+            await client.connect();
+            await client.query(`CREATE DATABASE "${dbConfig.database}"`);
+            await client.end();
+            
+            // Now connect to the newly created database
+            dbClient = new Client(dbConfig);
+            await dbClient.connect();
+          } catch (createError) {
+            console.error('Failed to create database:', createError.message);
+            throw directError; // Throw the original connection error if database creation fails
+          }
+        } else {
+          throw directError;
+        }
       }
-      await client.end();
-
-      // Connect to the actual database
-      dbClient = new Client(dbConfig);
-      await dbClient.connect();
     }
 
     console.log('Creating tables and types...');
