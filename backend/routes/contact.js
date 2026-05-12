@@ -176,4 +176,59 @@ Sent from St. Patrick's Catholic Church Website
   }
 });
 
+// Special test endpoint to diagnose live email issues
+router.get('/test-email', async (req, res) => {
+  try {
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const recipient = process.env.REPORTER_APPLICATION_RECIPIENT || 'comforter958@gmail.com';
+
+    if (!smtpUser || smtpUser === 'your_email@gmail.com' || !smtpPass || smtpPass === 'your_app_password') {
+      return res.status(400).json({
+        success: false,
+        message: 'SMTP credentials are not configured in your Render environment variables!',
+        diagnostics: {
+          SMTP_USER: smtpUser || 'MISSING',
+          SMTP_PASS: smtpPass ? 'CONFIGURED (BUT DEFAULT/PLACEHOLDER)' : 'MISSING',
+          REPORTER_APPLICATION_RECIPIENT: recipient
+        }
+      });
+    }
+
+    const { sendEmail } = require('../utils/email');
+    
+    // Attempt sending a real test email synchronously so we can catch any error
+    await sendEmail({
+      to: recipient,
+      subject: 'St. Patrick\'s Live SMTP Diagnosis Test',
+      text: 'If you receive this, your email configuration is 100% correct and working on Render!',
+      html: '<h3>If you receive this, your email configuration is 100% correct and working on Render!</h3>'
+    });
+
+    res.json({
+      success: true,
+      message: `Test email sent successfully to ${recipient}! Please check your Inbox and Spam folders.`,
+      diagnostics: {
+        SMTP_USER: smtpUser,
+        REPORTER_APPLICATION_RECIPIENT: recipient
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send test email. See the error details below to fix it.',
+      error: {
+        message: error.message,
+        code: error.code,
+        command: error.command
+      },
+      diagnostics: {
+        SMTP_USER: process.env.SMTP_USER,
+        REPORTER_APPLICATION_RECIPIENT: process.env.REPORTER_APPLICATION_RECIPIENT || 'comforter958@gmail.com'
+      }
+    });
+  }
+});
+
 module.exports = router;
