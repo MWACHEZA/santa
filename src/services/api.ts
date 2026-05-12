@@ -43,6 +43,11 @@ class ApiClient {
     }
   }
 
+  // Get base URL
+  getBaseUrl() {
+    return this.baseURL;
+  }
+
   // Get authentication headers
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
@@ -949,6 +954,7 @@ export const api = {
     getDate: (year: number, month: number, day: number) => 
       fetch(`http://calapi.romcal.net/api/v1/dates/${year}/${month}/${day}`).then(res => res.json()),
   },
+  apiClient,
   setAuthToken,
 };
 

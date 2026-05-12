@@ -23,6 +23,12 @@ const userRoutes = require('./routes/users');
 const categoryRoutes = require('./routes/categories');
 const uploadRoutes = require('./routes/upload');
 const analyticsRoutes = require('./routes/analytics');
+const themeRoutes = require('./routes/themes');
+const financeRoutes = require('./routes/finances');
+const liturgicalPrayerRoutes = require('./routes/liturgical-prayers');
+const priestDeskRoutes = require('./routes/priest-desk');
+const auditLogRoutes = require('./routes/audit-logs');
+const videoRoutes = require('./routes/videos');
 
 const ensureUserProfilesTable = async () => {
   const createTableSql = `
@@ -144,6 +150,12 @@ app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/themes', themeRoutes);
+app.use('/api/finances', financeRoutes);
+app.use('/api/liturgical-prayers', liturgicalPrayerRoutes);
+app.use('/api/priest-desk', priestDeskRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
+app.use('/api/videos', videoRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

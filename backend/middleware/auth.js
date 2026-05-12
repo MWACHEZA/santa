@@ -31,7 +31,10 @@ const authenticateToken = async (req, res, next) => {
     
     const user = users[0];
     
-    if (!user.is_active) {
+    // Check both is_active and isActive (for consistency)
+    const accountActive = (user.is_active === true || user.is_active === 1 || user.isActive === true || user.isActive === 1);
+
+    if (!accountActive) {
       return res.status(401).json({
         success: false,
         message: 'Account is deactivated'

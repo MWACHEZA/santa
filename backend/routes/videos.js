@@ -205,7 +205,18 @@ router.post('/archive', authenticateToken, requireContentManager, async (req, re
       `INSERT INTO video_archive (
         id, title, description, video_url, thumbnail, duration, category, is_published, published_at, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, title, description, videoUrl, thumbnail, duration, category, isPublished || false, publishedAt, req.user.id]
+      [
+        id, 
+        title, 
+        description || null, 
+        videoUrl, 
+        thumbnail || null, 
+        duration || null, 
+        category || null, 
+        isPublished || false, 
+        publishedAt, 
+        req.user.id
+      ]
     );
     
     // Log action

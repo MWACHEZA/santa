@@ -114,8 +114,18 @@ router.post('/', authenticateToken, requireContentManager, validateEvent, handle
         location, category_id, image_url, is_published, max_attendees, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      eventId, title, description, event_date, start_time, end_time,
-      location, category_id, image_url, is_published, max_attendees, req.user.id
+      eventId, 
+      title, 
+      description || null, 
+      event_date, 
+      start_time || null, 
+      end_time || null,
+      location || null, 
+      category_id || null, 
+      image_url || null, 
+      is_published === true, 
+      max_attendees || null, 
+      req.user.id
     ]);
     
     // Log action

@@ -324,8 +324,12 @@ router.post('/login', validateUserLogin, handleValidationErrors, async (req, res
     }
     
     const user = users[0];
+    console.log('Login debug - username:', user.username, 'isActive:', user.isActive, 'is_active:', user.is_active);
     
-    if (!user.isActive) {
+    // Ensure isActive has a value
+    const accountActive = (user.isActive === true || user.isActive === 1 || user.is_active === true || user.is_active === 1);
+
+    if (!accountActive) {
       try {
         await logAction({
           userId: user.id,

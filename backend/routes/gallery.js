@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateGallery, 
@@ -193,9 +194,27 @@ router.post('/', authenticateToken, requireContentManager, validateGallery, hand
         category_id, event_id, is_featured, upload_date, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      imageId, title, description, image_url, thumbnail_url,
-      category_id, event_id, is_featured, upload_date, req.user.id
+      imageId, 
+      title, 
+      description || null, 
+      image_url, 
+      thumbnail_url || null,
+      category_id || null, 
+      event_id || null, 
+      is_featured === true, 
+      upload_date || new Date(), 
+      req.user.id
     ]);
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_GALLERY_IMAGE',
+      entityType: 'gallery',
+      entityId: imageId,
+      details: `Uploaded gallery image: ${title}`,
+      ipAddress: req.ip
+    });
     
     // Get created image
     const [createdImage] = await db.execute(`

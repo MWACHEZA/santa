@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken, requirePriest } = require('../middleware/auth');
 
 const router = express.Router();
@@ -39,6 +40,16 @@ router.post('/', authenticateToken, requirePriest, async (req, res) => {
       [id, title, content, date || new Date(), isPublished === true, imageUrl || null, req.user.id]
     );
 
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_PRIEST_MESSAGE',
+      entityType: 'priest_message',
+      entityId: id,
+      details: `Created priest message: ${title}`,
+      ipAddress: req.ip
+    });
+
     const [newMessage] = await db.execute('SELECT * FROM priest_messages WHERE id = ?', [id]);
 
     res.status(201).json({
@@ -62,6 +73,16 @@ router.put('/:id', authenticateToken, requirePriest, async (req, res) => {
       [title, content, date, isPublished === true, imageUrl || null, id]
     );
 
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'UPDATE_PRIEST_MESSAGE',
+      entityType: 'priest_message',
+      entityId: id,
+      details: `Updated priest message: ${title || id}`,
+      ipAddress: req.ip
+    });
+
     const [updatedMessage] = await db.execute('SELECT * FROM priest_messages WHERE id = ?', [id]);
 
     res.json({
@@ -79,6 +100,16 @@ router.delete('/:id', authenticateToken, requirePriest, async (req, res) => {
   try {
     const { id } = req.params;
     await db.execute('DELETE FROM priest_messages WHERE id = ?', [id]);
+
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'DELETE_PRIEST_MESSAGE',
+      entityType: 'priest_message',
+      entityId: id,
+      details: `Deleted priest message ID: ${id}`,
+      ipAddress: req.ip
+    });
     res.json({ success: true, message: 'Message deleted successfully' });
   } catch (error) {
     console.error('Delete priest message error:', error);

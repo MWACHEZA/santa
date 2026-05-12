@@ -156,10 +156,10 @@ router.post('/', authenticateToken, requireContentManager, validateAnnouncement,
     
     await db.execute(`
       INSERT INTO announcements (
-        id, title, content, message, type, is_active, start_date, end_date, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        id, title, content, type, is_active, start_date, end_date, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      announcementId, title, content, content, type, is_active, 
+      announcementId, title, content, type, is_active, 
       start_date || null, end_date || null, req.user.id
     ]);
     
@@ -226,7 +226,6 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
     if (title !== undefined) { updates.push('title = ?'); values.push(title); }
     if (content !== undefined) { 
       updates.push('content = ?'); values.push(content);
-      updates.push('message = ?'); values.push(content);
     }
     if (type !== undefined) { updates.push('type = ?'); values.push(type); }
     if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }

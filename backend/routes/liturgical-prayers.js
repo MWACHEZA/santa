@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateId, 
@@ -38,7 +39,7 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
     const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
     
     // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM prayers ${whereClause}`;
+    const countQuery = `SELECT COUNT(*) as total FROM liturgical_prayers ${whereClause}`;
     const [countResult] = await db.execute(countQuery, queryParams);
     const total = parseInt(countResult[0].total);
     
@@ -47,12 +48,12 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
       SELECT 
         id,
         title,
-        text,
+        content,
         category,
-        image_url,
-        is_published as is_active,
+        language,
+        is_active,
         created_at
-      FROM prayers 
+      FROM liturgical_prayers 
       ${whereClause}
       ORDER BY created_at DESC
       LIMIT ? OFFSET ?
@@ -87,21 +88,31 @@ router.post('/', authenticateToken, requireContentManager, async (req, res) => {
   try {
     const {
       title,
-      text,
+      content,
       category,
-      is_active = true,
-      image_url = null
+      language = 'english',
+      is_active = true
     } = req.body;
     
     const prayerId = uuidv4();
     
     await db.execute(`
-      INSERT INTO prayers (
-        id, title, text, category, is_published, image_url, created_by
+      INSERT INTO liturgical_prayers (
+        id, title, content, category, language, is_active, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `, [
-      prayerId, title, text, category, is_active, image_url, req.user.id
+      prayerId, title, content, category || null, language || 'english', is_active, req.user.id
     ]);
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_LITURGICAL_PRAYER',
+      entityType: 'liturgical_prayer',
+      entityId: prayerId,
+      details: `Created liturgical prayer: ${title}`,
+      ipAddress: req.ip
+    });
     
     res.status(201).json({
       success: true,
@@ -109,10 +120,10 @@ router.post('/', authenticateToken, requireContentManager, async (req, res) => {
       data: {
         id: prayerId,
         title,
-        text,
+        content,
         category,
-        is_active,
-        image_url
+        language,
+        is_active
       }
     });
     
@@ -131,20 +142,20 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, handleV
     const { id } = req.params;
     const {
       title,
-      text,
+      content,
       category,
-      is_active,
-      image_url
+      language,
+      is_active
     } = req.body;
     
     const updates = [];
     const values = [];
     
     if (title !== undefined) { updates.push('title = ?'); values.push(title); }
-    if (text !== undefined) { updates.push('text = ?'); values.push(text); }
+    if (content !== undefined) { updates.push('content = ?'); values.push(content); }
     if (category !== undefined) { updates.push('category = ?'); values.push(category); }
-    if (is_active !== undefined) { updates.push('is_published = ?'); values.push(is_active); }
-    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
+    if (language !== undefined) { updates.push('language = ?'); values.push(language); }
+    if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }
     
     if (updates.length === 0) {
       return res.status(400).json({
@@ -156,7 +167,7 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, handleV
     values.push(id);
     
     await db.execute(
-      `UPDATE prayers SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+      `UPDATE liturgical_prayers SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
       values
     );
     
@@ -179,7 +190,7 @@ router.delete('/:id', authenticateToken, requireContentManager, validateId, hand
   try {
     const { id } = req.params;
     
-    await db.execute('DELETE FROM prayers WHERE id = ?', [id]);
+    await db.execute('DELETE FROM liturgical_prayers WHERE id = ?', [id]);
     
     res.json({
       success: true,

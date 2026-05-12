@@ -103,7 +103,7 @@ const Footer: React.FC = () => {
 
         <div className="footer-bottom">
           <div className="footer-bottom-content">
-            <p>&copy; {new Date().getFullYear()} St. Patrick's Catholic Church, Makokoba. {t('footer.all_rights')}.</p>
+            <p>&copy; 2026 St. Patrick's Catholic Church, Makokoba. {t('footer.all_rights')}. Powered by <span className="santana-credit">Santa_na</span></p>
             <div className="footer-bottom-links">
               <span>{t('footer.archdiocese')}</span>
               <Heart size={16} className="heart-icon" />

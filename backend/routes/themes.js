@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const router = express.Router();
 
@@ -47,7 +48,27 @@ router.post('/', authenticateToken, requireAdmin, async (req, res) => {
       INSERT INTO themes_of_year (
         id, year, title, subtitle, verse, description, image_url, is_active, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [themeId, year, title, subtitle, verse, description, imageUrl, isActive, req.user.id]);
+    `, [
+      themeId, 
+      year || new Date().getFullYear(), 
+      title, 
+      subtitle || null, 
+      verse || null, 
+      description || null, 
+      imageUrl || null, 
+      isActive === true, 
+      req.user.id
+    ]);
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_THEME',
+      entityType: 'theme',
+      entityId: themeId,
+      details: `Created theme of the year: ${title}`,
+      ipAddress: req.ip
+    });
     
     const [newTheme] = await db.execute('SELECT * FROM themes_of_year WHERE id = ?', [themeId]);
     
@@ -93,6 +114,16 @@ router.put('/:id', authenticateToken, requireAdmin, async (req, res) => {
     params.push(id);
     await db.execute(`UPDATE themes_of_year SET ${updates.join(', ')} WHERE id = ?`, params);
     
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'UPDATE_THEME',
+      entityType: 'theme',
+      entityId: id,
+      details: `Updated theme ID: ${id}`,
+      ipAddress: req.ip
+    });
+    
     const [updatedTheme] = await db.execute('SELECT * FROM themes_of_year WHERE id = ?', [id]);
     
     res.json({
@@ -110,6 +141,16 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
     await db.execute('DELETE FROM themes_of_year WHERE id = ?', [id]);
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'DELETE_THEME',
+      entityType: 'theme',
+      entityId: id,
+      details: `Deleted theme ID: ${id}`,
+      ipAddress: req.ip
+    });
     res.json({ success: true, message: 'Theme deleted successfully' });
   } catch (error) {
     console.error('Delete theme error:', error);

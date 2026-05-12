@@ -214,8 +214,17 @@ router.post('/', authenticateToken, requireNewsCreator, validateNews, handleVali
         author, author_role, is_published, published_at, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      newsId, title, summary, content, category_id, image_url,
-      author, author_role, is_published, publishedAt, req.user.id
+      newsId, 
+      title, 
+      summary || null, 
+      content, 
+      category_id || null, 
+      image_url || null,
+      author || null, 
+      author_role || null, 
+      is_published === true, 
+      publishedAt, 
+      req.user.id
     ]);
     
     // Get created news article

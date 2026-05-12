@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -55,11 +56,33 @@ router.post('/', authenticateToken, async (req, res) => {
         date, recorded_by, recorded_by_name, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        id, entityId, entityName, entityType, type, amount,
-        currency, paymentMethod, category, description, ownerName,
-        date || new Date(), req.user.id, recordedByName, 'approved'
+        id, 
+        entityId || null, 
+        entityName || null, 
+        entityType || 'parish', 
+        type, 
+        amount,
+        currency || 'USD', 
+        paymentMethod || 'Cash', 
+        category || 'General', 
+        description || null, 
+        ownerName || null,
+        date || new Date(), 
+        req.user.id, 
+        recordedByName || null, 
+        'approved'
       ]
     );
+
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_TRANSACTION',
+      entityType: 'finance',
+      entityId: id,
+      details: `Recorded ${type} of ${amount} ${currency} for ${entityName}`,
+      ipAddress: req.ip
+    });
 
     const [newTransaction] = await db.execute('SELECT * FROM financial_transactions WHERE id = ?', [id]);
 

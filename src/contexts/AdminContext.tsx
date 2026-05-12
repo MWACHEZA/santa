@@ -5,6 +5,23 @@ import { api } from '../services/api';
 import { liturgicalService } from '../services/liturgicalService';
 import { type CatholicReadings, type CatholicCelebration } from '../services/liturgicalService';
 
+// Helper to fix image URLs that might have been saved with localhost or as relative paths
+const fixImageUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  const apiBase = api.apiClient.getBaseUrl();
+  const backendBase = apiBase.replace(/\/api$/, '');
+  
+  if (url.startsWith('http://localhost:5000')) {
+    return url.replace('http://localhost:5000', backendBase);
+  }
+  
+  if (url.startsWith('/uploads')) {
+    return `${backendBase}${url}`;
+  }
+  
+  return url;
+};
+
 
 // Define all the necessary interfaces
 export interface Announcement {
@@ -788,9 +805,10 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setPriestMessages((priRes.value.data || []).map((m: any) => ({
               ...m,
               isPublished: m.is_published === 1 || m.is_published === true,
+              imageUrl: fixImageUrl(m.image_url || m.imageUrl),
               authorFirstName: m.author_first_name,
               authorLastName: m.author_last_name,
-              authorImageUrl: m.author_image_url
+              authorImageUrl: fixImageUrl(m.author_image_url)
             })));
           }
 
@@ -819,7 +837,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const galData = galRes.value.data?.images || galRes.value.data?.items || (Array.isArray(galRes.value.data) ? galRes.value.data : []);
             setGalleryImages(galData.map((img: any) => ({
               ...img,
-              url: img.image_url || img.url,
+              url: fixImageUrl(img.image_url || img.url),
               category: img.category_name || img.category || '',
               isPublished: img.is_published !== undefined ? img.is_published : true,
               uploadedAt: img.upload_date || img.created_at
@@ -833,7 +851,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               name: m.name,
               description: m.description,
               category: m.category || '',
-              imageUrl: m.image_url || m.imageUrl || '',
+              imageUrl: fixImageUrl(m.image_url || m.imageUrl || ''),
               contactPerson: m.leader_name || m.contactPerson || '',
               meetingTime: m.meeting_schedule || m.meetingTime || '',
               isActive: m.is_active !== undefined ? m.is_active : (m.isActive !== undefined ? m.isActive : true),
@@ -849,7 +867,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               subtitle: t.subtitle,
               verse: t.verse,
               description: t.description,
-              imageUrl: t.image_url || t.imageUrl,
+              imageUrl: fixImageUrl(t.image_url || t.imageUrl),
               isActive: t.is_active !== undefined ? t.is_active : t.isActive,
               createdAt: t.created_at || t.createdAt
             })));
@@ -859,7 +877,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             const rawNews = newsRes.value.data?.news || newsRes.value.data?.items || (Array.isArray(newsRes.value.data) ? newsRes.value.data : []);
             setParishNews(rawNews.map((n: any) => ({
               ...n,
-              imageUrl: n.image_url || n.imageUrl,
+              imageUrl: fixImageUrl(n.image_url || n.imageUrl),
               authorRole: n.author_role || n.authorRole,
               isPublished: n.is_published !== undefined ? n.is_published : n.isPublished,
               isArchived: n.is_archived !== undefined ? n.is_archived : n.isArchived,
@@ -876,7 +894,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               title: p.title,
               text: p.text,
               category: p.category,
-              imageUrl: p.image_url || p.imageUrl,
+              imageUrl: fixImageUrl(p.image_url || p.imageUrl),
               createdAt: p.created_at || p.createdAt,
               isPublished: p.is_active !== undefined ? p.is_active : (p.is_published !== undefined ? p.is_published : (p.isPublished !== undefined ? p.isPublished : true))
             })));

@@ -58,12 +58,10 @@ router.get('/', authenticateToken, requireAdmin, validatePagination, handleValid
         email,
         role,
         is_active as "isActive",
-        must_change_password as "mustChangePassword",
         first_name as "firstName",
         last_name as "lastName",
         phone,
-        association,
-        committee_position as "committeePosition",
+        association_id as "associationId",
         created_at as "createdAt",
         updated_at as "updatedAt",
         last_login as "lastLogin"

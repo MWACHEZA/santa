@@ -5,6 +5,23 @@ import { api } from '../services/api';
 import { type Ministry } from '../contexts/AdminContext';
 import './Ministries.css';
 
+// Helper to fix image URLs that might have been saved with localhost or as relative paths
+const fixImageUrl = (url: string): string => {
+  if (!url) return '';
+  const apiBase = api.apiClient.getBaseUrl();
+  const backendBase = apiBase.replace(/\/api$/, '');
+  
+  if (url.startsWith('http://localhost:5000')) {
+    return url.replace('http://localhost:5000', backendBase);
+  }
+  
+  if (url.startsWith('/uploads')) {
+    return `${backendBase}${url}`;
+  }
+  
+  return url;
+};
+
 const Ministries: React.FC = () => {
   const { t } = useLanguage();
   const [ministries, setMinistries] = useState<Ministry[]>([]);
@@ -21,7 +38,7 @@ const Ministries: React.FC = () => {
             name: m.name,
             description: m.description,
             category: m.category || '',
-            imageUrl: m.image_url || m.imageUrl || '',
+            imageUrl: fixImageUrl(m.image_url || m.imageUrl || ''),
             contactPerson: m.leader_name || m.contactPerson || '',
             meetingTime: m.meeting_schedule || m.meetingTime || '',
             isActive: m.is_active !== undefined ? m.is_active : (m.isActive !== undefined ? m.isActive : true),

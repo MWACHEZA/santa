@@ -1,6 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
+const { logAction } = require('../utils/logger');
 const { authenticateToken, requireContentManager, optionalAuth } = require('../middleware/auth');
 const { 
   validateMinistry, 
@@ -218,8 +219,8 @@ router.post('/', authenticateToken, requireContentManager, validateMinistry, han
         meeting_schedule, requirements, image_url, category, is_active, created_by
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      ministryId, name, description, leader_name, leader_contact,
-      meeting_schedule, requirements, image_url, category, is_active, req.user.id
+      ministryId, name, description || null, leader_name || null, leader_contact || null,
+      meeting_schedule || null, requirements || null, image_url || null, category || null, is_active, req.user.id
     ]);
     
     // Get created ministry
@@ -241,6 +242,16 @@ router.post('/', authenticateToken, requireContentManager, validateMinistry, han
       LEFT JOIN users u ON m.created_by = u.id
       WHERE m.id = ?
     `, [ministryId]);
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'CREATE_MINISTRY',
+      entityType: 'ministry',
+      entityId: ministryId,
+      details: `Created ministry: ${name}`,
+      ipAddress: req.ip
+    });
     
     res.status(201).json({
       success: true,
@@ -327,6 +338,16 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, validat
       values
     );
     
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'UPDATE_MINISTRY',
+      entityType: 'ministry',
+      entityId: id,
+      details: `Updated ministry ID: ${id}`,
+      ipAddress: req.ip
+    });
+    
     // Get updated ministry
     const [updatedMinistry] = await db.execute(`
       SELECT 
@@ -382,6 +403,16 @@ router.delete('/:id', authenticateToken, requireContentManager, validateId, hand
     
     // Delete the ministry
     await db.execute('DELETE FROM ministries WHERE id = ?', [id]);
+    
+    // Log action
+    await logAction({
+      userId: req.user.id,
+      action: 'DELETE_MINISTRY',
+      entityType: 'ministry',
+      entityId: id,
+      details: `Deleted ministry ID: ${id}`,
+      ipAddress: req.ip
+    });
     
     // Delete image if it exists
     if (existingMinistries[0].image_url) {

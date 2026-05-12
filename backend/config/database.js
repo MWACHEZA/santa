@@ -125,7 +125,7 @@ const initializeDatabase = async () => {
     };
 
     await createEnumType('user_role', ['admin', 'priest', 'secretary', 'reporter', 'vice_secretary', 'parishioner', 'treasurer']);
-    await createEnumType('category_type', ['news', 'event', 'ministry', 'sacrament', 'general', 'video', 'financial', 'gallery']);
+    await createEnumType('category_type', ['news', 'event', 'ministry', 'sacrament', 'general', 'video', 'financial', 'gallery', 'prayer']);
     
     // Ensure existing enum is updated if it was created without the new types
     try {
@@ -134,6 +134,7 @@ const initializeDatabase = async () => {
       await dbClient.query("ALTER TYPE category_type ADD VALUE IF NOT EXISTS 'video'");
       await dbClient.query("ALTER TYPE category_type ADD VALUE IF NOT EXISTS 'financial'");
       await dbClient.query("ALTER TYPE category_type ADD VALUE IF NOT EXISTS 'gallery'");
+      await dbClient.query("ALTER TYPE category_type ADD VALUE IF NOT EXISTS 'prayer'");
     } catch (e) {
       // Ignore if not supported or already exists (though IF NOT EXISTS handles it)
       console.log('Note: ALTER TYPE might have been skipped or failed (expected in some environments)', e.message);
@@ -509,6 +510,77 @@ const initializeDatabase = async () => {
         session_id VARCHAR(100),
         visit_date DATE NOT NULL,
         visit_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Themes of the Year table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS themes_of_year (
+        id VARCHAR(36) PRIMARY KEY,
+        year INT NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        subtitle VARCHAR(255),
+        verse TEXT,
+        description TEXT,
+        image_url VARCHAR(500),
+        is_active BOOLEAN DEFAULT false,
+        created_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Priest Messages table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS priest_messages (
+        id VARCHAR(36) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_published BOOLEAN DEFAULT false,
+        image_url VARCHAR(500),
+        author_id VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Financial Transactions table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS financial_transactions (
+        id VARCHAR(36) PRIMARY KEY,
+        entity_id VARCHAR(36),
+        entity_name VARCHAR(255),
+        entity_type VARCHAR(50),
+        type VARCHAR(50) NOT NULL,
+        amount DECIMAL(15, 2) NOT NULL,
+        currency VARCHAR(10) DEFAULT 'USD',
+        payment_method VARCHAR(50),
+        category VARCHAR(100),
+        description TEXT,
+        owner_name VARCHAR(255),
+        date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        recorded_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+        recorded_by_name VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'approved',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Liturgical Prayers table
+    await dbClient.query(`
+      CREATE TABLE IF NOT EXISTS liturgical_prayers (
+        id VARCHAR(36) PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        category VARCHAR(100),
+        language VARCHAR(50) DEFAULT 'english',
+        type VARCHAR(50),
+        is_active BOOLEAN DEFAULT true,
+        created_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
