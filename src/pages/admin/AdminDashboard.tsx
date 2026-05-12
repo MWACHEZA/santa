@@ -545,6 +545,8 @@ const AdminDashboard: React.FC = () => {
         </nav>
 
         <div className="sidebar-footer">
+          <p>&copy; 2026 St. Patrick's</p>
+          <p className="powered-by">Powered by <span className="santana-highlight">Santa_na</span></p>
           <button className="logout-btn" onClick={handleLogout}>
             <LogOut size={20} />
             <span>Logout</span>

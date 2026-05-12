@@ -186,6 +186,12 @@
   font-size: 0.9rem;
 }
 
+.santana-credit {
+  color: var(--gold);
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
 .footer-bottom-links {
   display: flex;
   align-items: center;
