@@ -578,11 +578,17 @@ const initializeDatabase = async () => {
         language VARCHAR(50) DEFAULT 'english',
         type VARCHAR(50),
         is_active BOOLEAN DEFAULT true,
+        image_url VARCHAR(500),
         created_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Defensively ensure image_url column exists in live/existing database
+    await dbClient.query(`
+      ALTER TABLE liturgical_prayers ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);
+    `).catch(err => console.log('ℹ️ image_url column already exists or table not created yet:', err.message));
 
     // File uploads table
     await dbClient.query(`

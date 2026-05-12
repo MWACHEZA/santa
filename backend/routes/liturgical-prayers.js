@@ -52,6 +52,7 @@ router.get('/', optionalAuth, validatePagination, handleValidationErrors, async 
         category,
         language,
         is_active,
+        image_url,
         created_at
       FROM liturgical_prayers 
       ${whereClause}
@@ -89,19 +90,29 @@ router.post('/', authenticateToken, requireContentManager, async (req, res) => {
     const {
       title,
       content,
+      text, // frontend uses 'text'
       category,
       language = 'english',
-      is_active = true
+      is_active = true,
+      image_url
     } = req.body;
+    
+    const finalContent = content || text;
+    if (!finalContent) {
+      return res.status(400).json({
+        success: false,
+        message: 'Prayer content or text is required'
+      });
+    }
     
     const prayerId = uuidv4();
     
     await db.execute(`
       INSERT INTO liturgical_prayers (
-        id, title, content, category, language, is_active, created_by
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        id, title, content, category, language, is_active, image_url, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      prayerId, title, content, category || null, language || 'english', is_active, req.user.id
+      prayerId, title, finalContent, category || null, language || 'english', is_active, image_url || null, req.user.id
     ]);
     
     // Log action
@@ -120,10 +131,11 @@ router.post('/', authenticateToken, requireContentManager, async (req, res) => {
       data: {
         id: prayerId,
         title,
-        content,
+        content: finalContent,
         category,
         language,
-        is_active
+        is_active,
+        image_url
       }
     });
     
@@ -143,19 +155,23 @@ router.put('/:id', authenticateToken, requireContentManager, validateId, handleV
     const {
       title,
       content,
+      text, // frontend fallback
       category,
       language,
-      is_active
+      is_active,
+      image_url
     } = req.body;
     
+    const finalContent = content || text;
     const updates = [];
     const values = [];
     
     if (title !== undefined) { updates.push('title = ?'); values.push(title); }
-    if (content !== undefined) { updates.push('content = ?'); values.push(content); }
+    if (finalContent !== undefined) { updates.push('content = ?'); values.push(finalContent); }
     if (category !== undefined) { updates.push('category = ?'); values.push(category); }
     if (language !== undefined) { updates.push('language = ?'); values.push(language); }
     if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active); }
+    if (image_url !== undefined) { updates.push('image_url = ?'); values.push(image_url); }
     
     if (updates.length === 0) {
       return res.status(400).json({
