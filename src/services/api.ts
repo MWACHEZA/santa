@@ -565,7 +565,7 @@ export const prayersApi = {
     return apiClient.get(`/prayers?${queryParams.toString()}`);
   },
   
-  submit: (prayerData: any) => apiClient.post('/prayers', prayerData),
+  submitIntention: (prayerData: any) => apiClient.post('/prayers', prayerData),
   
   approve: (id: string) => apiClient.patch(`/prayers/${id}/approve`),
   
