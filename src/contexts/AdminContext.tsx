@@ -8,24 +8,28 @@ import { type CatholicReadings, type CatholicCelebration } from '../services/lit
 // Helper to fix image URLs that might have been saved with localhost or as relative paths
 const fixImageUrl = (url: string | undefined): string => {
   if (!url) return '';
-  const apiBase = api.apiClient.getBaseUrl();
-  let backendBase = apiBase.replace(/\/api$/, '');
   
-  // Extra safety for Render production environment
-  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
-    if (backendBase.includes('localhost')) {
-      backendBase = 'https://santa-backend-3y5e.onrender.com';
-    }
+  // Use a reliable backend base URL
+  let backendBase = 'https://santa-backend-3y5e.onrender.com';
+  
+  // If we are on localhost, use localhost backend
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    backendBase = 'http://localhost:5000';
   }
 
+  // Handle full URLs from database that might be stale
   if (url.startsWith('http://localhost:5000')) {
     return url.replace('http://localhost:5000', backendBase);
   }
   
-  if (url.startsWith('/uploads')) {
-    // Ensure we don't have double slashes
-    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
-    return `${backendBase}${cleanUrl}`;
+  if (url.startsWith('https://santa-backend-3y5e.onrender.com')) {
+    return url.replace('https://santa-backend-3y5e.onrender.com', backendBase);
+  }
+
+  // Handle relative paths
+  if (url.startsWith('/uploads') || url.startsWith('uploads/')) {
+    const cleanPath = url.startsWith('/') ? url : `/${url}`;
+    return `${backendBase}${cleanPath}`;
   }
   
   return url;

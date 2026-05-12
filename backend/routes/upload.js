@@ -6,8 +6,22 @@ const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const db = require('../config/database');
 const { authenticateToken, requireContentManager } = require('../middleware/auth');
+const cloudinary = require('cloudinary').v2;
 
 const router = express.Router();
+
+// Configure Cloudinary if credentials are provided in env
+const hasCloudinary = !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+if (hasCloudinary) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log('☁️ Cloudinary integration initialized successfully');
+} else {
+  console.log('ℹ️ Cloudinary credentials not fully configured; using local ephemeral disk storage');
+}
 
 // Ensure upload directories exist
 const ensureDirectoryExists = async (dirPath) => {
@@ -127,9 +141,45 @@ router.post('/single', authenticateToken, requireContentManager, upload.single('
     
     // Save file info to database
     const fileId = uuidv4();
-    const relativePath = path.relative(process.env.UPLOAD_PATH || './uploads', processedFilePath);
-    const thumbnailRelativePath = thumbnailPath ? path.relative(process.env.UPLOAD_PATH || './uploads', thumbnailPath) : null;
+    let fileUrl = '';
+    let thumbnailUrl = null;
+    let relativePath = path.relative(process.env.UPLOAD_PATH || './uploads', processedFilePath);
+    let thumbnailRelativePath = thumbnailPath ? path.relative(process.env.UPLOAD_PATH || './uploads', thumbnailPath) : null;
     
+    if (hasCloudinary) {
+      try {
+        console.log('☁️ Uploading optimized image to Cloudinary...');
+        const mainUpload = await cloudinary.uploader.upload(processedFilePath, {
+          folder: `st_patricks/${type}`
+        });
+        fileUrl = mainUpload.secure_url;
+        relativePath = mainUpload.secure_url; // Save secure URL to file_path
+
+        if (thumbnailPath) {
+          console.log('☁️ Uploading thumbnail to Cloudinary...');
+          const thumbUpload = await cloudinary.uploader.upload(thumbnailPath, {
+            folder: `st_patricks/${type}/thumbnails`
+          });
+          thumbnailUrl = thumbUpload.secure_url;
+        }
+
+        // Clean up temporary local files
+        await fs.unlink(processedFilePath).catch(() => {});
+        if (thumbnailPath) {
+          await fs.unlink(thumbnailPath).catch(() => {});
+        }
+      } catch (cloudinaryErr) {
+        console.error('❌ Cloudinary upload failed, falling back to local storage:', cloudinaryErr);
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        fileUrl = `${baseUrl}/uploads/${relativePath.replace(/\\/g, '/')}`;
+        thumbnailUrl = thumbnailRelativePath ? `${baseUrl}/uploads/${thumbnailRelativePath.replace(/\\/g, '/')}` : null;
+      }
+    } else {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      fileUrl = `${baseUrl}/uploads/${relativePath.replace(/\\/g, '/')}`;
+      thumbnailUrl = thumbnailRelativePath ? `${baseUrl}/uploads/${thumbnailRelativePath.replace(/\\/g, '/')}` : null;
+    }
+
     await db.execute(`
       INSERT INTO file_uploads (
         id, original_name, filename, file_path, file_size, 
@@ -144,11 +194,6 @@ router.post('/single', authenticateToken, requireContentManager, upload.single('
       req.file.mimetype,
       req.user.id
     ]);
-    
-    // Construct URLs
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const fileUrl = `${baseUrl}/uploads/${relativePath.replace(/\\/g, '/')}`;
-    const thumbnailUrl = thumbnailRelativePath ? `${baseUrl}/uploads/${thumbnailRelativePath.replace(/\\/g, '/')}` : null;
     
     res.json({
       success: true,
@@ -243,9 +288,45 @@ router.post('/multiple', authenticateToken, requireContentManager, upload.array(
         
         // Save file info to database
         const fileId = uuidv4();
-        const relativePath = path.relative(process.env.UPLOAD_PATH || './uploads', processedFilePath);
-        const thumbnailRelativePath = thumbnailPath ? path.relative(process.env.UPLOAD_PATH || './uploads', thumbnailPath) : null;
+        let fileUrl = '';
+        let thumbnailUrl = null;
+        let relativePath = path.relative(process.env.UPLOAD_PATH || './uploads', processedFilePath);
+        let thumbnailRelativePath = thumbnailPath ? path.relative(process.env.UPLOAD_PATH || './uploads', thumbnailPath) : null;
         
+        if (hasCloudinary) {
+          try {
+            console.log('☁️ Uploading multiple optimized image to Cloudinary...');
+            const mainUpload = await cloudinary.uploader.upload(processedFilePath, {
+              folder: `st_patricks/${type}`
+            });
+            fileUrl = mainUpload.secure_url;
+            relativePath = mainUpload.secure_url;
+
+            if (thumbnailPath) {
+              console.log('☁️ Uploading multiple thumbnail to Cloudinary...');
+              const thumbUpload = await cloudinary.uploader.upload(thumbnailPath, {
+                folder: `st_patricks/${type}/thumbnails`
+              });
+              thumbnailUrl = thumbUpload.secure_url;
+            }
+
+            // Clean up temporary local files
+            await fs.unlink(processedFilePath).catch(() => {});
+            if (thumbnailPath) {
+              await fs.unlink(thumbnailPath).catch(() => {});
+            }
+          } catch (cloudinaryErr) {
+            console.error('❌ Cloudinary multiple upload failed, falling back to local storage:', cloudinaryErr);
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            fileUrl = `${baseUrl}/uploads/${relativePath.replace(/\\/g, '/')}`;
+            thumbnailUrl = thumbnailRelativePath ? `${baseUrl}/uploads/${thumbnailRelativePath.replace(/\\/g, '/')}` : null;
+          }
+        } else {
+          const baseUrl = `${req.protocol}://${req.get('host')}`;
+          fileUrl = `${baseUrl}/uploads/${relativePath.replace(/\\/g, '/')}`;
+          thumbnailUrl = thumbnailRelativePath ? `${baseUrl}/uploads/${thumbnailRelativePath.replace(/\\/g, '/')}` : null;
+        }
+
         await db.execute(`
           INSERT INTO file_uploads (
             id, original_name, filename, file_path, file_size, 
@@ -260,11 +341,6 @@ router.post('/multiple', authenticateToken, requireContentManager, upload.array(
           file.mimetype,
           req.user.id
         ]);
-        
-        // Construct URLs
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const fileUrl = `${baseUrl}/uploads/${relativePath.replace(/\\/g, '/')}`;
-        const thumbnailUrl = thumbnailRelativePath ? `${baseUrl}/uploads/${thumbnailRelativePath.replace(/\\/g, '/')}` : null;
         
         uploadedFiles.push({
           id: fileId,
