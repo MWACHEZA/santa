@@ -2,6 +2,37 @@ const nodemailer = require('nodemailer');
 
 const sendEmail = async ({ to, subject, html, text }) => {
   try {
+    // 1. Check if Brevo HTTP API Key is configured (Bypasses Render firewall completely)
+    if (process.env.BREVO_API_KEY) {
+      console.log('☁️ Sending email via Brevo HTTP API...');
+      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          sender: { 
+            name: process.env.FROM_NAME || 'St. Patrick\'s Catholic Church', 
+            email: process.env.FROM_EMAIL || 'comforter958@gmail.com' 
+          },
+          to: [{ email: to }],
+          subject: subject,
+          textContent: text || '',
+          htmlContent: html || ''
+        })
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Brevo HTTP API failed: ${response.status} ${errText}`);
+      }
+
+      const resData = await response.json();
+      console.log('✅ Email sent successfully via Brevo HTTP API:', resData.messageId);
+      return { success: true, messageId: resData.messageId };
+    }
+
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
 
@@ -17,6 +48,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
       return { success: true, mocked: true };
     }
 
+    // 2. Standard SMTP connection (Note: Render free tier blocks port 25/465/587 by default)
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.gmail.com',
       port: parseInt(process.env.SMTP_PORT || '587'),
@@ -42,7 +74,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     console.log('✅ Email sent successfully:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('❌ Failed to send email via SMTP:', error);
+    console.error('❌ Failed to send email:', error);
     console.log('====================== FALLBACK MAIL LOG ======================');
     console.log(`✉️ TO:      ${to}`);
     console.log(`📌 SUBJECT: ${subject}`);
