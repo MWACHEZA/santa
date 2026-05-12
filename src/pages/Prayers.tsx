@@ -14,6 +14,9 @@ const Prayers: React.FC = () => {
   const [categories, setCategories] = useState<string[]>(['All']);
   const [activeCategory, setActiveCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
+  const [intention, setIntention] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -41,6 +44,34 @@ const Prayers: React.FC = () => {
 
     fetchData();
   }, []);
+
+  const handleIntentionSubmit = async () => {
+    if (!intention.trim()) return;
+    
+    setIsSubmitting(true);
+    setSubmitMessage({ text: '', type: '' });
+    
+    try {
+      const res = await api.prayers.submitIntention({
+        intention: intention.trim(),
+        is_anonymous: true // Default to anonymous for privacy unless we add a toggle
+      });
+      
+      if (res.success) {
+        setSubmitMessage({ text: 'Thank you! Your prayer intention has been submitted for review.', type: 'success' });
+        setIntention('');
+      } else {
+        setSubmitMessage({ text: res.message || 'Failed to submit intention. Please try again.', type: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to submit intention', err);
+      setSubmitMessage({ text: 'An error occurred. Please try again later.', type: 'error' });
+    } finally {
+      setIsSubmitting(false);
+      // Clear message after 5 seconds
+      setTimeout(() => setSubmitMessage({ text: '', type: '' }), 5000);
+    }
+  };
   
   // Use liturgical data from context
   const activeReadings = liturgicalInfo?.readings;
@@ -283,14 +314,39 @@ const Prayers: React.FC = () => {
             your needs in our daily prayers and during Mass.
           </p>
           <div className="intentions-form">
+            {submitMessage.text && (
+              <div className={`submit-message ${submitMessage.type}`} style={{ 
+                padding: '1rem', 
+                borderRadius: '8px', 
+                marginBottom: '1rem',
+                backgroundColor: submitMessage.type === 'success' ? 'rgba(76, 175, 80, 0.1)' : 'rgba(244, 67, 54, 0.1)',
+                color: submitMessage.type === 'success' ? '#2e7d32' : '#d32f2f',
+                border: `1px solid ${submitMessage.type === 'success' ? '#4caf50' : '#f44336'}`
+              }}>
+                {submitMessage.text}
+              </div>
+            )}
             <textarea 
               placeholder="Share your prayer intention here..."
               rows={4}
               className="intention-input"
+              value={intention}
+              onChange={(e) => setIntention(e.target.value)}
+              disabled={isSubmitting}
             />
-            <button className="btn btn-primary">
-              <Heart size={20} />
-              Submit Intention
+            <button 
+              className="btn btn-primary" 
+              onClick={handleIntentionSubmit}
+              disabled={isSubmitting || !intention.trim()}
+            >
+              {isSubmitting ? (
+                <>Submitting...</>
+              ) : (
+                <>
+                  <Heart size={20} />
+                  Submit Intention
+                </>
+              )}
             </button>
           </div>
         </div>

@@ -1900,8 +1900,13 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         } else if (type === 'news') {
           setNewsCategories(prev => prev.includes(category) ? prev : [...prev, category].sort());
           setFullNewsCategories(prev => [...prev, res.data]);
+        } else if (type === 'event') {
+          setEventCategories(prev => prev.includes(category) ? prev : [...prev, category].sort());
+          setFullEventCategories(prev => [...prev, res.data]);
+        } else if (type === 'prayer') {
+          setPrayerCategories(prev => prev.includes(category) ? prev : [...prev, category].sort());
+          setFullPrayerCategories(prev => [...prev, res.data]);
         }
-        // Add others if needed
       }
     } catch (err) {
       console.error('Failed to add category', err);
@@ -1920,11 +1925,23 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (deletedCat) {
             setFinancialCategories(prev => prev.filter(name => name !== deletedCat.name));
           }
-        } else if (type === 'gallery') {
-          setFullGalleryCategories(prev => prev.filter(c => c.id !== id));
-          const deletedCat = fullGalleryCategories.find(c => c.id === id);
+        } else if (type === 'news') {
+          setFullNewsCategories(prev => prev.filter(c => c.id !== id));
+          const deletedCat = fullNewsCategories.find(c => c.id === id);
           if (deletedCat) {
-            setGalleryCategories(prev => prev.filter(name => name !== deletedCat.name));
+            setNewsCategories(prev => prev.filter(name => name !== deletedCat.name));
+          }
+        } else if (type === 'event') {
+          setFullEventCategories(prev => prev.filter(c => c.id !== id));
+          const deletedCat = fullEventCategories.find(c => c.id === id);
+          if (deletedCat) {
+            setEventCategories(prev => prev.filter(name => name !== deletedCat.name));
+          }
+        } else if (type === 'prayer') {
+          setFullPrayerCategories(prev => prev.filter(c => c.id !== id));
+          const deletedCat = fullPrayerCategories.find(c => c.id === id);
+          if (deletedCat) {
+            setPrayerCategories(prev => prev.filter(name => name !== deletedCat.name));
           }
         }
         logAdminAction('DELETE_CATEGORY', 'category', id, `Deleted category: ${id}`);
@@ -1933,7 +1950,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.error('Failed to delete category', err);
       throw err;
     }
-  }, [fullFinancialCategories, logAdminAction]);
+  }, [fullFinancialCategories, fullGalleryCategories, fullNewsCategories, fullEventCategories, fullPrayerCategories, logAdminAction]);
 
   // Priest's Desk methods
   const addPriestMessage = useCallback(async (message: Omit<PriestMessage, 'id' | 'createdAt'>) => {

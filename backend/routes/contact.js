@@ -153,27 +153,19 @@ Sent from St. Patrick's Catholic Church Website
       </div>
     `;
 
-    // Send email using Nodemailer helper (wrapped in try/catch to be robust)
-    let emailSent = false;
-    let emailError = null;
-    try {
-      await sendEmail({
-        to: recipient,
-        subject,
-        text: textContent,
-        html: htmlContent
-      });
-      emailSent = true;
-    } catch (emailErr) {
+    // Send email using Nodemailer helper (non-blocking)
+    sendEmail({
+      to: recipient,
+      subject,
+      text: textContent,
+      html: htmlContent
+    }).catch(emailErr => {
       console.error('⚠️ SMTP connection failed. Please ensure SMTP_PASS has a valid Google App Password in .env:', emailErr);
-      emailError = emailErr.message;
-    }
+    });
 
     res.json({
       success: true,
-      message: emailSent 
-        ? 'Application submitted and notification sent successfully' 
-        : 'Application submitted successfully (Email notification is pending SMTP configuration)'
+      message: 'Application submitted successfully. Our team will review it shortly.'
     });
   } catch (error) {
     console.error('Submit reporter application error:', error);

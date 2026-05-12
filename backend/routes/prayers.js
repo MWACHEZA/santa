@@ -117,29 +117,28 @@ router.post('/', optionalAuth, validatePrayerIntention, handleValidationErrors, 
       is_anonymous, is_urgent
     ]);
 
-    // Send email notification to administrator
-    try {
-      const adminEmail = process.env.REPORTER_APPLICATION_RECIPIENT || 'comforter958@gmail.com';
-      await sendEmail({
-        to: adminEmail,
-        subject: `New Prayer Intention${is_urgent ? ' (URGENT)' : ''}`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-            <h2 style="color: #2e7d32;">New Prayer Intention Submitted</h2>
-            <p><strong>From:</strong> ${is_anonymous ? 'Anonymous' : (finalRequesterName || 'Not provided')}</p>
-            <p><strong>Email:</strong> ${is_anonymous ? 'Anonymous' : (finalRequesterEmail || 'Not provided')}</p>
-            <p><strong>Urgency:</strong> ${is_urgent ? '<span style="color: red; font-weight: bold;">URGENT</span>' : 'Normal'}</p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-            <p><strong>Intention:</strong></p>
-            <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; font-style: italic;">
-              "${intention}"
-            </div>
-            <p style="margin-top: 30px; font-size: 12px; color: #888;">
-              This is an automated notification from St. Patrick's Catholic Church Management System.
-            </p>
+    // Send email notification to administrator (non-blocking)
+    const adminEmail = process.env.REPORTER_APPLICATION_RECIPIENT || 'comforter958@gmail.com';
+    sendEmail({
+      to: adminEmail,
+      subject: `New Prayer Intention${is_urgent ? ' (URGENT)' : ''}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #2e7d32;">New Prayer Intention Submitted</h2>
+          <p><strong>From:</strong> ${is_anonymous ? 'Anonymous' : (finalRequesterName || 'Not provided')}</p>
+          <p><strong>Email:</strong> ${is_anonymous ? 'Anonymous' : (finalRequesterEmail || 'Not provided')}</p>
+          <p><strong>Urgency:</strong> ${is_urgent ? '<span style="color: red; font-weight: bold;">URGENT</span>' : 'Normal'}</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+          <p><strong>Intention:</strong></p>
+          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px; font-style: italic;">
+            "${intention}"
           </div>
-        `,
-        text: `
+          <p style="margin-top: 30px; font-size: 12px; color: #888;">
+            This is an automated notification from St. Patrick's Catholic Church Management System.
+          </p>
+        </div>
+      `,
+      text: `
 New Prayer Intention Submitted
 ------------------------------
 From: ${is_anonymous ? 'Anonymous' : (finalRequesterName || 'Not provided')}
@@ -150,12 +149,10 @@ Intention:
 "${intention}"
 
 This is an automated notification from St. Patrick's Catholic Church Management System.
-        `
-      });
-    } catch (emailErr) {
+      `
+    }).catch(emailErr => {
       console.error('Failed to send prayer intention notification email:', emailErr);
-      // Don't fail the request if email fails
-    }
+    });
     
     res.status(201).json({
       success: true,
