@@ -12,8 +12,8 @@ const pool = new Pool({
 
 async function check() {
   try {
-    const res = await pool.query("SELECT column_name FROM information_schema.columns WHERE table_name = 'priest_messages'");
-    console.log('Columns:', res.rows.map(r => r.column_name));
+    const res = await pool.query("SELECT title, image_url FROM gallery");
+    console.log('Gallery Data:', JSON.stringify(res.rows, null, 2));
   } catch (err) {
     console.error(err);
   } finally {

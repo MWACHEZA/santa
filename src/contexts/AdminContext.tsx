@@ -9,14 +9,23 @@ import { type CatholicReadings, type CatholicCelebration } from '../services/lit
 const fixImageUrl = (url: string | undefined): string => {
   if (!url) return '';
   const apiBase = api.apiClient.getBaseUrl();
-  const backendBase = apiBase.replace(/\/api$/, '');
+  let backendBase = apiBase.replace(/\/api$/, '');
   
+  // Extra safety for Render production environment
+  if (typeof window !== 'undefined' && window.location.hostname.includes('onrender.com')) {
+    if (backendBase.includes('localhost')) {
+      backendBase = 'https://santa-backend-3y5e.onrender.com';
+    }
+  }
+
   if (url.startsWith('http://localhost:5000')) {
     return url.replace('http://localhost:5000', backendBase);
   }
   
   if (url.startsWith('/uploads')) {
-    return `${backendBase}${url}`;
+    // Ensure we don't have double slashes
+    const cleanUrl = url.startsWith('/') ? url : `/${url}`;
+    return `${backendBase}${cleanUrl}`;
   }
   
   return url;
