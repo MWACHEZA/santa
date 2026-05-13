@@ -266,7 +266,7 @@ pre, code {
 }
 
 /* Prevent any element from blocking scrolling - Exclude components that require overflow: hidden for image cropping and card styling, and maps that need strict clipping */
-*:not(.modern-auth):not(.auth-container):not(.loading-container):not(.no-scroll):not(.no-scroll *):not(.ministry-img-container):not(.ministry-img-container *):not(.image-preview):not(.image-preview *):not(.theme-preview):not(.theme-preview *):not(.ministry-image):not(.ministry-image *):not(.gallery-item):not(.gallery-item *):not(.card-image):not(.card-image *):not(.no-forced-overflow):not(.no-forced-overflow *):not(.map-container):not(.map-container *):not(.leaflet-container):not(.leaflet-container *):not(.leaflet-pane):not(.leaflet-pane *):not(.leaflet-tile-container):not(.leaflet-tile-container *) {
+*:not(.modern-auth):not(.auth-container):not(.loading-container):not(.no-scroll):not(.no-scroll *):not(.ministry-img-container):not(.ministry-img-container *):not(.image-preview):not(.image-preview *):not(.theme-preview):not(.theme-preview *):not(.ministry-image):not(.ministry-image *):not(.gallery-item):not(.gallery-item *):not(.card-image):not(.card-image *):not(.no-forced-overflow):not(.no-forced-overflow *):not(.map-container):not(.map-container *):not(.leaflet-container):not(.leaflet-container *):not(.leaflet-pane):not(.leaflet-pane *):not(.leaflet-tile-container):not(.leaflet-tile-container *):not(.side-nav):not(.side-nav *):not(.admin-sidebar):not(.admin-sidebar *):not(.prayer-card):not(.prayer-card *):not(.prayer-image-container):not(.prayer-image-container *):not(.logo):not(.logo *):not(.card):not(.card *) {
   max-height: none !important;
   overflow: visible !important;
 }
