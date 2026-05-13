@@ -25,7 +25,8 @@ import {
   Clock, 
   DollarSign, 
   FileText, 
-  FolderOpen, 
+  FolderOpen,
+  Edit, 
   History, 
   LogOut, 
   Menu, 
@@ -1263,6 +1264,7 @@ const ThemeManagementSection: React.FC = () => {
   const [showAddTheme, setShowAddTheme] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedThemeImageFile, setSelectedThemeImageFile] = useState<File | null>(null);
+  const [editingThemeId, setEditingThemeId] = useState<string | null>(null);
   const [newTheme, setNewTheme] = useState({
     year: new Date().getFullYear(),
     title: '',
@@ -1272,6 +1274,21 @@ const ThemeManagementSection: React.FC = () => {
     imageUrl: '',
     isActive: false
   });
+
+  const resetThemeForm = () => {
+    setNewTheme({
+      year: new Date().getFullYear(),
+      title: '',
+      subtitle: '',
+      verse: '',
+      description: '',
+      imageUrl: '',
+      isActive: false
+    });
+    setSelectedThemeImageFile(null);
+    setEditingThemeId(null);
+    setShowAddTheme(false);
+  };
 
   const handleAddTheme = async () => {
     if (!newTheme.title) {
@@ -1291,29 +1308,24 @@ const ThemeManagementSection: React.FC = () => {
         }
       }
       
-      await addThemeOfYear({
+      const themePayload = {
         ...newTheme,
         year: parseInt(newTheme.year.toString()),
         imageUrl: finalImageUrl
-      });
+      };
+
+      if (editingThemeId) {
+        await updateThemeOfYear(editingThemeId, themePayload);
+        success(`Theme for ${newTheme.year} updated successfully`);
+      } else {
+        await addThemeOfYear(themePayload);
+        success(`Theme for ${newTheme.year} added successfully`);
+      }
       
-      success(`Theme for ${newTheme.year} added successfully`);
-      
-      // Reset form
-      setNewTheme({
-        year: new Date().getFullYear(),
-        title: '',
-        subtitle: '',
-        verse: '',
-        description: '',
-        imageUrl: '',
-        isActive: false
-      });
-      setSelectedThemeImageFile(null);
-      setShowAddTheme(false);
+      resetThemeForm();
     } catch (err) {
-      console.error('Failed to add theme:', err);
-      error('Failed to add theme. Please try again.');
+      console.error('Failed to save theme:', err);
+      error('Failed to save theme. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1335,13 +1347,27 @@ const ThemeManagementSection: React.FC = () => {
     }));
   };
 
+  const handleEditTheme = (theme: any) => {
+    setNewTheme({
+      year: theme.year,
+      title: theme.title,
+      subtitle: theme.subtitle || '',
+      verse: theme.verse || '',
+      description: theme.description || '',
+      imageUrl: theme.imageUrl || '',
+      isActive: theme.isActive || false
+    });
+    setEditingThemeId(theme.id);
+    setShowAddTheme(true);
+  };
+
   return (
     <div className="theme-management-section">
       <div className="section-header">
         <h3>Theme of the Year Management</h3>
         <button 
           className="btn btn-primary"
-          onClick={() => setShowAddTheme(true)}
+          onClick={() => { resetThemeForm(); setShowAddTheme(true); }}
         >
           <Plus size={16} />
           Add New Theme
@@ -1352,8 +1378,8 @@ const ThemeManagementSection: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal rectangular">
             <div className="modal-header">
-              <h3>Add New Theme</h3>
-              <button className="btn-close" onClick={() => setShowAddTheme(false)}>
+              <h3>{editingThemeId ? 'Edit Theme' : 'Add New Theme'}</h3>
+              <button className="btn-close" onClick={resetThemeForm}>
                 <X size={20} />
               </button>
             </div>
@@ -1439,11 +1465,11 @@ const ThemeManagementSection: React.FC = () => {
                   onClick={handleAddTheme}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Adding...' : 'Add Theme'}
+                  {isSubmitting ? 'Saving...' : (editingThemeId ? 'Save Changes' : 'Add Theme')}
                 </button>
                 <button 
                   className="btn btn-secondary" 
-                  onClick={() => setShowAddTheme(false)}
+                  onClick={resetThemeForm}
                   disabled={isSubmitting}
                 >
                   Cancel
@@ -1470,6 +1496,12 @@ const ThemeManagementSection: React.FC = () => {
                   onClick={() => updateThemeOfYear(theme.id, { isActive: !theme.isActive })}
                 >
                   {theme.isActive ? 'Active' : 'Inactive'}
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={() => handleEditTheme(theme)}
+                >
+                  <Edit size={16} />
                 </button>
                 <button 
                   className="btn btn-danger"

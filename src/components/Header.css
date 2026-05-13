@@ -390,13 +390,15 @@
 .side-nav {
   position: fixed !important;
   top: 0 !important;
-  left: -320px;
+  left: 0 !important;
   width: 320px !important;
+  max-width: 85vw !important;
   height: 100vh !important;
   height: 100dvh !important;
   background: #ffffff !important;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3) !important;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transform: translateX(-100%) !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
   z-index: 10000 !important;
 
   display: flex !important;
@@ -406,7 +408,7 @@
 }
 
 .side-nav.open {
-  left: 0 !important;
+  transform: translateX(0) !important;
 }
 
 .side-nav-header {
@@ -784,22 +786,24 @@
     padding: 0.25rem 0.75rem;
   }
 
+  .lang-btn span, .side-nav-toggle span {
+    display: none;
+  }
+
   .lang-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.8rem;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 50%;
   }
 
   .user-info {
-    padding: 0.25rem 0.5rem;
-  }
-
-  .user-details {
-    font-size: 0.8rem;
+    display: none; /* Hide in header, visible in side nav */
   }
 
   .side-nav-toggle {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.8rem;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 50%;
   }
 
   /* Side Navigation Mobile Adjustments */
@@ -892,29 +896,19 @@
   }
 
   .lang-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    gap: 0.25rem;
+    padding: 0.4rem;
+    font-size: 0.9rem;
+    border-radius: 50%;
   }
 
   .user-info {
-    padding: 0.25rem 0.5rem;
-    gap: 0.5rem;
-  }
-
-  .user-details {
-    font-size: 0.75rem;
-    gap: 0.25rem;
-  }
-
-  .username {
-    display: none; /* Hide username on very small screens */
+    display: none;
   }
 
   .side-nav-toggle {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-    gap: 0.25rem;
+    padding: 0.4rem;
+    font-size: 0.9rem;
+    border-radius: 50%;
   }
 
   /* Side Navigation for Small Mobile */

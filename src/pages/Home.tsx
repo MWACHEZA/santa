@@ -510,7 +510,7 @@ const Home: React.FC = () => {
               <div className="timeline-item">
                 <div className="timeline-year">1990s-2000s</div>
                 <div className="timeline-image">
-                  <img src="/images/SYNOD IMAGE.png" alt="Ministry expansion activities" />
+                  <img src="/images/synod-image.png" alt="Ministry expansion activities" />
                 </div>
                 <div className="timeline-content">
                   <h4>Ministry Expansion</h4>
