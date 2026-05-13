@@ -208,42 +208,16 @@ const GalleryManager: React.FC = () => {
         }
       `}</style>
       {/* Tab Bar */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '2px solid #e5e7eb', paddingBottom: '0' }}>
+      <div className="gallery-tabs">
         <button
           onClick={() => setActiveTab('gallery')}
-          style={{
-            padding: '0.65rem 1.5rem',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'gallery' ? '3px solid #2d5016' : '3px solid transparent',
-            color: activeTab === 'gallery' ? '#2d5016' : '#6b7280',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
+          className={`tab-button ${activeTab === 'gallery' ? 'active' : ''}`}
         >
           <ImageIcon size={16} /> Gallery
         </button>
         <button
           onClick={() => setActiveTab('categories')}
-          style={{
-            padding: '0.65rem 1.5rem',
-            fontWeight: 700,
-            fontSize: '0.9rem',
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            borderBottom: activeTab === 'categories' ? '3px solid #2d5016' : '3px solid transparent',
-            color: activeTab === 'categories' ? '#2d5016' : '#6b7280',
-            transition: 'all 0.2s',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}
+          className={`tab-button ${activeTab === 'categories' ? 'active' : ''}`}
         >
           <Tag size={16} /> Manage Categories
         </button>

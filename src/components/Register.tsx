@@ -60,7 +60,19 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
     emergencyPhone: '',
     section: '',
     association: '',
-    agreeToTerms: false
+    agreeToTerms: false,
+    isBaptized: false,
+    baptismDate: '',
+    baptismVenue: '',
+    isConfirmed: false,
+    confirmationDate: '',
+    confirmationVenue: '',
+    receivesCommunion: false,
+    firstCommunionDate: '',
+    isMarried: false,
+    marriageDate: '',
+    marriageVenue: '',
+    spouseName: ''
   });
   
   
@@ -231,21 +243,21 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
         formDataToSend.append('profilePicture', formData.profilePicture);
       }
       
-      formDataToSend.append('isBaptized', String(formData.isBaptized));
-      if (formData.baptismDate) formDataToSend.append('baptismDate', formData.baptismDate);
-      if (formData.baptismVenue) formDataToSend.append('baptismVenue', formData.baptismVenue);
+      formDataToSend.append('isBaptized', String(!!formData.isBaptized));
+      if (formData.isBaptized && formData.baptismDate) formDataToSend.append('baptismDate', formData.baptismDate);
+      if (formData.isBaptized && formData.baptismVenue) formDataToSend.append('baptismVenue', formData.baptismVenue);
       
-      formDataToSend.append('isConfirmed', String(formData.isConfirmed));
-      if (formData.confirmationDate) formDataToSend.append('confirmationDate', formData.confirmationDate);
-      if (formData.confirmationVenue) formDataToSend.append('confirmationVenue', formData.confirmationVenue);
+      formDataToSend.append('isConfirmed', String(!!formData.isConfirmed));
+      if (formData.isConfirmed && formData.confirmationDate) formDataToSend.append('confirmationDate', formData.confirmationDate);
+      if (formData.isConfirmed && formData.confirmationVenue) formDataToSend.append('confirmationVenue', formData.confirmationVenue);
       
-      formDataToSend.append('receivesCommunion', String(formData.receivesCommunion));
-      if (formData.firstCommunionDate) formDataToSend.append('firstCommunionDate', formData.firstCommunionDate);
+      formDataToSend.append('receivesCommunion', String(!!formData.receivesCommunion));
+      if (formData.receivesCommunion && formData.firstCommunionDate) formDataToSend.append('firstCommunionDate', formData.firstCommunionDate);
       
-      formDataToSend.append('isMarried', String(formData.isMarried));
-      if (formData.marriageDate) formDataToSend.append('marriageDate', formData.marriageDate);
-      if (formData.marriageVenue) formDataToSend.append('marriageVenue', formData.marriageVenue);
-      if (formData.spouseName) formDataToSend.append('spouseName', formData.spouseName);
+      formDataToSend.append('isMarried', String(!!formData.isMarried));
+      if (formData.isMarried && formData.marriageDate) formDataToSend.append('marriageDate', formData.marriageDate);
+      if (formData.isMarried && formData.marriageVenue) formDataToSend.append('marriageVenue', formData.marriageVenue);
+      if (formData.isMarried && formData.spouseName) formDataToSend.append('spouseName', formData.spouseName);
 
       const result = await register(formDataToSend);
 
@@ -272,7 +284,19 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin, onRegistrationSucc
           emergencyPhone: '',
           section: '',
           association: '',
-          agreeToTerms: false
+          agreeToTerms: false,
+          isBaptized: false,
+          baptismDate: '',
+          baptismVenue: '',
+          isConfirmed: false,
+          confirmationDate: '',
+          confirmationVenue: '',
+          receivesCommunion: false,
+          firstCommunionDate: '',
+          isMarried: false,
+          marriageDate: '',
+          marriageVenue: '',
+          spouseName: ''
         });
 
         // Redirect to login after 2 seconds

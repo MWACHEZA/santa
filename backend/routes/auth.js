@@ -526,7 +526,8 @@ router.put('/profile', authenticateToken, async (req, res) => {
       spouseName,
       ordinationDate,
       ordinationVenue,
-      ordainedBy
+      ordainedBy,
+      profilePictureUrl
     } = req.body;
     
     // Check if email is already taken by another user
@@ -574,6 +575,35 @@ router.put('/profile', authenticateToken, async (req, res) => {
           userUpdates.push(`${column} = ?`);
           userValues.push(normalizeNullableValue(value));
         }
+      }
+    }
+    
+    if (profilePictureUrl !== undefined) {
+      if (!profilePictureUrl) {
+        userUpdates.push('profile_picture_id = ?');
+        userValues.push(null);
+      } else {
+        const filename = path.basename(profilePictureUrl);
+        const [existingMedia] = await db.execute(
+          'SELECT id FROM media_files WHERE file_url = ? OR filename = ?',
+          [profilePictureUrl, filename]
+        );
+        
+        let mediaId;
+        if (existingMedia.length > 0) {
+          mediaId = existingMedia[0].id;
+        } else {
+          mediaId = uuidv4();
+          const cleanPath = profilePictureUrl.startsWith('/') ? profilePictureUrl.slice(1) : profilePictureUrl;
+          await db.execute(
+            `INSERT INTO media_files (id, filename, original_filename, file_path, file_url, file_type, mime_type, file_size, uploaded_by, is_public)
+             VALUES (?, ?, ?, ?, ?, 'image', 'image/jpeg', 0, ?, true)`,
+            [mediaId, filename, filename, cleanPath, profilePictureUrl, userId]
+          );
+        }
+        
+        userUpdates.push('profile_picture_id = ?');
+        userValues.push(mediaId);
       }
     }
     

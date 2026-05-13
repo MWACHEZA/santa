@@ -27,6 +27,15 @@ const EnhancedProfile: React.FC = () => {
     return d.toISOString().slice(0, 10);
   };
   
+  const parseBool = (val: any): boolean | null => {
+    if (val === null || val === undefined || val === '') return null;
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+      if (val.toLowerCase() === 'true') return true;
+      if (val.toLowerCase() === 'false') return false;
+    }
+    return !!val;
+  };
 
   const [formData, setFormData] = useState({
     // Basic Information
@@ -48,18 +57,18 @@ const EnhancedProfile: React.FC = () => {
     role: user?.role || 'parishioner',
     
     // Sacramental Information (for parishioners)
-    isBaptized: user?.isBaptized ?? null,
+    isBaptized: parseBool(user?.isBaptized),
     baptismDate: user?.baptismDate || '',
     baptismVenue: user?.baptismVenue || '',
     
-    isConfirmed: user?.isConfirmed ?? null,
+    isConfirmed: parseBool(user?.isConfirmed),
     confirmationDate: user?.confirmationDate || '',
     confirmationVenue: user?.confirmationVenue || '',
     
-    receivesCommunion: user?.receivesCommunion ?? null,
+    receivesCommunion: parseBool(user?.receivesCommunion),
     firstCommunionDate: user?.firstCommunionDate || '',
     
-    isMarried: user?.isMarried ?? null,
+    isMarried: parseBool(user?.isMarried),
     marriageDate: user?.marriageDate || '',
     marriageVenue: user?.marriageVenue || '',
     spouseName: user?.spouseName || '',
@@ -111,15 +120,15 @@ const EnhancedProfile: React.FC = () => {
       section: u?.section || '',
       committeePosition: u?.committeePosition || '',
       role: u?.role || 'parishioner',
-      isBaptized: u?.isBaptized ?? null,
+      isBaptized: parseBool(u?.isBaptized),
       baptismDate: u?.baptismDate || '',
       baptismVenue: u?.baptismVenue || '',
-      isConfirmed: u?.isConfirmed ?? null,
+      isConfirmed: parseBool(u?.isConfirmed),
       confirmationDate: u?.confirmationDate || '',
       confirmationVenue: u?.confirmationVenue || '',
-      receivesCommunion: u?.receivesCommunion ?? null,
+      receivesCommunion: parseBool(u?.receivesCommunion),
       firstCommunionDate: u?.firstCommunionDate || '',
-      isMarried: u?.isMarried ?? null,
+      isMarried: parseBool(u?.isMarried),
       marriageDate: u?.marriageDate || '',
       marriageVenue: u?.marriageVenue || '',
       spouseName: u?.spouseName || '',
@@ -249,15 +258,15 @@ const EnhancedProfile: React.FC = () => {
       section: user?.section || '',
       committeePosition: user?.committeePosition || '',
       role: user?.role || 'parishioner',
-      isBaptized: user?.isBaptized ?? null,
+      isBaptized: parseBool(user?.isBaptized),
       baptismDate: user?.baptismDate || '',
       baptismVenue: user?.baptismVenue || '',
-      isConfirmed: user?.isConfirmed ?? null,
+      isConfirmed: parseBool(user?.isConfirmed),
       confirmationDate: user?.confirmationDate || '',
       confirmationVenue: user?.confirmationVenue || '',
-      receivesCommunion: user?.receivesCommunion ?? null,
+      receivesCommunion: parseBool(user?.receivesCommunion),
       firstCommunionDate: user?.firstCommunionDate || '',
-      isMarried: user?.isMarried ?? null,
+      isMarried: parseBool(user?.isMarried),
       marriageDate: user?.marriageDate || '',
       marriageVenue: user?.marriageVenue || '',
       spouseName: user?.spouseName || '',
@@ -319,12 +328,11 @@ const EnhancedProfile: React.FC = () => {
             <img
               src={user.profilePictureUrl}
               alt={`${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Profile picture'}
-              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
             />
           ) : (
             <User size={48} />
           )}
-          <div className="profile-avatar-actions">
+          <div className={`profile-avatar-actions ${avatarUploading ? 'uploading' : ''}`}>
             <input
               ref={fileInputRef}
               type="file"
@@ -353,34 +361,40 @@ const EnhancedProfile: React.FC = () => {
                 }
               }}
             />
-            <button 
-              className="avatar-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={avatarUploading}
-              title="Change profile picture"
-            >Change</button>
-            {user.profilePictureUrl && (
-              <button 
-                className="avatar-btn remove"
-                onClick={async () => {
-                  setAvatarUploading(true);
-                  setAvatarMessage(null);
-                  try {
-                    const res = await saveProfile({ profilePictureUrl: '' });
-                    if (res.success) {
-                      setAvatarMessage({ type: 'success', text: 'Profile picture removed' });
-                    } else {
-                      throw new Error(res.message || 'Failed to remove profile picture');
-                    }
-                  } catch (err) {
-                    setAvatarMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
-                  } finally {
-                    setAvatarUploading(false);
-                  }
-                }}
-                disabled={avatarUploading}
-                title="Remove profile picture"
-              >Remove</button>
+            {avatarUploading ? (
+              <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: 700 }}>Uploading...</span>
+            ) : (
+              <>
+                <button 
+                  className="avatar-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={avatarUploading}
+                  title="Change profile picture"
+                >Change</button>
+                {user.profilePictureUrl && (
+                  <button 
+                    className="avatar-btn remove"
+                    onClick={async () => {
+                      setAvatarUploading(true);
+                      setAvatarMessage(null);
+                      try {
+                        const res = await saveProfile({ profilePictureUrl: '' });
+                        if (res.success) {
+                          setAvatarMessage({ type: 'success', text: 'Profile picture removed' });
+                        } else {
+                          throw new Error(res.message || 'Failed to remove profile picture');
+                        }
+                      } catch (err) {
+                        setAvatarMessage({ type: 'error', text: err instanceof Error ? err.message : 'Operation failed' });
+                      } finally {
+                        setAvatarUploading(false);
+                      }
+                    }}
+                    disabled={avatarUploading}
+                    title="Remove profile picture"
+                  >Remove</button>
+                )}
+              </>
             )}
           </div>
         </div>

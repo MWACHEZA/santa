@@ -50,21 +50,32 @@
 }
 
 .profile-avatar {
-  width: 130px;
-  height: 130px;
+  width: 140px;
+  height: 140px;
   border-radius: 35px; /* Modern squircle */
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
-
   margin: 0 auto 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
   position: relative;
   z-index: 2;
+  overflow: hidden;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit !important;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.profile-avatar:hover img {
+  transform: scale(1.05);
 }
 
 .profile-avatar svg {
@@ -72,6 +83,60 @@
   height: 64px;
   color: white;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.profile-avatar-actions {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.65); /* Elegant dark overlay */
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 3;
+  padding: 0.5rem;
+}
+
+.profile-avatar:hover .profile-avatar-actions,
+.profile-avatar-actions.uploading {
+  opacity: 1;
+}
+
+.avatar-btn {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 85%;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.avatar-btn:hover {
+  background: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.avatar-btn.remove {
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.avatar-btn.remove:hover {
+  background: #ef4444;
 }
 
 .profile-name {
@@ -158,10 +223,14 @@
   padding: 0.5rem;
   gap: 0.5rem;
   border-bottom: 1px solid rgba(0,0,0,0.05);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  white-space: nowrap;
 }
 
 .tab-button {
   flex: 1;
+  min-width: 140px;
   padding: 1rem;
   border: none;
   background: transparent;
@@ -402,6 +471,10 @@
     position: static;
     justify-content: center;
     margin-top: 1.5rem;
+  }
+
+  .conditional-fields {
+    padding: 1rem;
   }
 }
 

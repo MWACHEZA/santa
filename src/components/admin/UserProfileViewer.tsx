@@ -26,6 +26,16 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
   const [avatarMessage, setAvatarMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   
+  const parseBool = (val: any): boolean | null => {
+    if (val === null || val === undefined || val === '') return null;
+    if (typeof val === 'boolean') return val;
+    if (typeof val === 'string') {
+      if (val.toLowerCase() === 'true') return true;
+      if (val.toLowerCase() === 'false') return false;
+    }
+    return !!val;
+  };
+
   const [formData, setFormData] = useState({
     // Basic Information
     firstName: user?.firstName || '',
@@ -43,15 +53,15 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
     section: user?.section || '',
     
     // Sacramental Information (for parishioners)
-    isBaptized: user?.isBaptized ?? null,
+    isBaptized: parseBool(user?.isBaptized),
     baptismDate: user?.baptismDate || '',
     baptismVenue: user?.baptismVenue || '',
-    isConfirmed: user?.isConfirmed ?? null,
+    isConfirmed: parseBool(user?.isConfirmed),
     confirmationDate: user?.confirmationDate || '',
     confirmationVenue: user?.confirmationVenue || '',
-    receivesCommunion: user?.receivesCommunion ?? null,
+    receivesCommunion: parseBool(user?.receivesCommunion),
     firstCommunionDate: user?.firstCommunionDate || '',
-    isMarried: user?.isMarried ?? null,
+    isMarried: parseBool(user?.isMarried),
     marriageDate: user?.marriageDate || '',
     marriageVenue: user?.marriageVenue || '',
     spouseName: user?.spouseName || '',
@@ -153,15 +163,15 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
       emergencyPhone: user?.emergencyPhone || '',
       association: user?.association || '',
       section: user?.section || '',
-      isBaptized: user?.isBaptized ?? null,
+      isBaptized: parseBool(user?.isBaptized),
       baptismDate: user?.baptismDate || '',
       baptismVenue: user?.baptismVenue || '',
-      isConfirmed: user?.isConfirmed ?? null,
+      isConfirmed: parseBool(user?.isConfirmed),
       confirmationDate: user?.confirmationDate || '',
       confirmationVenue: user?.confirmationVenue || '',
-      receivesCommunion: user?.receivesCommunion ?? null,
+      receivesCommunion: parseBool(user?.receivesCommunion),
       firstCommunionDate: user?.firstCommunionDate || '',
-      isMarried: user?.isMarried ?? null,
+      isMarried: parseBool(user?.isMarried),
       marriageDate: user?.marriageDate || '',
       marriageVenue: user?.marriageVenue || '',
       spouseName: user?.spouseName || '',
