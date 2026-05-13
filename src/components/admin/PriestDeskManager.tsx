@@ -123,117 +123,124 @@ const PriestDeskManager: React.FC = () => {
       </div>
 
       {isAdding && (
-        <div className="form-card card animate-slide-up">
-          <div className="card-header">
-            <h3>{editingId ? 'Edit Message' : 'Compose New Message'}</h3>
-          </div>
-          <form onSubmit={handleSubmit} className="modern-form">
-            <div className="form-group">
-              <label>Message Title</label>
-              <input 
-                type="text" 
-                required 
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                placeholder="e.g., Reflection on the 5th Sunday of Lent"
-              />
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label>Publication Date</label>
-                <div className="input-with-icon">
-                  <Calendar size={18} />
-                  <input 
-                    type="date" 
-                    required 
-                    value={formData.date}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
-                  />
-                </div>
-              </div>
-            <div className="form-group">
-              <label><ImageIcon size={16} /> Featured Image</label>
-              <div className="file-upload-area">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                />
-                <div 
-                  className="upload-zone"
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.add('drag-over');
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('drag-over');
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.currentTarget.classList.remove('drag-over');
-                    const file = e.dataTransfer.files?.[0];
-                    if (file) {
-                      const event = { target: { files: [file] } } as any;
-                      handleFileUpload(event);
-                    }
-                  }}
-                >
-                  {uploadPreview ? (
-                    <div className="upload-preview">
-                      <img src={uploadPreview} alt="Preview" />
-                      <div className="upload-overlay">
-                        <Upload size={24} />
-                        <span>Click to change</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="upload-placeholder">
-                      <Upload size={32} />
-                      <span>Drop image here or click to browse</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            </div>
-
-            <div className="form-group">
-              <label>Message Content</label>
-              <textarea 
-                required 
-                value={formData.content}
-                onChange={(e) => setFormData({...formData, content: e.target.value})}
-                placeholder="Write the Priest's message here..."
-                rows={8}
-              />
-            </div>
-
-            <div className="form-options">
-              <label className="checkbox-container">
-                <input 
-                  type="checkbox" 
-                  checked={formData.isPublished}
-                  onChange={(e) => setFormData({...formData, isPublished: e.target.checked})}
-                />
-                <span className="checkmark"></span>
-                Publish immediately
-              </label>
-            </div>
-
-            <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
-              <button type="submit" className="btn btn-primary">
-                {editingId 
-                  ? (formData.isPublished ? 'Update & Publish' : 'Update Draft') 
-                  : (formData.isPublished ? 'Publish Message' : 'Save as Draft')}
+        <div className="modal-overlay">
+          <div className="modal rectangular">
+            <div className="modal-header">
+              <h3>{editingId ? 'Edit Message' : 'Compose New Message'}</h3>
+              <button className="btn-close" onClick={resetForm}>
+                <X size={20} />
               </button>
             </div>
-          </form>
+            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+              <form onSubmit={handleSubmit} className="modern-form">
+                <div className="form-group">
+                  <label>Message Title</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={formData.title}
+                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    placeholder="e.g., Reflection on the 5th Sunday of Lent"
+                  />
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Publication Date</label>
+                    <div className="input-with-icon">
+                      <Calendar size={18} />
+                      <input 
+                        type="date" 
+                        required 
+                        value={formData.date}
+                        onChange={(e) => setFormData({...formData, date: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label><ImageIcon size={16} /> Featured Image</label>
+                    <div className="file-upload-area">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                      />
+                      <div 
+                        className="upload-zone"
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.add('drag-over');
+                        }}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('drag-over');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.classList.remove('drag-over');
+                          const file = e.dataTransfer.files?.[0];
+                          if (file) {
+                            const event = { target: { files: [file] } } as any;
+                            handleFileUpload(event);
+                          }
+                        }}
+                      >
+                        {uploadPreview ? (
+                          <div className="upload-preview">
+                            <img src={uploadPreview} alt="Preview" />
+                            <div className="upload-overlay">
+                              <Upload size={24} />
+                              <span>Click to change</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="upload-placeholder">
+                            <Upload size={32} />
+                            <span>Drop image here or click to browse</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Message Content</label>
+                  <textarea 
+                    required 
+                    value={formData.content}
+                    onChange={(e) => setFormData({...formData, content: e.target.value})}
+                    placeholder="Write the Priest's message here..."
+                    rows={8}
+                  />
+                </div>
+
+                <div className="form-options">
+                  <label className="checkbox-container">
+                    <input 
+                      type="checkbox" 
+                      checked={formData.isPublished}
+                      onChange={(e) => setFormData({...formData, isPublished: e.target.checked})}
+                    />
+                    <span className="checkmark"></span>
+                    Publish immediately
+                  </label>
+                </div>
+
+                <div className="form-actions" style={{ marginTop: '1.5rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={resetForm}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">
+                    {editingId 
+                      ? (formData.isPublished ? 'Update & Publish' : 'Update Draft') 
+                      : (formData.isPublished ? 'Publish Message' : 'Save as Draft')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
 

@@ -278,6 +278,10 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: '12px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
     border: '1px solid #e5e7eb',
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
   },
   header: {
     display: 'flex',
@@ -429,13 +433,18 @@ const styles: Record<string, React.CSSProperties> = {
     flexShrink: 0,
   },
   tableWrapper: {
+    width: '100%',
+    maxWidth: '100%',
     overflowX: 'auto',
     borderRadius: '10px',
     border: '1px solid #e5e7eb',
+    display: 'block',
+    WebkitOverflowScrolling: 'touch',
   },
   table: {
     width: '100%',
     borderCollapse: 'collapse',
+    minWidth: '650px',
   },
   thead: {
     background: '#f8fafc',

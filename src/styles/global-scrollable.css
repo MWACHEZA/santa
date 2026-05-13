@@ -415,7 +415,8 @@ body.no-scroll main {
   .popup-overlay,
   .category-modal-overlay,
   .admin-modal-overlay,
-  .news-modal-overlay {
+  .news-modal-overlay,
+  .prayer-manager .modal-overlay {
     align-items: flex-start !important;
     padding: 1.5rem 0.5rem !important;
     overflow-y: auto !important;
@@ -433,7 +434,8 @@ body.no-scroll main {
   .popup-content,
   .category-modal,
   .admin-modal-content,
-  .news-modal-content {
+  .news-modal-content,
+  .prayer-manager .modal-content {
     margin: auto !important;
     max-height: none !important;
     height: auto !important;

@@ -1070,30 +1070,83 @@ const ContactSection: React.FC = () => {
 // Schedule Section Component
 const ScheduleSection: React.FC = () => {
   const [massSchedule, setMassSchedule] = useState<any[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState<any | null>(null);
+  const [formSchedule, setFormSchedule] = useState({ day: '', times: '', language: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { success, error } = useToast();
 
-  const [isEditing, setIsEditing] = useState(false);
-
-  useEffect(() => {
+  const fetchSchedules = () => {
     api.schedule.getAll().then((res: any) => {
       if (res.success && res.data) {
         setMassSchedule(res.data);
       }
     }).catch((err: any) => console.error('Failed to fetch schedule', err));
+  };
+
+  useEffect(() => {
+    fetchSchedules();
   }, []);
 
-  const handleSave = async () => {
-    try {
-      await api.schedule.updateBulk(massSchedule);
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Failed to save schedule', err);
+  const handleAddClick = () => {
+    setEditingSchedule(null);
+    setFormSchedule({ day: '', times: '', language: '' });
+    setShowModal(true);
+  };
+
+  const handleEditClick = (schedule: any) => {
+    setEditingSchedule(schedule);
+    setFormSchedule({
+      day: schedule.day,
+      times: schedule.times.join(', '),
+      language: schedule.language
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this schedule?')) {
+      try {
+        await api.schedule.delete(id);
+        success('Schedule deleted successfully');
+        fetchSchedules();
+      } catch (err) {
+        error('Failed to delete schedule');
+      }
     }
   };
 
-  const updateSchedule = (dayIndex: number, field: string, value: any) => {
-    const updated = [...massSchedule];
-    updated[dayIndex] = { ...updated[dayIndex], [field]: value };
-    setMassSchedule(updated);
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formSchedule.day || !formSchedule.times) {
+      error('Please fill in Day and Mass Times');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const timesArray = formSchedule.times.split(',').map(t => t.trim()).filter(t => t !== '');
+      const scheduleData = {
+        day: formSchedule.day,
+        times: timesArray,
+        language: formSchedule.language
+      };
+
+      if (editingSchedule) {
+        await api.schedule.update(editingSchedule.id, scheduleData);
+        success(`Schedule for ${formSchedule.day} updated successfully`);
+      } else {
+        await api.schedule.create(scheduleData);
+        success(`Schedule for ${formSchedule.day} added successfully`);
+      }
+
+      setShowModal(false);
+      fetchSchedules();
+    } catch (err) {
+      error('Failed to save schedule');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -1101,42 +1154,104 @@ const ScheduleSection: React.FC = () => {
       <div className="section-header">
         <h3>Mass Schedule Management</h3>
         <button 
-          className={`btn ${isEditing ? 'btn-success' : 'btn-primary'}`}
-          onClick={isEditing ? handleSave : () => setIsEditing(true)}
+          className="btn btn-primary"
+          onClick={handleAddClick}
         >
-          {isEditing ? 'Save Schedule' : 'Edit Schedule'}
+          <Plus size={16} />
+          Add Schedule Day
         </button>
       </div>
 
       <div className="schedule-grid">
-            {massSchedule.map((schedule, index) => (
-          <div key={schedule.day} className="schedule-card">
-            <h4>{schedule.day}</h4>
+        {massSchedule.map((schedule) => (
+          <div key={schedule.id || schedule.day} className="schedule-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h4 style={{ margin: 0 }}>{schedule.day}</h4>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button 
+                  className="btn-icon" 
+                  onClick={() => handleEditClick(schedule)}
+                  title="Edit Day Schedule"
+                >
+                  <Edit2 size={16} />
+                </button>
+                <button 
+                  className="btn-icon delete" 
+                  onClick={() => handleDeleteClick(schedule.id)}
+                  title="Delete Day Schedule"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
             <div className="times-section">
-              <label htmlFor={`times-${schedule.day}`}>Mass Times</label>
-              <input
-                id={`times-${schedule.day}`}
-                type="text"
-                value={schedule.times.join(', ')}
-                onChange={(e) => updateSchedule(index, 'times', e.target.value.split(', '))}
-                disabled={!isEditing}
-                placeholder="e.g., 7:00 AM, 9:00 AM"
-              />
+              <strong>Mass Times:</strong>
+              <p>{schedule.times.join(', ')}</p>
             </div>
             <div className="language-section">
-              <label htmlFor={`language-${schedule.day}`}>Languages</label>
-              <input
-                id={`language-${schedule.day}`}
-                type="text"
-                value={schedule.language}
-                onChange={(e) => updateSchedule(index, 'language', e.target.value)}
-                disabled={!isEditing}
-                placeholder="e.g., English & IsiNdebele"
-              />
+              <strong>Languages:</strong>
+              <p>{schedule.language || 'N/A'}</p>
             </div>
           </div>
         ))}
       </div>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal rectangular">
+            <div className="modal-header">
+              <h3>{editingSchedule ? `Edit Schedule: ${editingSchedule.day}` : 'Add Day Schedule'}</h3>
+              <button className="btn-close" onClick={() => setShowModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+              <form onSubmit={handleFormSubmit} className="modern-form">
+                <div className="form-group">
+                  <label htmlFor="schedule-day">Day of the Week</label>
+                  <input
+                    id="schedule-day"
+                    type="text"
+                    placeholder="e.g., Sunday, Monday, or Feast Days"
+                    value={formSchedule.day}
+                    onChange={(e) => setFormSchedule({ ...formSchedule, day: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="schedule-times">Mass Times (separated by commas)</label>
+                  <input
+                    id="schedule-times"
+                    type="text"
+                    placeholder="e.g., 7:00 AM, 9:00 AM"
+                    value={formSchedule.times}
+                    onChange={(e) => setFormSchedule({ ...formSchedule, times: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="schedule-lang">Languages</label>
+                  <input
+                    id="schedule-lang"
+                    type="text"
+                    placeholder="e.g., English & IsiNdebele"
+                    value={formSchedule.language}
+                    onChange={(e) => setFormSchedule({ ...formSchedule, language: e.target.value })}
+                  />
+                </div>
+                <div className="form-actions" style={{ marginTop: '1.5rem' }}>
+                  <button type="submit" className="btn btn-success" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Save Schedule'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} disabled={isSubmitting}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -1234,98 +1349,107 @@ const ThemeManagementSection: React.FC = () => {
       </div>
 
       {showAddTheme && (
-        <div className="add-theme-form">
-          <h4>Add New Theme</h4>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="theme-year">Year</label>
-              <input
-                id="theme-year"
-                type="number"
-                value={newTheme.year}
-                onChange={(e) => setNewTheme({...newTheme, year: parseInt(e.target.value)})}
-                disabled={isSubmitting}
-              />
+        <div className="modal-overlay">
+          <div className="modal rectangular">
+            <div className="modal-header">
+              <h3>Add New Theme</h3>
+              <button className="btn-close" onClick={() => setShowAddTheme(false)}>
+                <X size={20} />
+              </button>
             </div>
-            <div className="form-group">
-              <label htmlFor="theme-title">Title</label>
-              <input
-                id="theme-title"
-                type="text"
-                placeholder="Theme title"
-                value={newTheme.title}
-                onChange={(e) => setNewTheme({...newTheme, title: e.target.value})}
-                disabled={isSubmitting}
+            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="theme-year">Year</label>
+                  <input
+                    id="theme-year"
+                    type="number"
+                    value={newTheme.year}
+                    onChange={(e) => setNewTheme({...newTheme, year: parseInt(e.target.value)})}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="theme-title">Title</label>
+                  <input
+                    id="theme-title"
+                    type="text"
+                    placeholder="Theme title"
+                    value={newTheme.title}
+                    onChange={(e) => setNewTheme({...newTheme, title: e.target.value})}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="theme-subtitle">Subtitle</label>
+                <input
+                  id="theme-subtitle"
+                  type="text"
+                  placeholder="Theme subtitle"
+                  value={newTheme.subtitle}
+                  onChange={(e) => setNewTheme({...newTheme, subtitle: e.target.value})}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="theme-verse">Bible Verse</label>
+                <input
+                  id="theme-verse"
+                  type="text"
+                  placeholder="Bible verse reference"
+                  value={newTheme.verse}
+                  onChange={(e) => setNewTheme({...newTheme, verse: e.target.value})}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="theme-description">Description</label>
+                <textarea
+                  id="theme-description"
+                  placeholder="Theme description"
+                  value={newTheme.description}
+                  onChange={(e) => setNewTheme({...newTheme, description: e.target.value})}
+                  rows={4}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <ImageUpload
+                label="Theme Image"
+                onImageSelect={handleThemeImageSelect}
+                onImageRemove={handleThemeImageRemove}
+                currentImageUrl={newTheme.imageUrl || undefined}
+                maxSizeInMB={3}
               />
+              <div className="form-group">
+                <label className="checkbox-container">
+                  <input
+                    type="checkbox"
+                    checked={newTheme.isActive}
+                    onChange={(e) => setNewTheme({...newTheme, isActive: e.target.checked})}
+                    disabled={isSubmitting}
+                  />
+                  <span className="checkmark"></span>
+                  Set as current Active Theme (deactivates others)
+                </label>
+              </div>
+              <div className="form-actions" style={{ marginTop: '1.5rem' }}>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleAddTheme}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Adding...' : 'Add Theme'}
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowAddTheme(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="theme-subtitle">Subtitle</label>
-            <input
-              id="theme-subtitle"
-              type="text"
-              placeholder="Theme subtitle"
-              value={newTheme.subtitle}
-              onChange={(e) => setNewTheme({...newTheme, subtitle: e.target.value})}
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="theme-verse">Bible Verse</label>
-            <input
-              id="theme-verse"
-              type="text"
-              placeholder="Bible verse reference"
-              value={newTheme.verse}
-              onChange={(e) => setNewTheme({...newTheme, verse: e.target.value})}
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="theme-description">Description</label>
-            <textarea
-              id="theme-description"
-              placeholder="Theme description"
-              value={newTheme.description}
-              onChange={(e) => setNewTheme({...newTheme, description: e.target.value})}
-              rows={4}
-              disabled={isSubmitting}
-            />
-          </div>
-          <ImageUpload
-            label="Theme Image"
-            onImageSelect={handleThemeImageSelect}
-            onImageRemove={handleThemeImageRemove}
-            currentImageUrl={newTheme.imageUrl || undefined}
-            maxSizeInMB={3}
-          />
-          <div className="form-group">
-            <label className="checkbox-container">
-              <input
-                type="checkbox"
-                checked={newTheme.isActive}
-                onChange={(e) => setNewTheme({...newTheme, isActive: e.target.checked})}
-                disabled={isSubmitting}
-              />
-              <span className="checkmark"></span>
-              Set as current Active Theme (deactivates others)
-            </label>
-          </div>
-          <div className="form-actions">
-            <button 
-              className="btn btn-success" 
-              onClick={handleAddTheme}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Adding...' : 'Add Theme'}
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={() => setShowAddTheme(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
@@ -1508,94 +1632,103 @@ const MinistryManagementSection: React.FC = () => {
       </div>
 
       {showAddMinistry && (
-        <div className="add-ministry-form">
-          <h4>{editingMinistryId ? 'Edit Ministry' : 'Add New Ministry'}</h4>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="ministry-name">Ministry Name</label>
-              <input
-                id="ministry-name"
-                type="text"
-                placeholder="Ministry name"
-                value={newMinistry.name}
-                onChange={(e) => setNewMinistry({...newMinistry, name: e.target.value})}
-                disabled={isSubmitting}
-              />
+        <div className="modal-overlay">
+          <div className="modal rectangular">
+            <div className="modal-header">
+              <h3>{editingMinistryId ? 'Edit Ministry' : 'Add New Ministry'}</h3>
+              <button className="btn-close" onClick={handleCancel}>
+                <X size={20} />
+              </button>
             </div>
-            <div className="form-group">
-              <label htmlFor="ministry-contact">Contact Person</label>
-              <input
-                id="ministry-contact"
-                type="text"
-                placeholder="Contact person"
-                value={newMinistry.contactPerson}
-                onChange={(e) => setNewMinistry({...newMinistry, contactPerson: e.target.value})}
-                disabled={isSubmitting}
+            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="ministry-name">Ministry Name</label>
+                  <input
+                    id="ministry-name"
+                    type="text"
+                    placeholder="Ministry name"
+                    value={newMinistry.name}
+                    onChange={(e) => setNewMinistry({...newMinistry, name: e.target.value})}
+                    disabled={isSubmitting}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="ministry-contact">Contact Person</label>
+                  <input
+                    id="ministry-contact"
+                    type="text"
+                    placeholder="Contact person"
+                    value={newMinistry.contactPerson}
+                    onChange={(e) => setNewMinistry({...newMinistry, contactPerson: e.target.value})}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label htmlFor="ministry-description">Description</label>
+                <textarea
+                  id="ministry-description"
+                  placeholder="Ministry description"
+                  value={newMinistry.description}
+                  onChange={(e) => setNewMinistry({...newMinistry, description: e.target.value})}
+                  rows={3}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <div className="form-group">
+                <label>Category</label>
+                <select
+                  value={newMinistry.category}
+                  onChange={(e) => setNewMinistry({...newMinistry, category: e.target.value})}
+                  disabled={isSubmitting}
+                >
+                  <option value="">Select Category</option>
+                  <option value="Youth Ministries">Youth Ministries</option>
+                  <option value="Women's Associations">Women's Associations</option>
+                  <option value="Children's Ministry">Children's Ministry</option>
+                  <option value="Men's Guild">Men's Guild</option>
+                  <option value="Prayer Groups">Prayer Groups</option>
+                  <option value="Liturgical Ministry">Liturgical Ministry</option>
+                  <option value="Committees">Committees</option>
+                  <option value="Other Ministries">Other Ministries</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label htmlFor="ministry-meeting">Meeting Time</label>
+                <input
+                  id="ministry-meeting"
+                  type="text"
+                  placeholder="Meeting time"
+                  value={newMinistry.meetingTime}
+                  onChange={(e) => setNewMinistry({...newMinistry, meetingTime: e.target.value})}
+                  disabled={isSubmitting}
+                />
+              </div>
+              <ImageUpload
+                label="Ministry Image"
+                onImageSelect={handleImageSelect}
+                onImageRemove={handleImageRemove}
+                currentImageUrl={newMinistry.imageUrl || undefined}
+                maxSizeInMB={2}
               />
+              <div className="form-actions" style={{ marginTop: '1.5rem' }}>
+                <button 
+                  className="btn btn-success" 
+                  onClick={handleAddMinistry}
+                  disabled={isSubmitting || !newMinistry.name || !newMinistry.description}
+                >
+                  {isSubmitting ? (editingMinistryId ? 'Saving...' : 'Adding...') : (editingMinistryId ? 'Save Changes' : 'Add Ministry')}
+                </button>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={handleCancel}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="ministry-description">Description</label>
-            <textarea
-              id="ministry-description"
-              placeholder="Ministry description"
-              value={newMinistry.description}
-              onChange={(e) => setNewMinistry({...newMinistry, description: e.target.value})}
-              rows={3}
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className="form-group">
-            <label>Category</label>
-            <select
-              value={newMinistry.category}
-              onChange={(e) => setNewMinistry({...newMinistry, category: e.target.value})}
-              disabled={isSubmitting}
-            >
-              <option value="">Select Category</option>
-              <option value="Youth Ministries">Youth Ministries</option>
-              <option value="Women's Associations">Women's Associations</option>
-              <option value="Children's Ministry">Children's Ministry</option>
-              <option value="Men's Guild">Men's Guild</option>
-              <option value="Prayer Groups">Prayer Groups</option>
-              <option value="Liturgical Ministry">Liturgical Ministry</option>
-              <option value="Committees">Committees</option>
-              <option value="Other Ministries">Other Ministries</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label htmlFor="ministry-meeting">Meeting Time</label>
-            <input
-              id="ministry-meeting"
-              type="text"
-              placeholder="Meeting time"
-              value={newMinistry.meetingTime}
-              onChange={(e) => setNewMinistry({...newMinistry, meetingTime: e.target.value})}
-              disabled={isSubmitting}
-            />
-          </div>
-          <ImageUpload
-            label="Ministry Image"
-            onImageSelect={handleImageSelect}
-            onImageRemove={handleImageRemove}
-            currentImageUrl={newMinistry.imageUrl || undefined}
-            maxSizeInMB={2}
-          />
-          <div className="form-actions">
-            <button 
-              className="btn btn-success" 
-              onClick={handleAddMinistry}
-              disabled={isSubmitting || !newMinistry.name || !newMinistry.description}
-            >
-              {isSubmitting ? (editingMinistryId ? 'Saving...' : 'Adding...') : (editingMinistryId ? 'Save Changes' : 'Add Ministry')}
-            </button>
-            <button 
-              className="btn btn-secondary" 
-              onClick={handleCancel}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
