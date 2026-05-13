@@ -759,6 +759,73 @@ const FinancialManager: React.FC = () => {
           margin-top: 1.5rem;
         }
 
+        .table-responsive {
+          width: 100%;
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+          .multi-currency-balances {
+            gap: 1rem !important;
+          }
+          
+          .balance-row {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+
+          .account-summaries {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+
+          .account-values {
+            font-size: 0.85rem !important;
+          }
+
+          .finance-controls {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+
+          .search-filters {
+            flex-direction: column !important;
+            width: 100% !important;
+            gap: 0.5rem !important;
+          }
+
+          .filter-group {
+            width: 100% !important;
+            justify-content: space-between !important;
+          }
+
+          .filter-group select {
+            width: 100% !important;
+          }
+
+          .finance-controls .btn {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+
+          .form-grid {
+            grid-template-columns: 1fr !important;
+            gap: 0.75rem !important;
+          }
+
+          .full-width {
+            grid-column: span 1 !important;
+          }
+
+          .transaction-form {
+            padding: 1.25rem !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+
         @media print {
           .no-print, .btn, .btn-icon, .finance-controls, .transaction-form-overlay, .header-title p, .export-actions {
             display: none !important;

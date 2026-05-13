@@ -399,3 +399,45 @@ body.no-scroll main {
     max-height: none !important;
   }
 }
+
+/* ==========================================================================
+   UNIVERSAL RESPONSIVE MODALS & SCROLL LOCK PREVENTER
+   This block overrides flex alignment issues on all modal overlays
+   on mobile devices, ensuring user can ALWAYS scroll and close any modal.
+   ========================================================================== */
+@media (max-width: 768px) {
+  .modal-overlay,
+  .announcement-form-overlay,
+  .event-form-overlay,
+  .gallery-form-overlay,
+  .transaction-form-overlay,
+  .video-modal-overlay,
+  .popup-overlay,
+  .category-modal-overlay,
+  .admin-modal-overlay,
+  .news-modal-overlay {
+    align-items: flex-start !important;
+    padding: 1.5rem 0.5rem !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: flex !important;
+  }
+
+  .modal-content,
+  .modal,
+  .announcement-form,
+  .event-form,
+  .gallery-form,
+  .transaction-form,
+  .video-modal,
+  .popup-content,
+  .category-modal,
+  .admin-modal-content,
+  .news-modal-content {
+    margin: auto !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}

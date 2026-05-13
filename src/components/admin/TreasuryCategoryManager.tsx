@@ -69,9 +69,9 @@ const TreasuryCategoryManager: React.FC = () => {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="treasury-category-manager-container" style={styles.container}>
       {/* Header */}
-      <div style={styles.header}>
+      <div className="tcm-header" style={styles.header}>
         <div>
           <h2 style={styles.title}><Tag size={22} style={{ marginRight: 10 }} />Treasury Categories</h2>
           <p style={styles.subtitle}>
@@ -79,7 +79,7 @@ const TreasuryCategoryManager: React.FC = () => {
             These categories appear in the dropdown when recording transactions.
           </p>
         </div>
-        <div style={styles.headerActions}>
+        <div className="tcm-header-actions" style={styles.headerActions}>
           <button style={styles.refreshBtn} onClick={handleRefresh} disabled={loading} title="Refresh">
             <RefreshCw size={16} style={loading ? { animation: 'spin 1s linear infinite' } : {}} />
             Refresh
@@ -95,7 +95,7 @@ const TreasuryCategoryManager: React.FC = () => {
       {isAdding && (
         <div style={styles.addForm}>
           <h3 style={styles.formTitle}>New Financial Category</h3>
-          <div style={styles.formRow}>
+          <div className="tcm-form-row" style={styles.formRow}>
             <div style={styles.formGroup}>
               <label style={styles.label}>Category Name *</label>
               <input
@@ -120,7 +120,7 @@ const TreasuryCategoryManager: React.FC = () => {
               />
             </div>
           </div>
-          <div style={styles.formActions}>
+          <div className="tcm-form-actions" style={styles.formActions}>
             <button style={styles.cancelBtn} onClick={() => { setIsAdding(false); setNewCategoryName(''); setNewCategoryDescription(''); }}>
               Cancel
             </button>
@@ -222,6 +222,46 @@ const TreasuryCategoryManager: React.FC = () => {
         @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+          .treasury-category-manager-container {
+            padding: 1rem !important;
+          }
+
+          .tcm-header {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 1rem !important;
+          }
+
+          .tcm-header-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            width: 100% !important;
+            gap: 0.5rem !important;
+          }
+
+          .tcm-header-actions button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+
+          .tcm-form-row {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+          }
+
+          .tcm-form-actions {
+            flex-direction: column !important;
+            width: 100% !important;
+            gap: 0.5rem !important;
+          }
+
+          .tcm-form-actions button {
+            width: 100% !important;
+            justify-content: center !important;
+          }
         }
       `}</style>
     </div>
