@@ -254,7 +254,7 @@ const VideoManager: React.FC = () => {
       let finalThumbnail = formData.thumbnail;
 
       // Handle File Upload for Archive
-      if (activeTab === 'archive' && selectedFile && !editingItem) {
+      if (activeTab === 'archive' && selectedFile) {
         setUploadProgress(10);
         const uploadRes = await api.upload.uploadSingle(selectedFile, 'videos');
         if (uploadRes.success) {
@@ -494,9 +494,9 @@ const VideoManager: React.FC = () => {
                     required
                   />
                 </div>
-              ) : !editingItem && (
+              ) : (
                 <div className="video-upload-section">
-                  <label>Upload Video</label>
+                  <label>Video File {editingItem ? '(Upload new to replace)' : ''}</label>
                   {!selectedFile ? (
                     <div 
                       {...getRootProps()} 
@@ -507,7 +507,12 @@ const VideoManager: React.FC = () => {
                       {isDragActive ? (
                         <p>Drop the video here...</p>
                       ) : (
-                        <p>Drag & drop a video here, or click to select</p>
+                        <p>Drag & drop a {editingItem ? 'new ' : ''}video here, or click to select</p>
+                      )}
+                      {editingItem && formData.url && (
+                        <p style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.5rem' }}>
+                          Current video: {formData.url.split('/').pop() || 'Existing Video'}
+                        </p>
                       )}
                     </div>
                   ) : (

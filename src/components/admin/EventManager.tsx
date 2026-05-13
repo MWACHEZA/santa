@@ -419,7 +419,7 @@ const EventManager: React.FC = () => {
                 
                 <div className="event-footer">
                   <span className="created-date">
-                    Created: {new Date(event.createdAt).toLocaleDateString()}
+                    Created: {event.createdAt ? new Date(event.createdAt).toLocaleDateString() : (event as any).created_at ? new Date((event as any).created_at).toLocaleDateString() : 'Unknown Date'}
                   </span>
                   {!isUpcoming(event.date) && (
                     <span className="past-event">Past Event</span>

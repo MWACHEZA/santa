@@ -712,7 +712,7 @@ const OverviewSection: React.FC<{
 
         {hasPermission('gallery') && (
           <div className="stat-card clickable" onClick={() => setActiveSection('gallery')}>
-            <div className="stat-icon gallery">
+            <div className="stat-icon stat-gallery">
               <Image size={20} />
             </div>
             <div className="stat-content">

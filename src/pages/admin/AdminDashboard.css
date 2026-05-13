@@ -225,7 +225,7 @@
 }
 .stat-icon.announcements { background: #ff6b6b; }
 .stat-icon.events        { background: #4ecdc4; }
-.stat-icon.gallery       { background: #45b7d1; }
+.stat-icon.stat-gallery       { background: #45b7d1; }
 .stat-icon.users         { background: #96ceb4; }
 
 .stat-content { display: flex; flex-direction: column; gap: .5rem; }

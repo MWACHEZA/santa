@@ -86,5 +86,64 @@ router.put('/bulk', authenticateToken, async (req, res) => {
     });
   }
 });
+// Create a new schedule
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const { day, times, language } = req.body;
+    
+    // Check if day already exists
+    const [existing] = await db.execute('SELECT id FROM mass_schedules WHERE day = ?', [day]);
+    if (existing.length > 0) {
+      return res.status(400).json({ success: false, message: 'Schedule for this day already exists' });
+    }
+
+    const id = uuidv4();
+    await db.execute(
+      'INSERT INTO mass_schedules (id, day, times, language) VALUES (?, ?, ?, ?)',
+      [id, day, JSON.stringify(times), language]
+    );
+
+    res.json({ success: true, message: 'Schedule created successfully', data: { id, day, times, language } });
+  } catch (error) {
+    console.error('Create schedule error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create schedule' });
+  }
+});
+
+// Update a schedule
+router.put('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { day, times, language } = req.body;
+
+    // Check if another record has the same day
+    const [existing] = await db.execute('SELECT id FROM mass_schedules WHERE day = ? AND id != ?', [day, id]);
+    if (existing.length > 0) {
+      return res.status(400).json({ success: false, message: 'Schedule for this day already exists' });
+    }
+
+    await db.execute(
+      'UPDATE mass_schedules SET day = ?, times = ?, language = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [day, JSON.stringify(times), language, id]
+    );
+
+    res.json({ success: true, message: 'Schedule updated successfully' });
+  } catch (error) {
+    console.error('Update schedule error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update schedule' });
+  }
+});
+
+// Delete a schedule
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.execute('DELETE FROM mass_schedules WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Schedule deleted successfully' });
+  } catch (error) {
+    console.error('Delete schedule error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete schedule' });
+  }
+});
 
 module.exports = router;
