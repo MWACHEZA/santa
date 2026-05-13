@@ -80,6 +80,7 @@ const AdminDashboard: React.FC = () => {
   const [contentDropdownOpen, setContentDropdownOpen] = useState(false);
   const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [websiteData, setWebsiteData] = useState({
     totalVisitors: 0,
     todayVisitors: 0,
@@ -336,8 +337,15 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-dashboard admin-container" style={{ minHeight: '100vh', backgroundColor: '#f8f9fa' }}>
       {/* Debug info */}
       {/* Sidebar */}
-      <aside className="admin-sidebar">
+      <aside className={`admin-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
+          <button 
+            className="admin-sidebar-close" 
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close Sidebar"
+          >
+            <X size={20} />
+          </button>
           <div className="admin-logo">
             <img 
               src="/logo.svg" 
@@ -558,7 +566,16 @@ const AdminDashboard: React.FC = () => {
       <main className="admin-main">
         <header className="admin-header">
           <div className="header-content">
-            <h1>{getSectionTitle(activeSection)}</h1>
+            <div className="header-left">
+              <button 
+                className="admin-sidebar-toggle"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                aria-label="Toggle Sidebar"
+              >
+                <Menu size={20} />
+              </button>
+              <h1>{getSectionTitle(activeSection)}</h1>
+            </div>
             <div className="header-actions">
               <span className="admin-user">{getWelcomeMessage()}</span>
             </div>
