@@ -795,7 +795,7 @@
   }
 
   .user-info {
-    display: none; /* Hide in header, visible in side nav */
+    display: none !important; /* Hide in header, visible in side nav */
   }
 
   .side-nav-toggle {
@@ -900,7 +900,7 @@
   }
 
   .user-info {
-    display: none;
+    display: none !important;
   }
 
   .side-nav-toggle {
