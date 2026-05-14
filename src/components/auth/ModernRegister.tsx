@@ -162,12 +162,9 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
     setIsLoading(true);
 
     try {
-      // Determine role based on committee position
-      let role = 'parishioner';
-      if (formData.committeePosition === 'Treasurer') role = 'treasurer';
-      else if (formData.committeePosition === 'Secretary') role = 'secretary';
-      else if (formData.committeePosition === 'Vice Secretary') role = 'vice_secretary';
-      else if (formData.committeePosition === 'Chairperson' || formData.committeePosition === 'Vice Chairperson') role = 'admin'; // Or another leadership role
+      // Users registering the normal way should always have the 'parishioner' role
+      // Their committee position will be stored, but their primary role is 'parishioner'
+      const role = 'parishioner';
 
       const result = await register({
         username: formData.username,
@@ -183,11 +180,9 @@ const ModernRegister: React.FC<ModernRegisterProps> = ({
         emergencyContact: formData.emergencyContact,
         emergencyPhone: formData.emergencyPhone,
         section: formData.section,
-
         association: formData.association,
         committeePosition: formData.committeePosition,
         role: role as any
-
       });
 
       if (result.success) {

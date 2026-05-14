@@ -512,18 +512,24 @@ export const contactApi = {
 
 // Schedule API
 export const scheduleApi = {
-  getAll: () => (async () => {
+  getAll: async () => {
     const endpoints = ['/schedules', '/schedule'];
     for (const ep of endpoints) {
       try {
         const res = await apiClient.get(ep);
-        if (res && res.success) return res;
-      } catch {}
+        // Normalize response to ensure data is an array
+        if (res && res.success) {
+          const data = Array.isArray(res.data) ? res.data : (res.data?.items || res.data?.schedules || []);
+          return { ...res, data };
+        }
+      } catch (err) {
+        console.warn(`Fetch from ${ep} failed`, err);
+      }
     }
-    return { success: false, data: { items: [] } } as ApiResponse<any>;
-  })(),
+    return { success: false, data: [], message: 'Failed to fetch schedules' } as ApiResponse<any>;
+  },
   
-  getById: (id: string) => (async () => {
+  getById: async (id: string) => {
     const endpoints = [`/schedules/${id}`, `/schedule/${id}`];
     for (const ep of endpoints) {
       try {
@@ -532,9 +538,9 @@ export const scheduleApi = {
       } catch {}
     }
     return { success: false } as ApiResponse<any>;
-  })(),
+  },
   
-  create: (scheduleData: any) => (async () => {
+  create: async (scheduleData: any) => {
     const endpoints = ['/schedules', '/schedule'];
     for (const ep of endpoints) {
       try {
@@ -543,9 +549,9 @@ export const scheduleApi = {
       } catch {}
     }
     return { success: false, message: 'Failed to create schedule' } as ApiResponse<any>;
-  })(),
+  },
   
-  update: (id: string, scheduleData: any) => (async () => {
+  update: async (id: string, scheduleData: any) => {
     const endpoints = [`/schedules/${id}`, `/schedule/${id}`];
     for (const ep of endpoints) {
       try {
@@ -554,9 +560,9 @@ export const scheduleApi = {
       } catch {}
     }
     return { success: false, message: 'Failed to update schedule' } as ApiResponse<any>;
-  })(),
+  },
   
-  delete: (id: string) => (async () => {
+  delete: async (id: string) => {
     const endpoints = [`/schedules/${id}`, `/schedule/${id}`];
     for (const ep of endpoints) {
       try {
@@ -565,7 +571,7 @@ export const scheduleApi = {
       } catch {}
     }
     return { success: false, message: 'Failed to delete schedule' } as ApiResponse<any>;
-  })(),
+  },
   
   updateBulk: (schedules: any[]) => (async () => {
     const endpoints = ['/schedules/bulk', '/schedule/bulk'];

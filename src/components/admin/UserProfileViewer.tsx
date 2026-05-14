@@ -562,13 +562,19 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                   disabled={!isEditing || isReadOnly}
                   className="form-input"
                 >
-                  <option value="">Select Association</option>
-                  <option value="Catholic Women League">Catholic Women League</option>
-                  <option value="Knights of Columbus">Knights of Columbus</option>
-                  <option value="Youth Ministry">Youth Ministry</option>
-                  <option value="Choir">Choir</option>
-                  <option value="Legion of Mary">Legion of Mary</option>
-                  <option value="St. Vincent de Paul">St. Vincent de Paul</option>
+                  <option value="">Select association (optional)</option>
+                  <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
+                  <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
+                  <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
+                  <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
+                  <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
+                  <option value="sodality-our-lady">Sodality of Our Lady</option>
+                  <option value="st-anne">St Anne</option>
+                  <option value="st-joseph">St Joseph</option>
+                  <option value="couples-association">Couples Association</option>
+                  <option value="focolare">Focolare</option>
+                  <option value="womens-forum">Women's Forum</option>
+                  <option value="association-altar-servers">Association of Altar Servers</option>
                 </select>
               </div>
               
@@ -584,12 +590,24 @@ const UserProfileViewer: React.FC<UserProfileViewerProps> = ({
                   disabled={!isEditing || isReadOnly}
                   className="form-input"
                 >
-                  <option value="">Select Section</option>
-                  <option value="St. Mary">St. Mary</option>
-                  <option value="St. Joseph">St. Joseph</option>
-                  <option value="St. Peter">St. Peter</option>
-                  <option value="St. Paul">St. Paul</option>
-                  <option value="St. John">St. John</option>
+                  <option value="">Select section (optional)</option>
+                  <option value="st-gabriel">St Gabriel</option>
+                  <option value="st-augustine">St Augustine</option>
+                  <option value="st-mary-magdalena">St Mary Magdalena</option>
+                  <option value="st-michael">St Michael</option>
+                  <option value="st-stephen">St Stephen</option>
+                  <option value="st-francis-of-assisi">St Francis of Assisi</option>
+                  <option value="st-monica">St Monica</option>
+                  <option value="st-theresa">St Theresa</option>
+                  <option value="st-bernadette">St Bernadette</option>
+                  <option value="st-philomina">St Philomina</option>
+                  <option value="st-peter">St Peter</option>
+                  <option value="st-bernard">St Bernard</option>
+                  <option value="st-veronica">St Veronica</option>
+                  <option value="st-paul">St Paul</option>
+                  <option value="st-luke">St Luke</option>
+                  <option value="st-basil">St Basil</option>
+                  <option value="st-anthony">St Anthony</option>
                 </select>
               </div>
             </div>

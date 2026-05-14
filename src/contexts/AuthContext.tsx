@@ -10,6 +10,7 @@ export interface User {
   phone?: string;
   firstName?: string;
   lastName?: string;
+  middleName?: string;
   role: UserRole;
 
   mustChangePassword?: boolean | null;
@@ -111,6 +112,15 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 
+// Helper to fix image URLs from backend
+const fixUrl = (url: string | undefined): string => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  const backendBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://santa-backend-3y5e.onrender.com';
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${backendBase}${cleanPath}`;
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -144,13 +154,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (res.success && res.data) {
         const { user: rawUser, token } = res.data;
         
-        // Map snake_case to camelCase
+        // Map snake_case to camelCase comprehensively
         const userData: User = {
           ...rawUser,
-          firstName: rawUser.first_name,
-          lastName: rawUser.last_name,
+          id: rawUser.id || rawUser._id,
+          firstName: rawUser.first_name || rawUser.firstName,
+          lastName: rawUser.last_name || rawUser.lastName,
+          middleName: rawUser.middle_name || rawUser.middleName,
           phone: rawUser.phone,
-          mustChangePassword: rawUser.must_change_password
+          dateOfBirth: rawUser.date_of_birth || rawUser.dateOfBirth,
+          gender: rawUser.gender,
+          address: rawUser.address,
+          emergencyContact: rawUser.emergency_contact || rawUser.emergencyContact,
+          emergencyPhone: rawUser.emergency_phone || rawUser.emergencyPhone,
+          association: rawUser.association,
+          section: rawUser.section || rawUser.parish_section,
+          committeePosition: rawUser.committee_position || rawUser.committeePosition,
+          isCommitteeMember: rawUser.is_committee_member !== undefined ? rawUser.is_committee_member : rawUser.isCommitteeMember,
+          profilePicture: rawUser.profile_picture || rawUser.profilePicture,
+          profilePictureUrl: fixUrl(rawUser.profile_picture || rawUser.profilePicture || rawUser.profile_picture_url || rawUser.profilePictureUrl),
+          
+          // Sacramental fields
+          isBaptized: rawUser.is_baptized !== undefined ? rawUser.is_baptized : rawUser.isBaptized,
+          baptismDate: rawUser.baptism_date || rawUser.baptismDate,
+          baptismVenue: rawUser.baptism_venue || rawUser.baptismVenue,
+          isConfirmed: rawUser.is_confirmed !== undefined ? rawUser.is_confirmed : rawUser.isConfirmed,
+          confirmationDate: rawUser.confirmation_date || rawUser.confirmationDate,
+          confirmationVenue: rawUser.confirmation_venue || rawUser.confirmationVenue,
+          receivesCommunion: rawUser.receives_communion !== undefined ? rawUser.receives_communion : rawUser.receivesCommunion,
+          firstCommunionDate: rawUser.first_communion_date || rawUser.firstCommunionDate,
+          isMarried: rawUser.is_married !== undefined ? rawUser.is_married : rawUser.isMarried,
+          marriageDate: rawUser.marriage_date || rawUser.marriageDate,
+          marriageVenue: rawUser.marriage_venue || rawUser.marriageVenue,
+          spouseName: rawUser.spouse_name || rawUser.spouseName,
+          
+          mustChangePassword: rawUser.must_change_password !== undefined ? rawUser.must_change_password : rawUser.mustChangePassword
         };
 
         setUser(userData);
@@ -175,11 +213,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const register = async (data: RegistrationData | FormData) => {
     try {
+      let payload = data;
+      
+      // If not FormData, map camelCase to snake_case for backend compatibility
+      if (!(data instanceof FormData)) {
+        payload = {
+          ...data,
+          first_name: (data as any).firstName,
+          last_name: (data as any).lastName,
+          middle_name: (data as any).middleName,
+          date_of_birth: (data as any).dateOfBirth,
+          emergency_contact: (data as any).emergencyContact,
+          emergency_phone: (data as any).emergencyPhone,
+          section: (data as any).section || (data as any).parish_section,
+          committee_position: (data as any).committeePosition,
+          // Explicitly map these just in case
+          username: (data as any).username,
+          email: (data as any).email,
+          password: (data as any).password,
+          phone: (data as any).phone,
+          gender: (data as any).gender,
+          address: (data as any).address,
+          association: (data as any).association,
+          role: (data as any).role
+        } as any;
+      }
 
-      const res = await api.auth.register(data as any);
+      const res = await api.auth.register(payload as any);
       if (res.success) {
         return { success: true, message: 'Registration successful' };
-
       }
       return { success: false, message: res.message || 'Registration failed' };
     } catch (err: any) {
@@ -203,7 +265,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const listUsers = async () => {
     try {
       const res = await api.users.getAll();
-      return res.data?.users || [];
+      const users = res.data?.users || res.data?.items || (Array.isArray(res.data) ? res.data : []);
+      
+      // Map all users to camelCase
+      return users.map((u: any) => ({
+        ...u,
+        firstName: u.first_name || u.firstName,
+        lastName: u.last_name || u.lastName,
+        phone: u.phone,
+        dateOfBirth: u.date_of_birth || u.dateOfBirth,
+        gender: u.gender,
+        section: u.section || u.parish_section,
+        association: u.association,
+        committeePosition: u.committee_position || u.committeePosition,
+        profilePictureUrl: u.profile_picture_url || u.profilePictureUrl || u.profile_picture || u.profilePicture
+      }));
     } catch (err) {
       return [];
     }
@@ -243,8 +319,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const updatedUser = {
               ...user,
               ...userData,
-              firstName: userData.firstName || userData.first_name || user.firstName,
-              lastName: userData.lastName || userData.last_name || user.lastName,
+              firstName: userData.first_name || userData.firstName || user.firstName,
+              lastName: userData.last_name || userData.lastName || user.lastName,
+              middleName: userData.middle_name || userData.middleName || user.middleName,
+              dateOfBirth: userData.date_of_birth || userData.dateOfBirth || user.dateOfBirth,
+              gender: userData.gender || user.gender,
+              section: userData.section || userData.parish_section || user.section,
+              association: userData.association || user.association,
+              committeePosition: userData.committee_position || userData.committeePosition || user.committeePosition,
+              profilePicture: userData.profile_picture || userData.profilePicture || user.profilePicture,
+              profilePictureUrl: fixUrl(userData.profile_picture || userData.profilePicture || userData.profile_picture_url || userData.profilePictureUrl) || user.profilePictureUrl,
+              isBaptized: userData.is_baptized !== undefined ? userData.is_baptized : (userData.isBaptized !== undefined ? userData.isBaptized : user.isBaptized),
+              isConfirmed: userData.is_confirmed !== undefined ? userData.is_confirmed : (userData.isConfirmed !== undefined ? userData.isConfirmed : user.isConfirmed),
+              receivesCommunion: userData.receives_communion !== undefined ? userData.receives_communion : (userData.receivesCommunion !== undefined ? userData.receivesCommunion : user.receivesCommunion),
+              isMarried: userData.is_married !== undefined ? userData.is_married : (userData.isMarried !== undefined ? userData.isMarried : user.isMarried),
             };
             setUser(updatedUser as User);
             localStorage.setItem('currentUser', JSON.stringify(updatedUser));

@@ -683,15 +683,28 @@ const EnhancedProfile: React.FC = () => {
                   <Users size={16} />
                   Association (Optional)
                 </label>
-                <input
+                <select
                   id="association"
-                  type="text"
                   name="association"
                   value={formData.association}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  placeholder="e.g., Catholic Women's League, Knights of Columbus"
-                />
+                  className="form-input"
+                >
+                  <option value="">Select association (optional)</option>
+                  <option value="missionary-childhood-mca">Missionary Childhood (MCA)</option>
+                  <option value="catholic-junior-youth-cja">Catholic Junior Youth Association (CJA)</option>
+                  <option value="catholic-senior-youth-cya">Catholic Senior Youth Association (CYA)</option>
+                  <option value="catholic-young-adults-cyaa">Catholic Young Adults Association (CYAA)</option>
+                  <option value="most-sacred-heart-jesus">Most Sacred Heart of Jesus</option>
+                  <option value="sodality-our-lady">Sodality of Our Lady</option>
+                  <option value="st-anne">St Anne</option>
+                  <option value="st-joseph">St Joseph</option>
+                  <option value="couples-association">Couples Association</option>
+                  <option value="focolare">Focolare</option>
+                  <option value="womens-forum">Women's Forum</option>
+                  <option value="association-altar-servers">Association of Altar Servers</option>
+                </select>
               </div>
               
               <div className="form-group">
@@ -699,15 +712,33 @@ const EnhancedProfile: React.FC = () => {
                   <Church size={16} />
                   Section (Optional)
                 </label>
-                <input
+                <select
                   id="section"
-                  type="text"
                   name="section"
                   value={formData.section}
                   onChange={handleInputChange}
                   disabled={!isEditing}
-                  placeholder="e.g., Youth Section, Adult Section"
-                />
+                  className="form-input"
+                >
+                  <option value="">Select section (optional)</option>
+                  <option value="st-gabriel">St Gabriel</option>
+                  <option value="st-augustine">St Augustine</option>
+                  <option value="st-mary-magdalena">St Mary Magdalena</option>
+                  <option value="st-michael">St Michael</option>
+                  <option value="st-stephen">St Stephen</option>
+                  <option value="st-francis-of-assisi">St Francis of Assisi</option>
+                  <option value="st-monica">St Monica</option>
+                  <option value="st-theresa">St Theresa</option>
+                  <option value="st-bernadette">St Bernadette</option>
+                  <option value="st-philomina">St Philomina</option>
+                  <option value="st-peter">St Peter</option>
+                  <option value="st-bernard">St Bernard</option>
+                  <option value="st-veronica">St Veronica</option>
+                  <option value="st-paul">St Paul</option>
+                  <option value="st-luke">St Luke</option>
+                  <option value="st-basil">St Basil</option>
+                  <option value="st-anthony">St Anthony</option>
+                </select>
               </div>
             </div>
 

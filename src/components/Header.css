@@ -385,21 +385,23 @@
 .side-nav-overlay.open {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
 .side-nav {
   position: fixed !important;
   top: 0 !important;
-  left: -120% !important;
+  left: -100% !important; /* Use -100% for safer hiding */
   width: 320px !important;
   max-width: 85vw !important;
   height: 100vh !important;
   height: 100dvh !important;
   background: #ffffff !important;
   box-shadow: 2px 0 20px rgba(0, 0, 0, 0.3) !important;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
   z-index: 10000 !important;
-
+  visibility: hidden; /* Hide from screen readers and layout */
+  pointer-events: none; /* Prevent interaction when closed */
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -407,6 +409,8 @@
 
 .side-nav.open {
   left: 0 !important;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .side-nav-header {
@@ -806,8 +810,8 @@
 
   /* Side Navigation Mobile Adjustments */
   .side-nav {
-    width: 280px;
-    left: -280px;
+    width: 280px !important;
+    left: -100% !important;
   }
   
   .side-nav-content {
@@ -911,8 +915,8 @@
 
   /* Side Navigation for Small Mobile */
   .side-nav {
-    width: 260px;
-    left: -260px;
+    width: 260px !important;
+    left: -100% !important;
   }
   
   .side-nav-content {
@@ -1002,8 +1006,8 @@
 /* Extra Small Devices (very small phones) */
 @media (max-width: 360px) {
   .side-nav {
-    width: 240px;
-    left: -240px;
+    width: 240px !important;
+    left: -100% !important;
   }
 
   .header-content {

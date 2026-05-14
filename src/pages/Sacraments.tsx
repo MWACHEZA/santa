@@ -74,14 +74,14 @@ const Sacraments: React.FC = () => {
 
   const getSacramentIcon = (name: string) => {
     const lowerName = name.toLowerCase();
-    if (lowerName.includes('baptism')) return <Droplets size={32} />;
-    if (lowerName.includes('confirmation')) return <Crown size={32} />;
-    if (lowerName.includes('eucharist') || lowerName.includes('communion')) return <Church size={32} />;
-    if (lowerName.includes('reconciliation') || lowerName.includes('confession')) return <Heart size={32} />;
-    if (lowerName.includes('anointing')) return <Cross size={32} />;
-    if (lowerName.includes('marriage') || lowerName.includes('matrimony')) return <Heart size={32} />;
-    if (lowerName.includes('holy orders') || lowerName.includes('priesthood')) return <BookOpen size={32} />;
-    return <Church size={32} />;
+    if (lowerName.includes('baptism')) return <Droplets size={32} strokeWidth={1.5} />;
+    if (lowerName.includes('confirmation')) return <Crown size={32} strokeWidth={1.5} />;
+    if (lowerName.includes('eucharist') || lowerName.includes('communion')) return <Church size={32} strokeWidth={1.5} />;
+    if (lowerName.includes('reconciliation') || lowerName.includes('confession')) return <Heart size={32} strokeWidth={1.5} />;
+    if (lowerName.includes('anointing')) return <Cross size={32} strokeWidth={1.5} />;
+    if (lowerName.includes('marriage') || lowerName.includes('matrimony')) return <Users size={32} strokeWidth={1.5} />;
+    if (lowerName.includes('holy orders') || lowerName.includes('priesthood')) return <BookOpen size={32} strokeWidth={1.5} />;
+    return <Church size={32} strokeWidth={1.5} />;
   };
 
   const activeSacrament = SACRAMENTS_DATA.find(s => s.id === activeSacramentId);

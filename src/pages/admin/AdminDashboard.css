@@ -935,22 +935,116 @@
   
   .nav-item { 
     justify-content: flex-start !important; 
-    padding: 1rem 1.5rem !important;
+    padding: 1.5rem !important;
     width: 100% !important;
     margin: 0 !important;
   }
 }
 
+@media (max-width: 768px) {
+  .enhanced-profile {
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .profile-header {
+    padding: 3rem 1rem 2rem;
+    border-radius: 0;
+  }
+  
+  .profile-avatar {
+    width: 110px;
+    height: 110px;
+    border-radius: 28px;
+    margin-bottom: 1rem;
+  }
+  
+  .profile-name {
+    font-size: 1.6rem;
+  }
+  
+  .tab-content {
+    padding: 1.25rem;
+  }
+  
+  .profile-actions {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .action-btn {
+    padding: 0.5rem;
+    border-radius: 10px;
+  }
+
+  .action-btn span {
+    display: none; /* Icon only on mobile to save space in header */
+  }
+
+  .tab-button {
+    min-width: 120px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .conditional-fields {
+    padding: 1rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-actions {
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .profile-avatar {
+    width: 90px;
+    height: 90px;
+  }
+
+  .profile-name {
+    font-size: 1.4rem;
+  }
+
+  .profile-header {
+    padding-top: 4rem; /* Space for absolute actions */
+  }
+}
+
 @media (max-width: 576px) {
   .admin-dashboard { 
-    flex-direction: row !important; 
+    flex-direction: column !important; 
   }
   
   .admin-header h1 {
-    font-size: 1.25rem !important;
+    font-size: 1.1rem !important;
   }
   
   .admin-user {
-    font-size: 0.8rem !important;
+    display: none !important; /* Hide user name on very small screens to save space */
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .section-header h2, .section-header h3 {
+    font-size: 1.25rem !important;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
   }
 }

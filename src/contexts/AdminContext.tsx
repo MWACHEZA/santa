@@ -272,6 +272,11 @@ export interface ParishMember {
   role: UserRole;
   committeePosition?: string;
   association?: string;
+  section?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  profilePicture?: string;
+  middleName?: string;
 }
 
 export interface WebsiteAnalytics {
@@ -938,7 +943,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           }
 
           if (usersRes.status === 'fulfilled' && usersRes.value.success) {
-            const users = usersRes.value.data?.users || [];
+            const users = usersRes.value.data?.users || usersRes.value.data?.items || (Array.isArray(usersRes.value.data) ? usersRes.value.data : []);
             setParishMembers(users.map((u: any) => {
               const lastLogin = u.lastLogin ? new Date(u.lastLogin) : new Date(u.createdAt);
               const now = new Date();
@@ -948,13 +953,20 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               else if (diffMinutes < 30) status = 'away';
               return {
                 id: u.id,
-                name: u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.username,
+                name: u.firstName && u.lastName 
+                  ? `${u.firstName}${u.middleName ? ' ' + u.middleName : ''} ${u.lastName}` 
+                  : (u.username || 'User'),
                 email: u.email,
                 lastLogin,
                 status,
                 role: u.role,
-                committeePosition: u.committeePosition,
-                association: u.association
+                committeePosition: u.committeePosition || u.committee_position,
+                association: u.association,
+                section: u.section || u.parish_section,
+                gender: u.gender,
+                dateOfBirth: u.dateOfBirth || u.date_of_birth,
+                profilePicture: fixImageUrl(u.profile_picture || u.profilePicture),
+                middleName: u.middleName || u.middle_name
               };
             }));
           }

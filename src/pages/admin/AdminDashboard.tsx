@@ -1079,8 +1079,10 @@ const ScheduleSection: React.FC = () => {
 
   const fetchSchedules = () => {
     api.schedule.getAll().then((res: any) => {
-      if (res.success && res.data) {
-        setMassSchedule(res.data);
+      console.log('📅 Schedule fetch result:', res);
+      if (res.success) {
+        // res.data is already normalized to an array in scheduleApi.getAll
+        setMassSchedule(res.data || []);
       }
     }).catch((err: any) => console.error('Failed to fetch schedule', err));
   };
@@ -1099,8 +1101,8 @@ const ScheduleSection: React.FC = () => {
     setEditingSchedule(schedule);
     setFormSchedule({
       day: schedule.day,
-      times: schedule.times.join(', '),
-      language: schedule.language
+      times: Array.isArray(schedule.times) ? schedule.times.join(', ') : schedule.times,
+      language: schedule.language || ''
     });
     setShowModal(true);
   };
@@ -1133,18 +1135,24 @@ const ScheduleSection: React.FC = () => {
         language: formSchedule.language
       };
 
+      console.log('🚀 Sending schedule data:', scheduleData);
+      let result;
       if (editingSchedule) {
-        await api.schedule.update(editingSchedule.id, scheduleData);
-        success(`Schedule for ${formSchedule.day} updated successfully`);
+        result = await api.schedule.update(editingSchedule.id || editingSchedule._id, scheduleData);
       } else {
-        await api.schedule.create(scheduleData);
-        success(`Schedule for ${formSchedule.day} added successfully`);
+        result = await api.schedule.create(scheduleData);
       }
 
-      setShowModal(false);
-      fetchSchedules();
-    } catch (err) {
-      error('Failed to save schedule');
+      if (result.success) {
+        success(`Schedule for ${formSchedule.day} ${editingSchedule ? 'updated' : 'added'} successfully`);
+        setShowModal(false);
+        fetchSchedules();
+      } else {
+        error(result.message || 'Failed to save schedule');
+      }
+    } catch (err: any) {
+      console.error('Save schedule error:', err);
+      error(err.message || 'Failed to save schedule');
     } finally {
       setIsSubmitting(false);
     }
@@ -1152,7 +1160,7 @@ const ScheduleSection: React.FC = () => {
 
   return (
     <div className="schedule-section">
-      <div className="section-header">
+      <div className="section-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
         <h3>Mass Schedule Management</h3>
         <button 
           className="btn btn-primary"
@@ -1164,37 +1172,43 @@ const ScheduleSection: React.FC = () => {
       </div>
 
       <div className="schedule-grid">
-        {massSchedule.map((schedule) => (
-          <div key={schedule.id || schedule.day} className="schedule-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h4 style={{ margin: 0 }}>{schedule.day}</h4>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+        {massSchedule && Array.isArray(massSchedule) && massSchedule.map((schedule) => (
+          <div key={schedule.id || schedule._id || schedule.day} className="schedule-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #eee', paddingBottom: '0.5rem' }}>
+              <h4 style={{ margin: 0, color: 'var(--primary-green)' }}>{schedule.day}</h4>
+              <div style={{ display: 'flex', gap: '0.4rem' }}>
                 <button 
                   className="btn-icon" 
                   onClick={() => handleEditClick(schedule)}
                   title="Edit Day Schedule"
                 >
-                  <Edit2 size={16} />
+                  <Edit2 size={14} />
                 </button>
                 <button 
-                  className="btn-icon delete" 
-                  onClick={() => handleDeleteClick(schedule.id)}
+                  className="btn-icon danger" 
+                  onClick={() => handleDeleteClick(schedule.id || schedule._id)}
                   title="Delete Day Schedule"
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={14} />
                 </button>
               </div>
             </div>
-            <div className="times-section">
-              <strong>Mass Times:</strong>
-              <p>{schedule.times.join(', ')}</p>
+            <div className="times-section" style={{ marginBottom: '0.75rem' }}>
+              <strong style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginBottom: '0.25rem' }}>Mass Times:</strong>
+              <p style={{ margin: 0, fontWeight: 600 }}>{Array.isArray(schedule.times) ? schedule.times.join(', ') : schedule.times}</p>
             </div>
             <div className="language-section">
-              <strong>Languages:</strong>
-              <p>{schedule.language || 'N/A'}</p>
+              <strong style={{ fontSize: '0.85rem', color: '#666', display: 'block', marginBottom: '0.25rem' }}>Languages:</strong>
+              <p style={{ margin: 0, opacity: 0.8 }}>{schedule.language || 'Not specified'}</p>
             </div>
           </div>
         ))}
+        {(!massSchedule || massSchedule.length === 0) && (
+          <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '3rem', color: '#999', background: '#f9f9f9', borderRadius: '12px', border: '2px dashed #eee' }}>
+            <CalendarDays size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
+            <p>No schedules found. Click "Add Schedule Day" to create one.</p>
+          </div>
+        )}
       </div>
 
       {showModal && (

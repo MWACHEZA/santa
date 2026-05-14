@@ -86,6 +86,12 @@
   transform: translateX(10px);
 }
 
+@media (max-width: 1200px) {
+  .sacrament-tab.active {
+    transform: none; /* Remove horizontal shift on mobile tabs */
+  }
+}
+
 .sacrament-tab.active .tab-icon {
   background: rgba(255, 255, 255, 0.2);
   color: white;
@@ -372,6 +378,7 @@
 @media (max-width: 1200px) {
   .sacraments-container {
     flex-direction: column;
+    min-height: auto;
   }
   
   .sacraments-tabs {
@@ -384,6 +391,7 @@
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */
+    gap: 1rem;
   }
   
   .sacraments-tabs::-webkit-scrollbar {
@@ -391,9 +399,22 @@
   }
   
   .sacrament-tab {
-    min-width: max-content;
-    padding: 1rem 1.5rem;
+    min-width: 160px;
+    padding: 0.75rem 1rem;
     flex-shrink: 0;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+    border-radius: 12px;
+  }
+
+  .sacrament-tab .tab-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .sacrament-tab .tab-name {
+    font-size: 0.85rem;
   }
 }
 

@@ -111,27 +111,10 @@ const Analytics: React.FC = () => {
       returnVisitors: websiteAnalytics.visitorTypes.find(v => v.type === 'Returning')?.count || 0
     },
     demographics: {
-      byGender: [
-        { gender: 'Female', count: parishMembers.filter((m: any) => m.gender === 'female').length, percentage: Math.round((parishMembers.filter((m: any) => m.gender === 'female').length / parishMembers.length) * 100) || 0 },
-        { gender: 'Male', count: parishMembers.filter((m: any) => m.gender === 'male').length, percentage: Math.round((parishMembers.filter((m: any) => m.gender === 'male').length / parishMembers.length) * 100) || 0 }
-      ],
-      byAge: [
-        { ageGroup: '18-25', count: 45, percentage: 15 },
-        { ageGroup: '26-45', count: 120, percentage: 40 },
-        { ageGroup: '46-60', count: 105, percentage: 35 },
-        { ageGroup: '60+', count: 30, percentage: 10 }
-      ],
-      bySection: [
-        { section: 'St. Mary', count: 75, percentage: 25 },
-        { section: 'St. Peter', count: 60, percentage: 20 },
-        { section: 'St. Paul', count: 90, percentage: 30 },
-        { section: 'Holy Spirit', count: 75, percentage: 25 }
-      ],
-      byAssociation: Array.from(new Set(parishMembers.map(m => m.association).filter(Boolean))).map(assoc => ({
-        association: assoc!,
-        count: parishMembers.filter(m => m.association === assoc).length,
-        percentage: Math.round((parishMembers.filter(m => m.association === assoc).length / parishMembers.length) * 100) || 0
-      }))
+      byGender: [],
+      byAge: [],
+      bySection: [],
+      byAssociation: []
     },
     popular: {
       pages: websiteAnalytics.topPages.map(p => ({
@@ -196,7 +179,8 @@ const Analytics: React.FC = () => {
         const totalCategories = Object.values(categoryCounts).reduce((a, b) => a + b, 0) || 1;
         const palette = ['#45b7d1', '#4ecdc4', '#ff6b6b', '#96ceb4', '#f7b267', '#b8de6f'];
         const popularCategories = Object.entries(categoryCounts).map(([name, count], idx) => ({ name, percentage: Number(((count / totalCategories) * 100).toFixed(1)), color: palette[idx % palette.length] }));
-        setAnalyticsData({
+        setAnalyticsData(prev => ({
+          ...prev,
           users: {
             total: o.users?.total ?? o.totalUsers ?? 0,
             active: o.users?.active ?? o.activeUsers ?? 0,
@@ -221,9 +205,9 @@ const Analytics: React.FC = () => {
             bounceRate: o.engagement?.bounceRate ?? 0,
             returnVisitors: o.engagement?.returnVisitors ?? 0
           },
-          demographics: { byGender: [], byAge: [], bySection: [], byAssociation: [] },
+          demographics,
           popular: { pages: popularPages, videos: popularVideos, categories: popularCategories }
-        });
+        }));
       } catch {}
     };
     load();
