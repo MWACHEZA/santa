@@ -141,7 +141,7 @@ class ApiClient {
   }
 
   // File upload method
-  async uploadFile<T = any>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+  async uploadFile<T = any>(endpoint: string, formData: FormData, method: string = 'POST'): Promise<ApiResponse<T>> {
     try {
       const url = `${this.baseURL}${endpoint}`;
       const headers: HeadersInit = {};
@@ -152,7 +152,7 @@ class ApiClient {
       }
 
       const response = await fetch(url, {
-        method: 'POST',
+        method,
         headers,
         body: formData,
         credentials: 'include',
@@ -196,7 +196,7 @@ export const authApi = {
 
   updateProfile: (data: any | FormData) => {
     if (data instanceof FormData) {
-      return apiClient.uploadFile('/auth/profile', data);
+      return apiClient.uploadFile('/auth/profile', data, 'PUT');
     }
     return apiClient.put('/auth/profile', data);
   },
@@ -451,7 +451,12 @@ export const usersApi = {
     const endpoints = [`/admin/users/${id}`, `/users/${id}`];
     for (const ep of endpoints) {
       try {
-        const res = await apiClient.put(ep, userData);
+        let res;
+        if (userData instanceof FormData) {
+          res = await apiClient.uploadFile(ep, userData, 'PUT');
+        } else {
+          res = await apiClient.put(ep, userData);
+        }
         if (res && res.success) return res;
       } catch {}
     }
@@ -507,13 +512,82 @@ export const contactApi = {
 
 // Schedule API
 export const scheduleApi = {
-  getAll: () => apiClient.get('/schedule'),
-  getById: (id: string) => apiClient.get(`/schedule/${id}`),
-  create: (scheduleData: any) => apiClient.post('/schedule', scheduleData),
-  update: (id: string, scheduleData: any) => apiClient.put(`/schedule/${id}`, scheduleData),
-  delete: (id: string) => apiClient.delete(`/schedule/${id}`),
-  updateBulk: (schedules: any[]) => apiClient.put('/schedule/bulk', { schedules }),
-  bulkUpdateDay: (day: string, schedules: any[]) => apiClient.put(`/schedule/day/${day}`, { schedules }),
+  getAll: () => (async () => {
+    const endpoints = ['/schedules', '/schedule'];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.get(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, data: { items: [] } } as ApiResponse<any>;
+  })(),
+  
+  getById: (id: string) => (async () => {
+    const endpoints = [`/schedules/${id}`, `/schedule/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.get(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false } as ApiResponse<any>;
+  })(),
+  
+  create: (scheduleData: any) => (async () => {
+    const endpoints = ['/schedules', '/schedule'];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.post(ep, scheduleData);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to create schedule' } as ApiResponse<any>;
+  })(),
+  
+  update: (id: string, scheduleData: any) => (async () => {
+    const endpoints = [`/schedules/${id}`, `/schedule/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.put(ep, scheduleData);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to update schedule' } as ApiResponse<any>;
+  })(),
+  
+  delete: (id: string) => (async () => {
+    const endpoints = [`/schedules/${id}`, `/schedule/${id}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.delete(ep);
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to delete schedule' } as ApiResponse<any>;
+  })(),
+  
+  updateBulk: (schedules: any[]) => (async () => {
+    const endpoints = ['/schedules/bulk', '/schedule/bulk'];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.put(ep, { schedules });
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to update schedules' } as ApiResponse<any>;
+  })(),
+  
+  bulkUpdateDay: (day: string, schedules: any[]) => (async () => {
+    const endpoints = [`/schedules/day/${day}`, `/schedule/day/${day}`];
+    for (const ep of endpoints) {
+      try {
+        const res = await apiClient.put(ep, { schedules });
+        if (res && res.success) return res;
+      } catch {}
+    }
+    return { success: false, message: 'Failed to update day schedules' } as ApiResponse<any>;
+  })(),
 };
 
 // Analytics API
