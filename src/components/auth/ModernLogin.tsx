@@ -82,7 +82,7 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
           if (result.mustChangePassword) {
             navigate('/change-password');
           } else {
-            navigate(result.role === 'parishioner' ? '/' : '/admin');
+            navigate(['admin', 'priest', 'secretary', 'reporter'].includes(result.role || '') ? '/admin' : '/');
           }
         } else {
           setError(result.message || 'Invalid credentials');

@@ -135,9 +135,11 @@ const Header: React.FC = () => {
                       ({
                         user.role === 'admin' ? 'Administrator' :
                         user.role === 'priest' ? 'Parish Priest' :
-                        (user.role === 'treasurer' && user.committeePosition === 'Treasurer') ? 'Association Treasurer' :
-                        (user.role === 'secretary' && user.committeePosition === 'Secretary') ? 'Association Secretary' :
-                        user.committeePosition || user.role
+                        user.role === 'reporter' ? 'Reporter' :
+                        user.role === 'secretary' && !user.committeePosition ? 'Secretary' :
+                        user.committeePosition
+                          ? `${user.committeePosition}${user.association ? ` · ${user.association}` : user.section ? ` · ${user.section}` : ''}`
+                          : 'Parishioner'
                       })
                     </span>
                   </div>
@@ -374,12 +376,19 @@ const Header: React.FC = () => {
                     ? `${user?.firstName} ${user?.lastName}` 
                     : (user?.username || '')}
                 </h4>
-                <p>{user?.role}</p>
+                <p style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+                  {user.committeePosition
+                    ? `${user.committeePosition}${user.association ? ` · ${user.association}` : user.section ? ` · ${user.section}` : ''}`
+                    : user.role === 'admin' ? 'Administrator'
+                    : user.role === 'priest' ? 'Parish Priest'
+                    : user.role === 'reporter' ? 'Reporter'
+                    : 'Parishioner'}
+                </p>
               </div>
             </div>
             
 
-            {(user.role !== 'parishioner') && (
+            {['admin', 'priest', 'secretary', 'reporter'].includes(user.role) && (
 
               <Link 
                 to="/admin" 

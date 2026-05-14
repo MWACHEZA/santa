@@ -399,7 +399,46 @@ const EnhancedProfile: React.FC = () => {
           </div>
         </div>
         <h1 className="profile-name">{user.firstName} {user.lastName}</h1>
-        <p className="profile-role">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
+
+        {/* Position badge — shows for committee members on parishioner side */}
+        {user.committeePosition ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+              background: 'linear-gradient(135deg, #2d5016 0%, #4a8022 100%)',
+              color: '#fff',
+              borderRadius: '999px',
+              padding: '0.35rem 1.1rem',
+              fontSize: '0.85rem',
+              fontWeight: 700,
+              letterSpacing: '0.03em',
+              boxShadow: '0 2px 8px rgba(45,80,22,0.25)'
+            }}>
+              <Crown size={14} />
+              {user.committeePosition}
+            </span>
+
+            {(user.association || user.section) && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.3)',
+                color: 'rgba(255,255,255,0.92)',
+                borderRadius: '999px',
+                padding: '0.25rem 0.9rem',
+                fontSize: '0.8rem',
+                fontWeight: 500
+              }}>
+                <Users size={13} />
+                {[user.association, user.section].filter(Boolean).join(' • ')}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="profile-role">
+            {user.role === 'parishioner' ? 'Parishioner' : user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+          </p>
+        )}
         
         <div className="profile-actions">
           {!isEditing ? (

@@ -53,20 +53,14 @@ const AuthenticatedApp: React.FC = () => {
     console.log('✅ Authenticated, should show app content');
   }
 
-  // Helper function to get default route based on user role
+  // Only staff roles created from admin panel go to the admin dashboard.
+  // Parishioners, committee members, treasurers, council members etc. always see the parishioner side.
+  const ADMIN_ROLES = ['admin', 'priest', 'secretary', 'reporter'];
+
+  const isAdminRole = (role: string) => ADMIN_ROLES.includes(role);
+
   const getDefaultRoute = (userRole: string) => {
-    switch (userRole) {
-      case 'admin':
-      case 'secretary':
-      case 'vice_secretary':
-      case 'treasurer':
-      case 'priest':
-      case 'reporter':
-        return '/admin';
-      case 'parishioner':
-      default:
-        return '/';
-    }
+    return isAdminRole(userRole) ? '/admin' : '/';
   };
 
   // Show loading state while checking authentication or admin context (unless forced ready)
@@ -141,16 +135,11 @@ const AuthenticatedApp: React.FC = () => {
 
   // If authenticated but on root path, redirect to appropriate dashboard
   if (isUserAuthenticated && location.pathname === '/') {
-    const defaultRoute = getDefaultRoute(user?.role || 'parishioner');
-    console.log('🔄 Redirecting from root to:', defaultRoute);
-    
-    // For parishioners and association-level leaders, don't redirect from root
-    if (user?.role === 'parishioner' || (user?.role === 'treasurer' && user?.association)) {
-      console.log('✅ Parishioner/Association leader on home page, no redirect needed');
-      // Don't redirect, let them see the home page
-    } else {
-      return <Navigate to={defaultRoute} replace />;
+    // Only true admin/staff roles get pushed to /admin from root — everyone else stays here
+    if (user && isAdminRole(user.role)) {
+      return <Navigate to="/admin" replace />;
     }
+    // Parishioners + committee members stay on parishioner side — no redirect needed
   }
 
 
@@ -169,20 +158,14 @@ const AuthenticatedApp: React.FC = () => {
           <Route path="/register" element={<ModernLogin initialShowRegister={true} />} />
           <Route path="/change-password" element={<ChangePassword />} />
           
-          {/* Admin Routes - Check if user has admin role */}
+          {/* Admin Routes - Only for staff roles created from admin panel */}
           <Route 
             path="/admin/*" 
             element={
-              isUserAuthenticated && user && ['admin', 'secretary', 'vice_secretary', 'treasurer', 'priest', 'reporter'].includes(user.role) 
+              isUserAuthenticated && user && isAdminRole(user.role)
                 ? <AdminDashboard />
                 : isUserAuthenticated && !authLoading
-                ? <div style={{ padding: '2rem', textAlign: 'center' }}>
-                    <h2>Profile Loading Error</h2>
-                    <p>We found your session but couldn't load your profile details.</p>
-                    <button onClick={() => { localStorage.clear(); window.location.href = '/login'; }}>
-                      Reset Session
-                    </button>
-                  </div>
+                ? <Navigate to="/" replace />
                 : <Navigate to="/login" replace />
             } 
           />
@@ -192,7 +175,7 @@ const AuthenticatedApp: React.FC = () => {
             path="/" 
             element={
               isUserAuthenticated 
-                ? (user && ['admin', 'secretary', 'priest', 'reporter'].includes(user.role) 
+                ? (user && isAdminRole(user.role)
                     ? <Navigate to="/admin" replace /> 
                     : <Home />)
                 : <Navigate to="/login" replace />
