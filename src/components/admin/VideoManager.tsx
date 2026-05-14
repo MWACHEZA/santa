@@ -495,60 +495,18 @@ const VideoManager: React.FC = () => {
                   />
                 </div>
               ) : (
-                <div className="video-upload-section">
-                  <label>Video File {editingItem ? '(Upload new to replace)' : ''}</label>
-                  {!selectedFile ? (
-                    <div 
-                      {...getRootProps()} 
-                      className={`video-dropzone ${isDragActive ? 'active' : ''}`}
-                    >
-                      <input {...getInputProps()} />
-                      <Upload size={48} />
-                      {isDragActive ? (
-                        <p>Drop the video here...</p>
-                      ) : (
-                        <p>Drag & drop a {editingItem ? 'new ' : ''}video here, or click to select</p>
-                      )}
-                      {editingItem && formData.url && (
-                        <p style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.5rem' }}>
-                          Current video: {formData.url.split('/').pop() || 'Existing Video'}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="selected-file-info">
-                      <div className="file-details">
-                        <FileVideo size={32} className="text-primary" />
-                        <div>
-                          <p className="file-name">{selectedFile.name}</p>
-                          <p className="file-size">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
-                        </div>
-                      </div>
-                      {!isUploading && (
-                        <button 
-                          type="button" 
-                          onClick={() => setSelectedFile(null)}
-                          className="btn btn-sm btn-danger"
-                        >
-                          <X size={16} />
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  {isUploading && (
-                    <div className="upload-progress-container">
-                      <div className="progress-bar-bg">
-                        <div 
-                          className="progress-bar-fill" 
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                      <div className="progress-text">
-                        <span>Uploading...</span>
-                        <span>{uploadProgress}%</span>
-                      </div>
-                    </div>
-                  )}
+                <div className="form-group">
+                  <label>Video URL (YouTube, Vimeo, Google Drive, etc.)</label>
+                  <input
+                    type="url"
+                    value={formData.url}
+                    onChange={(e) => setFormData({...formData, url: e.target.value})}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    required
+                  />
+                  <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                    Due to server hosting limitations, please upload your videos to a platform like YouTube and paste the link here.
+                  </small>
                 </div>
               )}
 

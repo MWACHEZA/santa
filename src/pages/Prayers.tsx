@@ -15,15 +15,17 @@ const Prayers: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [intention, setIntention] = useState('');
+  const [intentions, setIntentions] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState({ text: '', type: '' });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prayersRes, categoriesRes] = await Promise.all([
+        const [prayersRes, categoriesRes, intentionsRes] = await Promise.all([
           api.liturgicalPrayers.getAll(),
-          api.categories.getByType('prayer')
+          api.categories.getByType('prayer'),
+          api.prayers.getAll({ approved: true })
         ]);
 
         if (prayersRes.success) {
@@ -34,6 +36,10 @@ const Prayers: React.FC = () => {
           const cats = categoriesRes.data?.items || categoriesRes.data || [];
           const catNames = cats.map((c: any) => c.name);
           setCategories(['All', ...catNames]);
+        }
+        
+        if (intentionsRes.success) {
+          setIntentions(intentionsRes.data?.intentions || intentionsRes.data?.items || intentionsRes.data || []);
         }
       } catch (err) {
         console.error('Failed to fetch prayer data', err);
@@ -349,6 +355,23 @@ const Prayers: React.FC = () => {
               )}
             </button>
           </div>
+          
+          {intentions && intentions.length > 0 && (
+            <div className="community-intentions mt-5">
+              <h4 className="mb-4">Community Prayer Intentions</h4>
+              <div className="intentions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                {intentions.map(int => (
+                  <div key={int.id} className="intention-card p-4 rounded" style={{ backgroundColor: 'rgba(0,0,0,0.03)', border: '1px solid rgba(0,0,0,0.08)' }}>
+                    <p style={{ fontStyle: 'italic', marginBottom: '1rem', color: 'var(--text-color)' }}>"{int.intention}"</p>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.875rem', color: 'var(--text-light)' }}>
+                      <span>{int.is_anonymous ? 'Anonymous' : (int.requester_name || 'Parishioner')}</span>
+                      <span>{new Date(int.submitted_at || int.createdAt || new Date()).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

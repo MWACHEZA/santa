@@ -55,7 +55,7 @@ const WatchMass: React.FC = () => {
       try {
         const [streamsRes, archiveRes, categoriesRes] = await Promise.all([
           api.videos.getStreams({ active: true }),
-          api.videos.getArchive({ published: true }),
+          api.videos.getArchive(),
           api.categories.getByType('video')
         ]);
         
@@ -366,11 +366,21 @@ const WatchMass: React.FC = () => {
                           </span>
                         </div>
                         <div className="video-actions" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                          <a href={video.videoUrl} target="_blank" rel="noreferrer" className="watch-button">
-                            Play
-                          </a>
-                          <a href={video.videoUrl} download target="_blank" rel="noreferrer" className="watch-button">
-                            Download
+                          <button
+                            className="watch-button"
+                            onClick={(e) => { e.stopPropagation(); setSelectedVideo(video); api.videos.incrementViews(video.id, 'archive'); }}
+                          >
+                            ▶ Play
+                          </button>
+                          <a
+                            href={video.videoUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="watch-button"
+                            style={{ textDecoration: 'none' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            ↓ Open / Download
                           </a>
                         </div>
                       </div>
