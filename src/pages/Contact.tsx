@@ -114,8 +114,8 @@ const Contact: React.FC = () => {
             </div>
             <h4>Parish Staff</h4>
             <div className="staff-list">
-              <p><strong>Parish Priest:</strong> Fr.Rodeney Simainza</p>
-              <p><strong>Assistant Priest:</strong> santana</p>
+              <p><strong>Parish Priest:</strong> Fr. Dumani</p>
+              <p><strong>Assistant Priest:</strong> TBA</p>
               <p><strong>Parish Secretary:</strong> Mr Mzingaye Zulu</p>
             </div>
           </div>

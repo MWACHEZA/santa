@@ -54,15 +54,28 @@ const Calendar: React.FC = () => {
     return upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).slice(0, 10);
   };
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
+  const COLOR_PALETTE = [
+    '#2d5016', '#4ecdc4', '#45b7d1', '#f093fb', '#f39c12',
+    '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22', '#2980b9',
+    '#27ae60', '#c0392b', '#8e44ad', '#16a085', '#d35400'
+  ];
+
+  const getCategoryColor = (category: string): string => {
+    const staticColors: Record<string, string> = {
       mass: '#2d5016',
       meeting: '#4ecdc4',
       social: '#45b7d1',
       education: '#f093fb',
       outreach: '#f39c12'
     };
-    return colors[category as keyof typeof colors] || '#6c757d';
+    const key = (category || '').toLowerCase();
+    if (staticColors[key]) return staticColors[key];
+    try {
+      const saved = JSON.parse(localStorage.getItem('eventCategoryColors') || '{}');
+      if (saved[key]) return saved[key];
+    } catch {}
+    const hash = key.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return COLOR_PALETTE[hash % COLOR_PALETTE.length];
   };
 
   const getCategoryIcon = (category: string) => {

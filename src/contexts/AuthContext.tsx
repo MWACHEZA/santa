@@ -226,16 +226,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       let res;
       if (user && user.id === id) {
-        res = await api.auth.updateProfile(updates);
-        if (res.success && res.data?.user) {
-          const updatedUser = {
-            ...user,
-            ...res.data.user,
-            firstName: res.data.user.firstName || res.data.user.first_name,
-            lastName: res.data.user.lastName || res.data.user.last_name,
-          };
-          setUser(updatedUser as User);
-          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        // Try /auth/profile first, fall back to /users/:id if endpoint not found
+        try {
+          res = await api.auth.updateProfile(updates);
+          // If backend returns 404 or endpoint-not-found, treat as failure
+          if (!res.success && (res.message || '').toLowerCase().includes('not found')) {
+            throw new Error('endpoint_not_found');
+          }
+        } catch (profileErr: any) {
+          // Fallback: update via /users/:id
+          res = await api.users.update(id, updates);
+        }
+        if (res.success) {
+          const userData = res.data?.user || res.data;
+          if (userData) {
+            const updatedUser = {
+              ...user,
+              ...userData,
+              firstName: userData.firstName || userData.first_name || user.firstName,
+              lastName: userData.lastName || userData.last_name || user.lastName,
+            };
+            setUser(updatedUser as User);
+            localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+          }
         }
       } else {
         res = await api.users.update(id, updates);

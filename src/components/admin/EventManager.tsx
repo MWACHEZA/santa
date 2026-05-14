@@ -31,7 +31,28 @@ const EventManager: React.FC = () => {
 
   
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#4ecdc4');
   const [showAddCategory, setShowAddCategory] = useState(false);
+
+  // Persistent color map stored in localStorage so new categories keep their color
+  const getCategoryColorMap = (): Record<string, string> => {
+    try {
+      return JSON.parse(localStorage.getItem('eventCategoryColors') || '{}');
+    } catch { return {}; }
+  };
+
+  const saveCategoryColor = (cat: string, color: string) => {
+    const map = getCategoryColorMap();
+    map[cat] = color;
+    localStorage.setItem('eventCategoryColors', JSON.stringify(map));
+  };
+
+  // Fallback palette for categories that don't have a saved color
+  const COLOR_PALETTE = [
+    '#2d5016', '#4ecdc4', '#45b7d1', '#f093fb', '#f39c12',
+    '#e74c3c', '#9b59b6', '#1abc9c', '#e67e22', '#2980b9',
+    '#27ae60', '#c0392b', '#8e44ad', '#16a085', '#d35400'
+  ];
 
   const categories = [
     { value: 'all', label: 'All Events' },
@@ -46,8 +67,10 @@ const EventManager: React.FC = () => {
     if (newCategoryName.trim() && !eventCategories.includes(newCategoryName.trim().toLowerCase())) {
       try {
         await addCategory(newCategoryName.trim().toLowerCase(), 'event');
+        saveCategoryColor(newCategoryName.trim().toLowerCase(), newCategoryColor);
         logAdminAction('ADD_EVENT_CATEGORY', 'event', 'new', `Added new event category: ${newCategoryName.trim()}`);
         setNewCategoryName('');
+        setNewCategoryColor('#4ecdc4');
         setShowAddCategory(false);
         toastSuccess('Category added successfully', 'Events');
       } catch (err) {
@@ -136,15 +159,22 @@ const EventManager: React.FC = () => {
 
   const sortedEvents = filteredEvents.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const getCategoryColor = (category: string) => {
-    const colors = {
+  const getCategoryColor = (category: string): string => {
+    const staticColors: Record<string, string> = {
       mass: '#2d5016',
       meeting: '#4ecdc4',
       social: '#45b7d1',
       education: '#f093fb',
       outreach: '#f39c12'
     };
-    return colors[category as keyof typeof colors] || '#6c757d';
+    const key = (category || '').toLowerCase();
+    // Check static first, then saved custom colors, then derive from palette
+    if (staticColors[key]) return staticColors[key];
+    const saved = getCategoryColorMap()[key];
+    if (saved) return saved;
+    // Auto-assign from palette based on hash of string
+    const hash = key.split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return COLOR_PALETTE[hash % COLOR_PALETTE.length];
   };
 
   const getCategoryIcon = (category: string) => {
@@ -199,6 +229,7 @@ const EventManager: React.FC = () => {
         <div className="categories-list">
           {eventCategories.map((category) => (
             <div key={category} className="category-item">
+              <div style={{ width: 14, height: 14, borderRadius: '50%', backgroundColor: getCategoryColor(category), flexShrink: 0 }} />
               <span className="category-icon">{getCategoryIcon(category)}</span>
               <span className="category-name">{category.charAt(0).toUpperCase() + category.slice(1)}</span>
               <span className="event-count">
@@ -454,6 +485,18 @@ const EventManager: React.FC = () => {
                   placeholder="Enter category name (e.g., retreat, fundraising)"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddCategory()}
                 />
+              </div>
+              <div className="form-group">
+                <label>Category Colour</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <input
+                    type="color"
+                    value={newCategoryColor}
+                    onChange={(e) => setNewCategoryColor(e.target.value)}
+                    style={{ width: 48, height: 36, border: 'none', padding: 0, cursor: 'pointer', borderRadius: 6 }}
+                  />
+                  <span style={{ fontSize: '0.85rem', color: '#666' }}>This colour will appear on the calendar for this category.</span>
+                </div>
               </div>
               <div className="form-actions">
                 <button 
