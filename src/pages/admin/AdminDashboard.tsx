@@ -1128,31 +1128,45 @@ const ScheduleSection: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      const timesArray = formSchedule.times.split(',').map(t => t.trim()).filter(t => t !== '');
+      // Handle mass times - split by comma and clean up
+      let timesArray: string[] = [];
+      if (typeof formSchedule.times === 'string') {
+        timesArray = formSchedule.times.split(',').map(t => t.trim()).filter(t => t !== '');
+      } else if (Array.isArray(formSchedule.times)) {
+        timesArray = formSchedule.times;
+      }
+      
       const scheduleData = {
         day: formSchedule.day,
         times: timesArray,
         language: formSchedule.language
       };
 
-      console.log('🚀 Sending schedule data:', scheduleData);
+      console.log('🚀 Saving schedule:', { editing: !!editingSchedule, data: scheduleData });
+      
       let result;
       if (editingSchedule) {
-        result = await api.schedule.update(editingSchedule.id || editingSchedule._id, scheduleData);
+        const id = editingSchedule.id || editingSchedule._id;
+        if (!id) {
+          throw new Error('Could not find schedule ID for update');
+        }
+        result = await api.schedule.update(id, scheduleData);
       } else {
         result = await api.schedule.create(scheduleData);
       }
 
-      if (result.success) {
+      if (result && result.success) {
         success(`Schedule for ${formSchedule.day} ${editingSchedule ? 'updated' : 'added'} successfully`);
         setShowModal(false);
         fetchSchedules();
       } else {
-        error(result.message || 'Failed to save schedule');
+        const msg = result?.message || 'The server rejected the schedule data. Please check your inputs.';
+        error(msg);
+        console.error('Schedule save failed:', result);
       }
     } catch (err: any) {
       console.error('Save schedule error:', err);
-      error(err.message || 'Failed to save schedule');
+      error(err.message || 'Connection failed. Could not save schedule.');
     } finally {
       setIsSubmitting(false);
     }

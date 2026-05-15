@@ -1493,15 +1493,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // External News methods
   const fetchExternalNews = useCallback(async (source: ExternalNews['source']) => {
-    console.log(`Fetching news from ${source}...`);
+    console.log(`📡 Fetching news from source: ${source}...`);
     setIsLoading(true);
     try {
-
-      // Small artificial network delay for premium fluid transition feel
-      await new Promise(resolve => setTimeout(resolve, 600));
-
+      // 1. Try real API first
+      const res = await api.news.getExternal(source);
+      
+      // Define simulated data for fallback
       const simulatedNews: ExternalNews[] = [
-        // Diocese News (Archdiocese of Bulawayo)
         {
           id: 'diocese-1',
           title: 'Archbishop Alex Thomas Launches New Pastoral Plan for Bulawayo Parishes',
@@ -1509,7 +1508,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           imageUrl: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&q=80&w=800',
           externalUrl: 'https://www.archdiocesebulawayo.org',
           source: 'diocese',
-          publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days ago
+          publishedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
           fetchedAt: new Date().toISOString()
         },
         {
@@ -1519,21 +1518,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           imageUrl: 'https://images.unsplash.com/photo-1548625361-155deee223d0?auto=format&fit=crop&q=80&w=800',
           externalUrl: 'https://www.archdiocesebulawayo.org',
           source: 'diocese',
-          publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
+          publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
           fetchedAt: new Date().toISOString()
         },
-        {
-          id: 'diocese-3',
-          title: 'Diocesan Youth Assembly Gathers Over 1,000 Young Catholics',
-          summary: 'Our Lady of Fatima Parish hosts an inspiring weekend of prayer, leadership workshops, and vibrant cultural celebrations for Catholic youth.',
-          imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=800',
-          externalUrl: 'https://www.archdiocesebulawayo.org',
-          source: 'diocese',
-          publishedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(), // 10 days ago
-          fetchedAt: new Date().toISOString()
-        },
-
-        // Vatican News
         {
           id: 'vatican-1',
           title: 'Pope Francis Calls for Global Action on Climate and Township Poverty',
@@ -1541,7 +1528,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           imageUrl: 'https://images.unsplash.com/photo-1548625361-30a09e023cf5?auto=format&fit=crop&q=80&w=800',
           externalUrl: 'https://www.vaticannews.va/en.html',
           source: 'vatican',
-          publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+          publishedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
           fetchedAt: new Date().toISOString()
         },
         {
@@ -1551,19 +1538,17 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           imageUrl: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?auto=format&fit=crop&q=80&w=800',
           externalUrl: 'https://www.vaticannews.va/en.html',
           source: 'vatican',
-          publishedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(), // 4 days ago
+          publishedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
           fetchedAt: new Date().toISOString()
         },
-
-        // Zimbabwe Catholic News (ZCBC)
         {
           id: 'zim-1',
-          title: 'Zimbabwe Catholic Bishops Conference (ZCBC) Issues Pastoral Letter on Hope and Resilience',
+          title: 'ZCBC Issues Pastoral Letter on Hope and Resilience',
           summary: 'The Catholic bishops release a joint letter calling for peace, ethical leadership, and mutual support during the current El Niño-induced drought.',
           imageUrl: 'https://images.unsplash.com/photo-1509005084666-3cbc75184cbb?auto=format&fit=crop&q=80&w=800',
           externalUrl: 'https://www.zcbc.co.zw',
           source: 'zimbabwe_catholic',
-          publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
+          publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
           fetchedAt: new Date().toISOString()
         },
         {
@@ -1573,17 +1558,47 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           imageUrl: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800',
           externalUrl: 'https://www.zcbc.co.zw',
           source: 'zimbabwe_catholic',
-          publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+          publishedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
           fetchedAt: new Date().toISOString()
         }
       ];
 
-      setExternalNews(simulatedNews);
+      if (res.success && res.data && (res.data.items?.length || res.data.length)) {
+        const items = res.data.items || res.data;
+        const mappedItems = items.map((item: any) => ({
+          ...item,
+          source: item.source || source,
+          id: item.id || Math.random().toString(36).substr(2, 9),
+          publishedAt: item.publishedAt || item.published_at || new Date().toISOString()
+        }));
+
+        setExternalNews(prev => {
+          const otherSources = prev.filter(n => n.source !== source);
+          return [...otherSources, ...mappedItems];
+        });
+      } else {
+        // 2. Fallback to simulation
+        console.log(`⚠️ No real news found for ${source}, using simulation fallback.`);
+        const filteredSimulated = simulatedNews.filter(n => n.source === source);
+        setExternalNews(prev => {
+          const otherSources = prev.filter(n => n.source !== source);
+          return [...otherSources, ...filteredSimulated];
+        });
+      }
     } catch (err) {
-      console.error('Failed to fetch external news:', err);
+      console.error(`❌ Failed to fetch external news from ${source}:`, err);
+      // Final fallback to simulation on error
+      const simulatedNews: ExternalNews[] = [
+        { id: 'vatican-1', title: 'Pope Francis Calls for Global Action', summary: 'Simulation fallback...', externalUrl: 'https://www.vaticannews.va', source: 'vatican', publishedAt: new Date().toISOString(), fetchedAt: new Date().toISOString() },
+        { id: 'zim-1', title: 'ZCBC Update', summary: 'Simulation fallback...', externalUrl: 'https://www.zcbc.co.zw', source: 'zimbabwe_catholic', publishedAt: new Date().toISOString(), fetchedAt: new Date().toISOString() }
+      ];
+      const filteredSimulated = simulatedNews.filter(n => n.source === source);
+      setExternalNews(prev => {
+        const otherSources = prev.filter(n => n.source !== source);
+        return [...otherSources, ...filteredSimulated];
+      });
     } finally {
       setIsLoading(false);
-
     }
   }, [setExternalNews]);
 

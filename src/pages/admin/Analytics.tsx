@@ -182,7 +182,7 @@ const Analytics: React.FC = () => {
         setAnalyticsData(prev => ({
           ...prev,
           users: {
-            total: o.users?.total ?? o.totalUsers ?? 0,
+            total: parishMembers.length > 0 ? parishMembers.length : (o.users?.total ?? o.totalUsers ?? 0),
             active: o.users?.active ?? o.activeUsers ?? 0,
             newThisMonth: o.users?.newThisMonth ?? o.newUsers ?? 0,
             growth: o.users?.growth ?? o.userGrowth ?? 0

@@ -27,6 +27,7 @@ interface NewsFormData {
   category: string;
   imageUrl: string;
   isPublished: boolean;
+  isArchived: boolean;
 }
 
 const NewsManagement: React.FC = () => {
@@ -58,7 +59,8 @@ const NewsManagement: React.FC = () => {
     content: '',
     category: '',
     imageUrl: '',
-    isPublished: false
+    isPublished: false,
+    isArchived: false
   });
 
   const [uploadPreview, setUploadPreview] = useState<string>('');
@@ -152,7 +154,7 @@ const NewsManagement: React.FC = () => {
           ? user?.role 
           : 'reporter') as any,
         publishedAt: formData.isPublished ? new Date().toISOString() : '',
-        isArchived: false,
+        isArchived: formData.isArchived,
       };
       
       if (editingNews) {
@@ -185,7 +187,8 @@ const NewsManagement: React.FC = () => {
       content: '',
       category: '',
       imageUrl: '',
-      isPublished: false
+      isPublished: false,
+      isArchived: false
     });
     setUploadPreview('');
     setUploadedFile(null);
@@ -200,7 +203,8 @@ const NewsManagement: React.FC = () => {
       content: news.content,
       category: news.category_id || news.category || '',
       imageUrl: news.imageUrl || '',
-      isPublished: news.isPublished
+      isPublished: news.isPublished,
+      isArchived: news.isArchived || false
     });
     setUploadPreview(news.imageUrl || '');
     setEditingNews(news.id);
@@ -450,6 +454,15 @@ const NewsManagement: React.FC = () => {
                     />
                     <span className="checkmark"></span>
                     Publish immediately
+                  </label>
+                  <label className="checkbox-label" style={{ marginTop: '0.5rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={formData.isArchived}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isArchived: e.target.checked }))}
+                    />
+                    <span className="checkmark"></span>
+                    Add to Archives (Category)
                   </label>
                 </div>
 
