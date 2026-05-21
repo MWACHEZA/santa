@@ -549,6 +549,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [isExternalNewsLoading, setIsExternalNewsLoading] = useState(false);
 
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
@@ -763,7 +764,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         api.analytics.getRealtime(),
         api.analytics.getContent(30),
         api.themes.getAll(),
-        api.auditLogs.getAll({ limit: 50 })
+        api.auditLogs.getAll({ limit: 50 }),
+        // Pre-fetch external news
+        api.news.getExternal('diocese'),
+        api.news.getExternal('vatican'),
+        api.news.getExternal('zimbabwe_catholic')
       ]);
 
       console.log('🔄 Syncing all admin data...');
@@ -1014,6 +1019,35 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
 
       await Promise.all([fetchPublicData(), fetchAdminData(), fetchAuditLogs({ limit: 50 })]);
+      
+      // Handle external news results from the initial all-settled call
+      const extDioRes: any = results[21]?.status === 'fulfilled' ? (results[21].value as any) : { success: false };
+      const extVatRes: any = results[22]?.status === 'fulfilled' ? (results[22].value as any) : { success: false };
+      const extZimRes: any = results[23]?.status === 'fulfilled' ? (results[23].value as any) : { success: false };
+
+      const allExtNews: ExternalNews[] = [];
+      const processExt = (res: any, source: any) => {
+        if (res.success && res.data) {
+          const items = res.data.items || res.data || [];
+          (Array.isArray(items) ? items : []).forEach((item: any) => {
+            allExtNews.push({
+              ...item,
+              source: item.source || source,
+              id: item.id || `${source}-${Math.random()}`,
+              publishedAt: item.published_at || item.publishedAt || new Date().toISOString()
+            });
+          });
+        }
+      };
+      
+      processExt(extDioRes, 'diocese');
+      processExt(extVatRes, 'vatican');
+      processExt(extZimRes, 'zimbabwe_catholic');
+      
+      if (allExtNews.length > 0) {
+        setExternalNews(allExtNews);
+      }
+      
       console.log('✅ Admin data sync complete');
     } catch (err) {
       console.error('❌ Failed to fetch admin data', err);
@@ -1494,7 +1528,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // External News methods
   const fetchExternalNews = useCallback(async (source: ExternalNews['source']) => {
     console.log(`📡 Fetching news from source: ${source}...`);
-    setIsLoading(true);
+    setIsExternalNewsLoading(true);
     try {
       // 1. Try real API first
       const res = await api.news.getExternal(source);
@@ -1598,18 +1632,62 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return [...otherSources, ...filteredSimulated];
       });
     } finally {
-      setIsLoading(false);
+      setIsExternalNewsLoading(false);
     }
   }, [setExternalNews]);
 
   // News Archive methods
   const getNewsArchiveByYear = useCallback((year: number): NewsArchive[] => {
-    return newsArchive.filter(item => item.year === year);
-  }, [newsArchive]);
+    // Get historical archives
+    const historical = newsArchive.filter(item => item.year === year);
+    
+    // Get newly archived parish news for this year
+    const newlyArchived = parishNews
+      .filter(n => n.isArchived && new Date(n.publishedAt || n.createdAt).getFullYear() === year)
+      .map(n => ({
+        id: n.id,
+        title: n.title,
+        summary: n.summary,
+        content: n.content,
+        imageUrl: n.imageUrl,
+        originalPublishDate: n.publishedAt || n.createdAt,
+        archivedAt: n.publishedAt || n.createdAt,
+        author: n.author,
+        year: new Date(n.publishedAt || n.createdAt).getFullYear(),
+        month: new Date(n.publishedAt || n.createdAt).getMonth() + 1
+      }));
+      
+    return [...historical, ...newlyArchived].sort((a, b) => 
+      new Date(b.originalPublishDate).getTime() - new Date(a.originalPublishDate).getTime()
+    );
+  }, [newsArchive, parishNews]);
 
   const getNewsArchiveByMonth = useCallback((year: number, month: number): NewsArchive[] => {
-    return newsArchive.filter(item => item.year === year && item.month === month);
-  }, [newsArchive]);
+    const historical = newsArchive.filter(item => item.year === year && item.month === month);
+    
+    // Get newly archived parish news for this year and month
+    const newlyArchived = parishNews
+      .filter(n => {
+        const date = new Date(n.publishedAt || n.createdAt);
+        return n.isArchived && date.getFullYear() === year && (date.getMonth() + 1) === month;
+      })
+      .map(n => ({
+        id: n.id,
+        title: n.title,
+        summary: n.summary,
+        content: n.content,
+        imageUrl: n.imageUrl,
+        originalPublishDate: n.publishedAt || n.createdAt,
+        archivedAt: n.publishedAt || n.createdAt,
+        author: n.author,
+        year: new Date(n.publishedAt || n.createdAt).getFullYear(),
+        month: new Date(n.publishedAt || n.createdAt).getMonth() + 1
+      }));
+
+    return [...historical, ...newlyArchived].sort((a, b) => 
+      new Date(b.originalPublishDate).getTime() - new Date(a.originalPublishDate).getTime()
+    );
+  }, [newsArchive, parishNews]);
 
   // Section Image methods
   const addSectionImage = useCallback((image: Omit<SectionImage, 'id' | 'createdAt'>) => {
@@ -2140,6 +2218,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     getPublishedParishNews,
     archiveParishNews,
     externalNews,
+    isExternalNewsLoading,
     fetchExternalNews,
     newsArchive,
     getNewsArchiveByYear,
@@ -2209,7 +2288,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     fetchVideos
   }), [
     user, isLoading, hasPermission, announcements, events, galleryImages,
-    ministries, parishNews, externalNews, newsArchive, sectionImages,
+    ministries, parishNews, externalNews, isExternalNewsLoading, newsArchive, sectionImages,
     themesOfYear, saintOfDay, liturgicalInfo, contactInfo, massSchedule,
     sacraments, prayers, prayerIntentions, financialTransactions,
     financialCategories, newsCategories, eventCategories, fullEventCategories, prayerCategories, fullPrayerCategories,
