@@ -49,8 +49,10 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
   
   const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone' | 'username'>('email');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeLegalModal, setActiveLegalModal] = useState<null | 'privacy' | 'terms'>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -359,9 +361,8 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
 
               {/* Remember Me & Forgot Password */}
               <div className="form-options">
-                <label className="checkbox-container">
-                  <input type="checkbox" />
-                  <span className="checkmark"></span>
+                <label className="checkbox-container" onClick={() => setRememberMe(v => !v)}>
+                  <span className={`checkmark${rememberMe ? ' checked' : ''}`}></span>
                   Remember me
                 </label>
                 <button type="button" className="forgot-password">
@@ -418,18 +419,95 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
             <div className="form-footer">
               <p>
                 By signing in, you agree to our{' '}
-                <button type="button" className="link">Terms of Service</button>{' '}
+                <button type="button" className="link" onClick={() => setActiveLegalModal('terms')}>Terms of Service</button>{' '}
                 and{' '}
-                <button type="button" className="link">Privacy Policy</button>
+                <button type="button" className="link" onClick={() => setActiveLegalModal('privacy')}>Privacy Policy</button>
               </p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Legal Modals */}
+      {activeLegalModal && (
+        <div
+          className="legal-modal-overlay"
+          onClick={() => setActiveLegalModal(null)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 99999, padding: '1rem'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'white', borderRadius: '20px', maxWidth: '640px',
+              width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 30px 80px rgba(0,0,0,0.2)', overflow: 'hidden'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{
+              padding: '1.5rem 2rem', borderBottom: '1px solid #e2e8f0',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: 'linear-gradient(135deg, #2d5016, #4a7c2c)', color: 'white'
+            }}>
+              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+                {activeLegalModal === 'privacy' ? '🔒 Privacy Policy' : '📋 Terms of Service'}
+              </h2>
+              <button
+                onClick={() => setActiveLegalModal(null)}
+                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px',
+                  color: 'white', cursor: 'pointer', padding: '6px 10px', fontSize: '1.1rem' }}
+              >✕</button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '1.5rem 2rem', overflowY: 'auto', lineHeight: 1.7, color: '#374151' }}>
+              {activeLegalModal === 'privacy' ? (
+                <>
+                  <p><strong>Last updated: July 2026</strong></p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>1. Information We Collect</h3>
+                  <p>We collect the personal information you provide when you register, such as your name, email address, phone number, and parish association. We do not sell or share your data with third parties.</p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>2. How We Use Your Information</h3>
+                  <p>Your information is used solely to provide access to the St. Patrick's Parish digital platform — including announcements, events, the gallery, prayer intentions, and community updates.</p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>3. Data Security</h3>
+                  <p>We take your privacy seriously. All passwords are encrypted and access tokens are stored securely. We implement industry-standard security practices to protect your data.</p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>4. Contact</h3>
+                  <p>If you have questions about your data, please contact the parish office at <strong>info@stpatricksmakokoba.org</strong>.</p>
+                </>
+              ) : (
+                <>
+                  <p><strong>Last updated: July 2026</strong></p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>1. Acceptance of Terms</h3>
+                  <p>By accessing the St. Patrick's Parish platform, you agree to be bound by these Terms of Service. This platform is intended for parishioners, staff, and community members of St. Patrick's Catholic Parish, Makokoba, Bulawayo.</p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>2. Account Responsibilities</h3>
+                  <p>You are responsible for maintaining the confidentiality of your account credentials. You agree not to share your account or use the platform for any unlawful or disrespectful purpose.</p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>3. Content</h3>
+                  <p>All content on this platform — including news, announcements, events and media — is the property of St. Patrick's Parish. Reproduction without permission is prohibited.</p>
+                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>4. Termination</h3>
+                  <p>The parish administration reserves the right to suspend or terminate any account that violates these terms or the values of the Catholic community.</p>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '1rem 2rem', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+              <button
+                onClick={() => setActiveLegalModal(null)}
+                style={{ background: '#2d5016', color: 'white', border: 'none',
+                  borderRadius: '10px', padding: '0.6rem 1.5rem', fontWeight: 600,
+                  cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ModernLogin;
-
-// console.log('ModernLogin rendered');

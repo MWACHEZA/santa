@@ -638,34 +638,39 @@ html, body {
   font-size: 0.875rem;
   color: var(--gray-600);
   cursor: pointer;
+  user-select: none;
 }
 
+/* hide any native input if it ever appears */
 .checkbox-container input {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--primary-green);
+  display: none;
 }
 
 .checkmark {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
   border: 2px solid var(--gray-300);
-  border-radius: 3px;
+  border-radius: 4px;
   position: relative;
+  background: white;
+  transition: background 0.2s, border-color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.checkbox-container input:checked + .checkmark {
+.checkmark.checked {
   background: var(--primary-green);
   border-color: var(--primary-green);
 }
 
-.checkbox-container input:checked + .checkmark::after {
+.checkmark.checked::after {
   content: '✓';
-  position: absolute;
-  top: -2px;
-  left: 2px;
   color: white;
   font-size: 12px;
+  line-height: 1;
+  font-weight: bold;
 }
 
 .forgot-password {
