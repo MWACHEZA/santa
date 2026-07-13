@@ -63,8 +63,11 @@ const AuthenticatedApp: React.FC = () => {
     return isAdminRole(userRole) ? '/admin' : '/';
   };
 
+  // Only block on adminLoading for admin roles — parishioners don't need admin context to render
+  const needsAdminContext = user ? isAdminRole(user.role) : false;
+
   // Show loading state while checking authentication or admin context (unless forced ready)
-  if ((authLoading || adminLoading) && !forceReady) {
+  if ((authLoading || (adminLoading && needsAdminContext)) && !forceReady) {
     console.log('🔄 Showing loading screen:', { authLoading, adminLoading, forceReady });
     return (
       <div className="loading-container" style={{ 

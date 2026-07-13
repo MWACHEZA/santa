@@ -742,6 +742,14 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     setIsLoading(true);
+
+    // Hard timeout — always clear loading within 8s even if backend is cold-starting
+    const timeout = new Promise<void>(resolve => setTimeout(() => {
+      console.warn('⏱️ Admin data fetch timed out — proceeding without full data');
+      resolve();
+    }, 8000));
+
+    const fetchAll = async () => {
     try {
       console.log('🔄 Syncing all admin data...');
 
@@ -1028,6 +1036,11 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setIsLoading(false);
     }
+    }; // end fetchAll
+
+    // Race: whichever finishes first (fetch or 8s timeout)
+    await Promise.race([fetchAll(), timeout]);
+    setIsLoading(false);
   }, [user, fetchAuditLogs]);
 
   useEffect(() => {
