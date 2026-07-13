@@ -13,7 +13,7 @@ import NewsManagement from './NewsManagement';
 import Analytics from './Analytics';
 import VideoManager from '../../components/admin/VideoManager';
 import ImageUpload from '../../components/admin/ImageUpload';
-import FinancialManager from '../../components/admin/FinancialManager';
+
 import PriestDeskManager from '../../components/admin/PriestDeskManager';
 import AuditLogViewer from '../../components/admin/AuditLogViewer';
 import EnhancedProfile from '../../components/EnhancedProfile';
@@ -53,7 +53,7 @@ import {
 } from 'lucide-react';
 import './AdminDashboard.css';
 
-type AdminSection = 'overview' | 'announcements' | 'events' | 'gallery' | 'contact' | 'schedule' | 'priests-desk' | 'analytics' | 'prayers' | 'images' | 'users' | 'themes' | 'ministries' | 'prayer-intentions' | 'news' | 'videos' | 'profile' | 'finances' | 'audit-logs';
+type AdminSection = 'overview' | 'announcements' | 'events' | 'gallery' | 'contact' | 'schedule' | 'priests-desk' | 'analytics' | 'prayers' | 'images' | 'users' | 'themes' | 'ministries' | 'prayer-intentions' | 'news' | 'videos' | 'profile' | 'audit-logs';
 
 const AdminDashboard: React.FC = () => {
   console.log('🎯 AdminDashboard rendering...');
@@ -106,9 +106,7 @@ const AdminDashboard: React.FC = () => {
 
   // Set initial section based on user permissions
   React.useEffect(() => {
-    if (user?.role === 'treasurer') {
-      setActiveSection('finances');
-    } else if (hasPermission('overview')) {
+    if (hasPermission('overview')) {
       setActiveSection('overview');
     } else if (hasPermission('announcements')) {
       setActiveSection('announcements');
@@ -264,8 +262,7 @@ const AdminDashboard: React.FC = () => {
       vice_secretary: 'Vice Secretary',
       parishioner: 'Parishioner',
       committee_member: 'Committee Member',
-      council_member: 'Council Member',
-      treasurer: 'Treasurer'
+      council_member: 'Council Member'
     };
 
     let displayName = roleNames[user.role] || 'User';
@@ -278,7 +275,6 @@ const AdminDashboard: React.FC = () => {
         secretary: 'Secretary',
         vice_secretary: 'Vice Secretary',
         organizing_secretary: 'Organizing Secretary',
-        treasurer: 'Treasurer',
         advisor: 'Advisor',
         committee_member: 'Committee Member'
       };
@@ -369,16 +365,7 @@ const AdminDashboard: React.FC = () => {
             </button>
           )}
 
-          {hasPermission('finances') && (
-            <button
-              className={`nav-item ${activeSection === 'finances' ? 'active' : ''}`}
-              onClick={() => setActiveSection('finances')}
-            >
-              <DollarSign size={20} />
-              <span>{user?.role === 'treasurer' && user?.association ? 'Association Finance' : 'Treasury'}</span>
-            </button>
-          )}
-          
+
           {/* Content Management Dropdown */}
           {(hasPermission('gallery') || hasPermission('ministries') || hasPermission('theme') || hasPermission('images')) && (
             <div className="nav-dropdown">
@@ -607,7 +594,7 @@ const AdminDashboard: React.FC = () => {
           {activeSection === 'prayer-intentions' && <PrayerIntentionManagementSection />}
           {activeSection === 'profile' && <EnhancedProfile />}
           {activeSection === 'users' && <UserManagement />}
-          {activeSection === 'finances' && <FinancialManager />}
+
           {activeSection === 'audit-logs' && <AuditLogViewer />}
         </div>
       </main>
@@ -760,12 +747,7 @@ const OverviewSection: React.FC<{
               Post News
             </button>
           )}
-          {hasPermission('finances') && (
-            <button className="action-btn quaternary" onClick={() => setActiveSection('finances')}>
-              <DollarSign size={16} />
-              Finance Record
-            </button>
-          )}
+
         </div>
       </div>
 

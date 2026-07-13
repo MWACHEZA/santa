@@ -285,22 +285,7 @@ const Header: React.FC = () => {
           </ul>
         </div>
 
-        {/* My Community Section */}
-        <div className="side-nav-section">
-          <h3 className="side-nav-section-title">My Community</h3>
-          <ul className="nav-list">
-            <li>
-              <Link 
-                to="/association-finance" 
-                className={`nav-link ${isActive('/association-finance') ? 'active' : ''}`}
-                onClick={() => setIsSideNavOpen(false)}
-              >
-                <DollarSign className="nav-link-icon" size={20} />
-                Association Finance
-              </Link>
-            </li>
-          </ul>
-        </div>
+
 
         {/* Get Involved Section */}
         <div className="side-nav-section">

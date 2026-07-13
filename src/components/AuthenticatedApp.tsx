@@ -19,7 +19,7 @@ import AdminDashboard from '../pages/admin/AdminDashboard';
 import ModernLogin from './auth/ModernLogin';
 import ChangePassword from './auth/ChangePassword';
 import EnhancedProfile from './EnhancedProfile';
-import AssociationFinance from '../pages/AssociationFinance';
+
 import LoadingSpinner from './common/LoadingSpinner';
 import AnalyticsTracker from './common/AnalyticsTracker';
 
@@ -192,7 +192,7 @@ const AuthenticatedApp: React.FC = () => {
           <Route path="/giving" element={isUserAuthenticated ? <Giving /> : <Navigate to="/login" replace />} />
           <Route path="/news" element={isUserAuthenticated ? <News /> : <Navigate to="/login" replace />} />
           <Route path="/profile" element={isUserAuthenticated ? <EnhancedProfile /> : <Navigate to="/login" replace />} />
-          <Route path="/association-finance" element={isUserAuthenticated ? <AssociationFinance /> : <Navigate to="/login" replace />} />
+
           
           {/* Redirect unknown routes */}
           <Route path="*" element={

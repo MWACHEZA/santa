@@ -743,34 +743,6 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setIsLoading(true);
     try {
-      const results = await Promise.allSettled([
-        api.announcements.getAll(),
-        api.events.getAll(),
-        api.priestDesk.getAll(),
-        api.finances.getAll(),
-        api.categories.getAll({ type: 'financial' }),
-        api.categories.getAll({ type: 'news' }),
-        api.categories.getAll({ type: 'event' }),
-        api.categories.getAll({ type: 'prayer' }),
-        api.categories.getAll({ type: 'gallery' }),
-        api.gallery.getAll(),
-        api.ministries.getAll(),
-        api.sacraments.getAll(),
-        api.liturgicalPrayers.getAll(),
-        api.news.getAll(),
-        api.users.getAll({ limit: 100 }),
-        api.analytics.getOverview(30),
-        api.analytics.getVisitors(30),
-        api.analytics.getRealtime(),
-        api.analytics.getContent(30),
-        api.themes.getAll(),
-        api.auditLogs.getAll({ limit: 50 }),
-        // Pre-fetch external news
-        api.news.getExternal('diocese'),
-        api.news.getExternal('vatican'),
-        api.news.getExternal('zimbabwe_catholic')
-      ]);
-
       console.log('🔄 Syncing all admin data...');
 
       // Define public and private fetches
@@ -1020,10 +992,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       await Promise.all([fetchPublicData(), fetchAdminData(), fetchAuditLogs({ limit: 50 })]);
       
-      // Handle external news results from the initial all-settled call
-      const extDioRes: any = results[21]?.status === 'fulfilled' ? (results[21].value as any) : { success: false };
-      const extVatRes: any = results[22]?.status === 'fulfilled' ? (results[22].value as any) : { success: false };
-      const extZimRes: any = results[23]?.status === 'fulfilled' ? (results[23].value as any) : { success: false };
+      // Fetch external news
+      const [extDioRes, extVatRes, extZimRes] = await Promise.all([
+        api.news.getExternal('diocese').catch(() => ({ success: false })),
+        api.news.getExternal('vatican').catch(() => ({ success: false })),
+        api.news.getExternal('zimbabwe_catholic').catch(() => ({ success: false }))
+      ]);
 
       const allExtNews: ExternalNews[] = [];
       const processExt = (res: any, source: any) => {
