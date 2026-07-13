@@ -433,74 +433,82 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
         <div
           className="legal-modal-overlay"
           onClick={() => setActiveLegalModal(null)}
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 99999, padding: '1rem'
-          }}
         >
           <div
+            className="legal-modal"
             onClick={e => e.stopPropagation()}
-            style={{
-              background: 'white', borderRadius: '20px', maxWidth: '640px',
-              width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-              boxShadow: '0 30px 80px rgba(0,0,0,0.2)', overflow: 'hidden'
-            }}
+            role="dialog"
+            aria-modal="true"
+            aria-label={activeLegalModal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}
           >
             {/* Modal Header */}
-            <div style={{
-              padding: '1.5rem 2rem', borderBottom: '1px solid #e2e8f0',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              background: 'linear-gradient(135deg, #2d5016, #4a7c2c)', color: 'white'
-            }}>
-              <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>
+            <div className="legal-modal-header">
+              <h2 className="legal-modal-title">
                 {activeLegalModal === 'privacy' ? '🔒 Privacy Policy' : '📋 Terms of Service'}
               </h2>
               <button
+                className="legal-modal-close"
                 onClick={() => setActiveLegalModal(null)}
-                style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px',
-                  color: 'white', cursor: 'pointer', padding: '6px 10px', fontSize: '1.1rem' }}
+                aria-label="Close"
               >✕</button>
             </div>
 
-            {/* Modal Body */}
-            <div style={{ padding: '1.5rem 2rem', overflowY: 'auto', lineHeight: 1.7, color: '#374151' }}>
+            {/* Scrollable Body */}
+            <div className="legal-modal-body">
               {activeLegalModal === 'privacy' ? (
                 <>
-                  <p><strong>Last updated: July 2026</strong></p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>1. Information We Collect</h3>
-                  <p>We collect the personal information you provide when you register, such as your name, email address, phone number, and parish association. We do not sell or share your data with third parties.</p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>2. How We Use Your Information</h3>
-                  <p>Your information is used solely to provide access to the St. Patrick's Parish digital platform — including announcements, events, the gallery, prayer intentions, and community updates.</p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>3. Data Security</h3>
-                  <p>We take your privacy seriously. All passwords are encrypted and access tokens are stored securely. We implement industry-standard security practices to protect your data.</p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>4. Contact</h3>
-                  <p>If you have questions about your data, please contact the parish office at <strong>info@stpatricksmakokoba.org</strong>.</p>
+                  <p className="legal-updated">Last updated: July 2026</p>
+
+                  <h3>1. Information We Collect</h3>
+                  <p>We collect the personal information you voluntarily provide when registering — including your name, email address, phone number, and parish association. We do not sell or share your personal data with third parties under any circumstances.</p>
+
+                  <h3>2. How We Use Your Information</h3>
+                  <p>Your information is used exclusively to provide access to the St. Patrick's Parish digital platform — including announcements, events, the gallery, prayer intentions, and community updates relevant to your parish life.</p>
+
+                  <h3>3. Data Storage & Security</h3>
+                  <p>We take your privacy seriously. All passwords are securely hashed before storage. Access tokens are managed securely and expire automatically. We implement industry-standard security practices to protect your personal data at all times.</p>
+
+                  <h3>4. Cookies</h3>
+                  <p>We use session cookies solely to keep you logged in during your visit. We do not use tracking or advertising cookies of any kind.</p>
+
+                  <h3>5. Your Rights</h3>
+                  <p>You have the right to request access to, correction of, or deletion of your personal data at any time. To exercise these rights, contact the parish office.</p>
+
+                  <h3>6. Contact</h3>
+                  <p>If you have questions or concerns about how your data is handled, please contact us at <strong>info@stpatricksmakokoba.org</strong> or visit the Parish Office during working hours.</p>
                 </>
               ) : (
                 <>
-                  <p><strong>Last updated: July 2026</strong></p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>1. Acceptance of Terms</h3>
-                  <p>By accessing the St. Patrick's Parish platform, you agree to be bound by these Terms of Service. This platform is intended for parishioners, staff, and community members of St. Patrick's Catholic Parish, Makokoba, Bulawayo.</p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>2. Account Responsibilities</h3>
-                  <p>You are responsible for maintaining the confidentiality of your account credentials. You agree not to share your account or use the platform for any unlawful or disrespectful purpose.</p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>3. Content</h3>
-                  <p>All content on this platform — including news, announcements, events and media — is the property of St. Patrick's Parish. Reproduction without permission is prohibited.</p>
-                  <h3 style={{ color: '#2d5016', marginTop: '1.25rem' }}>4. Termination</h3>
-                  <p>The parish administration reserves the right to suspend or terminate any account that violates these terms or the values of the Catholic community.</p>
+                  <p className="legal-updated">Last updated: July 2026</p>
+
+                  <h3>1. Acceptance of Terms</h3>
+                  <p>By accessing and using the St. Patrick's Parish digital platform, you confirm that you have read, understood, and agree to be bound by these Terms of Service. This platform is intended for parishioners, staff, and community members of St. Patrick's Catholic Parish, Makokoba, Bulawayo.</p>
+
+                  <h3>2. Account Responsibilities</h3>
+                  <p>You are solely responsible for maintaining the confidentiality of your login credentials. You agree not to share your account with others, and to notify the parish immediately if you suspect unauthorised access to your account.</p>
+
+                  <h3>3. Acceptable Use</h3>
+                  <p>You agree to use this platform only for lawful purposes consistent with the values and teachings of the Catholic Church. Any content you contribute must be respectful, truthful, and in keeping with community standards.</p>
+
+                  <h3>4. Intellectual Property</h3>
+                  <p>All content on this platform — including news articles, announcements, event listings, images, and media — is the property of St. Patrick's Parish. Reproduction, redistribution, or commercial use without written permission is strictly prohibited.</p>
+
+                  <h3>5. Termination</h3>
+                  <p>The parish administration reserves the right to suspend or permanently terminate any account found to violate these Terms of Service, the Privacy Policy, or the values of the Catholic community, without prior notice.</p>
+
+                  <h3>6. Changes to Terms</h3>
+                  <p>We reserve the right to update these terms at any time. Continued use of the platform after changes are posted constitutes acceptance of the revised terms.</p>
                 </>
               )}
             </div>
 
             {/* Modal Footer */}
-            <div style={{ padding: '1rem 2rem', borderTop: '1px solid #e2e8f0', textAlign: 'right' }}>
+            <div className="legal-modal-footer">
               <button
+                className="legal-modal-accept-btn"
                 onClick={() => setActiveLegalModal(null)}
-                style={{ background: '#2d5016', color: 'white', border: 'none',
-                  borderRadius: '10px', padding: '0.6rem 1.5rem', fontWeight: 600,
-                  cursor: 'pointer', fontSize: '0.9rem' }}
               >
-                Close
+                I Understand — Close
               </button>
             </div>
           </div>
