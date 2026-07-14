@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "check-db": "node scripts/check-database.js",
-    "setup": "npm install"
+    "setup": "npm install",
+    "build": "echo 'No build step required for backend'"
   },
   "keywords": [
     "church",
