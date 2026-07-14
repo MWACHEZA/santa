@@ -236,7 +236,7 @@ const startServer = async () => {
       connected = true;
       break;
     } catch (err) {
-      console.warn(`⚠️  DB attempt ${attempt} failed: ${err.message}`);
+      console.warn(`⚠️  DB attempt ${attempt} failed: ${err.message || err}`);
       if (attempt < MAX_RETRIES) {
         console.log(`⏳ Retrying in ${RETRY_DELAY_MS / 1000}s...`);
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));

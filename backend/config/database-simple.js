@@ -5,10 +5,12 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const useConnectionString = !!process.env.DATABASE_URL;
 
 // Database configuration
+const isExternalDB = process.env.DATABASE_URL && /\.(com|net|io|dev|app)/i.test(process.env.DATABASE_URL);
+
 const dbConfig = useConnectionString
   ? {
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      ...(isExternalDB ? { ssl: { rejectUnauthorized: false } } : {}),
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
