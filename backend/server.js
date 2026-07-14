@@ -221,21 +221,46 @@ app.use((err, req, res, next) => {
 
 // Database connection and server startup
 const startServer = async () => {
+  // ── DB Connection with Retry ───────────────────────────────────────────────
+  // Render's free PostgreSQL can take up to 30s to accept connections after
+  // a cold start. We retry up to 10 times (5s apart = 50s total) before giving up.
+  const MAX_RETRIES = 10;
+  const RETRY_DELAY_MS = 5000;
+
+  let connected = false;
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      console.log(`🔌 DB connection attempt ${attempt}/${MAX_RETRIES}...`);
+      await db.execute('SELECT 1');
+      console.log('✅ Database connected successfully');
+      connected = true;
+      break;
+    } catch (err) {
+      console.warn(`⚠️  DB attempt ${attempt} failed: ${err.message}`);
+      if (attempt < MAX_RETRIES) {
+        console.log(`⏳ Retrying in ${RETRY_DELAY_MS / 1000}s...`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+      }
+    }
+  }
+
+  if (!connected) {
+    console.error('❌ Could not connect to database after all retries. Exiting.');
+    process.exit(1);
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   try {
-    // Test database connection
-    await db.execute('SELECT 1');
-    console.log('✅ Database connected successfully');
-    
     // Initialize full database schema and seed default data automatically
     const dbFull = require('./config/database');
     console.log('🔄 Initializing database schema...');
     await dbFull.initializeDatabase();
     console.log('🌱 Seeding default categories and users...');
     await dbFull.insertDefaultData();
-    
+
     // Ensure extended profile table exists
     await ensureUserProfilesTable();
-    
+
     // Start server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
@@ -269,7 +294,7 @@ const startServer = async () => {
       // ─────────────────────────────────────────────────────────────────────
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('❌ Failed to initialise server after DB connected:', error);
     process.exit(1);
   }
 };
