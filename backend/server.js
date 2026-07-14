@@ -241,6 +241,32 @@ const startServer = async () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📱 Health check: http://localhost:${PORT}/health`);
       console.log(`🔗 API base URL: http://localhost:${PORT}/api`);
+
+      // ── Keep-Alive Self-Ping ──────────────────────────────────────────────
+      // Render.com free tier sleeps after 15 minutes of inactivity.
+      // We ping our own /health endpoint every 14 minutes to stay awake.
+      if (process.env.NODE_ENV === 'production') {
+        const https = require('https');
+        const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://santa-backend-3y5e.onrender.com`;
+        const PING_INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
+
+        const pingself = () => {
+          https.get(`${SELF_URL}/health`, (res) => {
+            console.log(`🏓 Keep-alive ping: ${res.statusCode}`);
+          }).on('error', (err) => {
+            console.warn('⚠️ Keep-alive ping failed:', err.message);
+          });
+        };
+
+        // Start pinging after 1 minute (give DB time to fully init)
+        setTimeout(() => {
+          pingself();
+          setInterval(pingself, PING_INTERVAL_MS);
+        }, 60 * 1000);
+
+        console.log(`🏓 Keep-alive self-ping enabled (every 14 minutes)`);
+      }
+      // ─────────────────────────────────────────────────────────────────────
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
