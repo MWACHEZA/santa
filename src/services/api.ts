@@ -3,6 +3,22 @@ const API_BASE_URL = isProduction
   ? 'https://santa-backend-3y5e.onrender.com/api'
   : (process.env.REACT_APP_API_URL || 'http://localhost:5000/api');
 
+const BACKEND_BASE = isProduction
+  ? 'https://santa-backend-3y5e.onrender.com'
+  : 'http://localhost:5000';
+
+// Ping the backend health endpoint so Render wakes from sleep before the user tries to log in
+export const wakeUpBackend = async (): Promise<void> => {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000); // 30s max for cold start
+    await fetch(`${BACKEND_BASE}/health`, { signal: controller.signal });
+    clearTimeout(timer);
+  } catch {
+    // Silently ignore — this is a best-effort wake-up ping
+  }
+};
+
 // Types
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -67,6 +83,10 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
+    // Abort after 20 seconds so we never hang indefinitely on a sleeping Render backend
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+
     try {
       const url = `${this.baseURL}${endpoint}`;
       console.log(`🚀 API Request: ${options.method || 'GET'} ${url}`);
@@ -77,9 +97,11 @@ class ApiClient {
           ...options.headers,
         },
         credentials: 'include',
+        signal: controller.signal,
       };
 
       const response = await fetch(url, config);
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (!response.ok) {
@@ -89,24 +111,27 @@ class ApiClient {
       }
 
       return data;
-    } catch (error) {
-      // Only log unexpected errors, not connection refused (expected in development)
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        // Connection refused - API server not running (expected in development)
-        throw error;
-      } else {
-        const msg = (error as any)?.message || '';
-        const isAuthError = typeof msg === 'string' && (
-          msg.includes('Invalid credentials') ||
-          msg.includes('Authentication required') ||
-          msg.includes('Insufficient permissions') ||
-          msg.includes('Unauthorized')
-        );
-        if (!isAuthError) {
-          console.error('API request failed:', error);
-        }
-        throw error;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+
+      // Timeout or network failure — give a friendly message
+      if (error?.name === 'AbortError' || (error instanceof TypeError && error.message.includes('Failed to fetch'))) {
+        const friendly = new Error('The server is waking up — please wait a moment and try again.');
+        (friendly as any).isNetworkError = true;
+        throw friendly;
       }
+
+      const msg = error?.message || '';
+      const isAuthError = typeof msg === 'string' && (
+        msg.includes('Invalid credentials') ||
+        msg.includes('Authentication required') ||
+        msg.includes('Insufficient permissions') ||
+        msg.includes('Unauthorized')
+      );
+      if (!isAuthError) {
+        console.error('API request failed:', error);
+      }
+      throw error;
     }
   }
 

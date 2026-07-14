@@ -91,9 +91,15 @@ const ModernLogin: React.FC<ModernLoginProps> = ({ initialShowRegister = false }
           toastError(result.message || 'Invalid credentials', 'Login Failed');
         }
       }
-    } catch (err) {
-      setError('An unexpected error occurred');
-      toastError('An unexpected error occurred. Please try again.', 'System Error');
+    } catch (err: any) {
+      const isWakingUp = err?.isNetworkError || (err?.message || '').includes('waking up');
+      if (isWakingUp) {
+        setError('The server is starting up — please wait about 30 seconds and try again.');
+        toastError('Server is waking up. Please try again in 30 seconds.', 'Starting Up...');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+        toastError('An unexpected error occurred. Please try again.', 'System Error');
+      }
     } finally {
       setIsSubmitting(false);
     }
