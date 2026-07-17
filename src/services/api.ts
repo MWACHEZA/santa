@@ -1,8 +1,8 @@
 const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
 
-// Use the environment variable if available, otherwise fallback to the old known URL, or localhost for dev.
+// Use the environment variable if available, otherwise use the verified new backend URL
 const BACKEND_BASE = process.env.REACT_APP_API_URL || (isProduction
-  ? 'https://st-patricks-makokoba.onrender.com'
+  ? 'https://st-patricks-backend.onrender.com'
   : 'http://localhost:5000');
 
 const API_BASE_URL = `${BACKEND_BASE}/api`;

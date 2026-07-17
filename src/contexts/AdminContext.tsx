@@ -9,30 +9,27 @@ import { type CatholicReadings, type CatholicCelebration } from '../services/lit
 const fixImageUrl = (url: string | undefined): string => {
   if (!url) return '';
   
-  // Use a reliable backend base URL
-  let backendBase = process.env.REACT_APP_API_URL || 'https://st-patricks-makokoba.onrender.com';
+  const isProd = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
+  const backendBase = process.env.REACT_APP_API_URL || (isProd ? 'https://st-patricks-backend.onrender.com' : 'http://localhost:5000');
   
-  // If we are on localhost, use localhost backend
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    backendBase = 'http://localhost:5000';
-  }
-
-  // Handle full URLs from database that might be stale
-  if (url.startsWith('http://localhost:5000')) {
-    return url.replace('http://localhost:5000', backendBase);
-  }
-  
-  if (url.startsWith('https://santa-backend-3y5e.onrender.com')) {
-    return url.replace('https://santa-backend-3y5e.onrender.com', backendBase);
-  }
-
-  // Handle relative paths
-  if (url.startsWith('/uploads') || url.startsWith('uploads/')) {
-    const cleanPath = url.startsWith('/') ? url : `/${url}`;
-    return `${backendBase}${cleanPath}`;
+  // If it's a Cloudinary URL or already an absolute URL (http/https), return as is
+  if (url.startsWith('http') || url.includes('cloudinary.com')) {
+    // Optionally fix localhosts inside an absolute URL if that somehow happened
+    if (url.includes('localhost:5000')) {
+      return url.replace('http://localhost:5000', backendBase);
+    }
+    if (url.includes('santa-backend-3y5e.onrender.com')) {
+      return url.replace('https://santa-backend-3y5e.onrender.com', backendBase);
+    }
+    if (url.includes('st-patricks-makokoba.onrender.com')) {
+      return url.replace('https://st-patricks-makokoba.onrender.com', backendBase);
+    }
+    return url;
   }
   
-  return url;
+  // If it's a relative path (like /uploads/...), prepend the backend URL
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${backendBase}${cleanPath}`;
 };
 
 
