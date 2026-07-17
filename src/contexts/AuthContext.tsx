@@ -116,7 +116,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const fixUrl = (url: string | undefined): string => {
   if (!url) return '';
   if (url.startsWith('http')) return url;
-  const backendBase = window.location.hostname === 'localhost' ? 'http://localhost:5000' : 'https://santa-backend-3y5e.onrender.com';
+  const backendBase = window.location.hostname === 'localhost' 
+    ? 'http://localhost:5000' 
+    : (process.env.REACT_APP_API_URL || 'https://st-patricks-makokoba.onrender.com');
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
   return `${backendBase}${cleanPath}`;
 };

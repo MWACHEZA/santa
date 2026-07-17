@@ -1,13 +1,11 @@
 const isProduction = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
-const API_BASE_URL = isProduction 
-  ? 'https://santa-backend-3y5e.onrender.com/api'
-  : (process.env.REACT_APP_API_URL || 'http://localhost:5000/api');
 
-const BACKEND_BASE = isProduction
-  ? 'https://santa-backend-3y5e.onrender.com'
-  : 'http://localhost:5000';
+// Use the environment variable if available, otherwise fallback to the old known URL, or localhost for dev.
+const BACKEND_BASE = process.env.REACT_APP_API_URL || (isProduction
+  ? 'https://st-patricks-makokoba.onrender.com'
+  : 'http://localhost:5000');
 
-// Ping the backend health endpoint so Render wakes from sleep before the user tries to log in
+const API_BASE_URL = `${BACKEND_BASE}/api`;
 export const wakeUpBackend = async (): Promise<void> => {
   try {
     const controller = new AbortController();

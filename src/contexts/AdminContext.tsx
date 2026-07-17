@@ -10,7 +10,7 @@ const fixImageUrl = (url: string | undefined): string => {
   if (!url) return '';
   
   // Use a reliable backend base URL
-  let backendBase = 'https://santa-backend-3y5e.onrender.com';
+  let backendBase = process.env.REACT_APP_API_URL || 'https://st-patricks-makokoba.onrender.com';
   
   // If we are on localhost, use localhost backend
   if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
