@@ -272,7 +272,7 @@ const startServer = async () => {
       // We ping our own /health endpoint every 14 minutes to stay awake.
       if (process.env.NODE_ENV === 'production') {
         const https = require('https');
-        const SELF_URL = process.env.RENDER_EXTERNAL_URL || `https://santa-backend-3y5e.onrender.com`;
+        const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.REACT_APP_API_URL || `https://st-patricks-makokoba.onrender.com`;
         const PING_INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
 
         const pingself = () => {
