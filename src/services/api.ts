@@ -52,10 +52,14 @@ class ApiClient {
   // Set authentication token
   setToken(token: string | null) {
     this.token = token;
-    if (token) {
-      localStorage.setItem('authToken', token);
-    } else {
-      localStorage.removeItem('authToken');
+    try {
+      if (token) {
+        localStorage.setItem('authToken', token);
+      } else {
+        localStorage.removeItem('authToken');
+      }
+    } catch (err) {
+      console.warn('Failed to save auth token to localStorage:', err);
     }
   }
 

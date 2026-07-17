@@ -127,20 +127,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const token = localStorage.getItem('authToken');
-      const storedUser = localStorage.getItem('currentUser');
-      
-      if (token && storedUser) {
-        try {
-          api.setAuthToken(token);
-          setUser(JSON.parse(storedUser));
-        } catch (error) {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('currentUser');
+      try {
+        const token = localStorage.getItem('authToken');
+        const storedUser = localStorage.getItem('currentUser');
+        
+        if (token && storedUser) {
+          try {
+            api.setAuthToken(token);
+            setUser(JSON.parse(storedUser));
+          } catch (error) {
+            try {
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('currentUser');
+            } catch (e) {
+              // Ignore errors while cleaning up
+            }
+          }
         }
-
+      } catch (err) {
+        console.warn('Failed to access localStorage during auth initialization:', err);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initializeAuth();
@@ -193,8 +201,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         setUser(userData);
         api.setAuthToken(token);
-        localStorage.setItem('authToken', token);
-        localStorage.setItem('currentUser', JSON.stringify(userData));
+        try {
+          localStorage.setItem('authToken', token);
+          localStorage.setItem('currentUser', JSON.stringify(userData));
+        } catch (storageErr) {
+          console.warn('Failed to persist session to localStorage', storageErr);
+        }
         setIsLoading(false);
         return { 
           success: true, 
