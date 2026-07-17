@@ -85,9 +85,9 @@ class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    // Abort after 20 seconds so we never hang indefinitely on a sleeping Render backend
+    // Abort after 45 seconds so we never hang indefinitely on a sleeping Render backend
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
       const url = `${this.baseURL}${endpoint}`;
