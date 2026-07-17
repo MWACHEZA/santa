@@ -1209,7 +1209,7 @@ const ScheduleSection: React.FC = () => {
 
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal rectangular">
+          <div className="modal">
             <div className="modal-header">
               <h3>{editingSchedule ? `Edit Schedule: ${editingSchedule.day}` : 'Add Day Schedule'}</h3>
               <button className="btn-close" onClick={() => setShowModal(false)}>

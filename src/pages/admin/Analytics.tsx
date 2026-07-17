@@ -182,28 +182,31 @@ const Analytics: React.FC = () => {
         setAnalyticsData(prev => ({
           ...prev,
           users: {
-            total: parishMembers.length > 0 ? parishMembers.length : (o.users?.total ?? o.totalUsers ?? 0),
-            active: o.users?.active ?? o.activeUsers ?? 0,
-            newThisMonth: o.users?.newThisMonth ?? o.newUsers ?? 0,
-            growth: o.users?.growth ?? o.userGrowth ?? 0
+            total: parishMembers.length > 0 ? parishMembers.length : prev.users.total,
+            active: o.overview?.today_visitors ?? prev.users.active,
+            newThisMonth: parishMembers.filter(m => {
+              const createdDate = new Date(m.id === 'system' ? new Date() : parseInt(m.id));
+              return !isNaN(createdDate.getTime()) && (new Date().getTime() - createdDate.getTime() < 30 * 86400000);
+            }).length,
+            growth: o.overview?.userGrowth ?? prev.users.growth
           },
           content: {
-            totalViews: c.totalViews ?? o.content?.totalViews ?? o.pageViews ?? 0,
-            videoViews: c.videoViews ?? o.content?.videoViews ?? v.totalViews ?? 0,
-            newsViews: c.newsViews ?? o.content?.newsViews ?? 0,
-            prayerViews: c.prayerViews ?? o.content?.prayerViews ?? 0
+            totalViews: o.overview?.total_visits ?? prev.content.totalViews,
+            videoViews: prev.content.videoViews,
+            newsViews: prev.content.newsViews,
+            prayerViews: prev.content.prayerViews
           },
           videos: {
-            totalVideos: v.totalVideos ?? archives.length ?? (videoList.length || 0),
-            liveStreams: v.liveStreams ?? streams.length ?? 0,
-            totalWatchTime: v.totalWatchTime ?? '0h',
-            averageViewDuration: v.averageViewDuration ?? '0:00'
+            totalVideos: archives.length || prev.videos.totalVideos,
+            liveStreams: streams.length || prev.videos.liveStreams,
+            totalWatchTime: prev.videos.totalWatchTime,
+            averageViewDuration: prev.videos.averageViewDuration
           },
           engagement: {
-            totalInteractions: o.engagement?.totalInteractions ?? 0,
-            averageSessionTime: o.engagement?.averageSessionTime ?? '0:00',
-            bounceRate: o.engagement?.bounceRate ?? 0,
-            returnVisitors: o.engagement?.returnVisitors ?? 0
+            totalInteractions: o.overview?.total_sessions ?? prev.engagement.totalInteractions,
+            averageSessionTime: prev.engagement.averageSessionTime,
+            bounceRate: prev.engagement.bounceRate,
+            returnVisitors: o.overview ? (o.overview.total_visits - o.overview.unique_visitors) : prev.engagement.returnVisitors
           },
           demographics,
           popular: { pages: popularPages, videos: popularVideos, categories: popularCategories }

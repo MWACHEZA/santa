@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all schedules
 router.get('/', async (req, res) => {
   try {
-    const [rows] = await db.execute('SELECT * FROM mass_schedules ORDER BY updated_at DESC');
+    const [rows] = await db.execute('SELECT * FROM mass_schedule ORDER BY updated_at DESC');
     
     // Transform to frontend format (array of days)
     // The frontend expects: { day: 'Sunday', times: [...], language: '...' }
@@ -58,17 +58,17 @@ router.put('/bulk', authenticateToken, async (req, res) => {
       const { day, times, language } = item;
       
       // Check if exists
-      const [rows] = await db.execute('SELECT id FROM mass_schedules WHERE day = ?', [day]);
+      const [rows] = await db.execute('SELECT id FROM mass_schedule WHERE day = ?', [day]);
       
       if (rows.length === 0) {
         const id = uuidv4();
         await db.execute(
-          'INSERT INTO mass_schedules (id, day, times, language) VALUES (?, ?, ?, ?)',
+          'INSERT INTO mass_schedule (id, day, times, language) VALUES (?, ?, ?, ?)',
           [id, day, times, language]
         );
       } else {
         await db.execute(
-          'UPDATE mass_schedules SET times = ?, language = ?, updated_at = CURRENT_TIMESTAMP WHERE day = ?',
+          'UPDATE mass_schedule SET times = ?, language = ?, updated_at = CURRENT_TIMESTAMP WHERE day = ?',
           [times, language, day]
         );
       }
@@ -92,14 +92,14 @@ router.post('/', authenticateToken, async (req, res) => {
     const { day, times, language } = req.body;
     
     // Check if day already exists
-    const [existing] = await db.execute('SELECT id FROM mass_schedules WHERE day = ?', [day]);
+    const [existing] = await db.execute('SELECT id FROM mass_schedule WHERE day = ?', [day]);
     if (existing.length > 0) {
       return res.status(400).json({ success: false, message: 'Schedule for this day already exists' });
     }
 
     const id = uuidv4();
     await db.execute(
-      'INSERT INTO mass_schedules (id, day, times, language) VALUES (?, ?, ?, ?)',
+      'INSERT INTO mass_schedule (id, day, times, language) VALUES (?, ?, ?, ?)',
       [id, day, JSON.stringify(times), language]
     );
 
@@ -117,13 +117,13 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const { day, times, language } = req.body;
 
     // Check if another record has the same day
-    const [existing] = await db.execute('SELECT id FROM mass_schedules WHERE day = ? AND id != ?', [day, id]);
+    const [existing] = await db.execute('SELECT id FROM mass_schedule WHERE day = ? AND id != ?', [day, id]);
     if (existing.length > 0) {
       return res.status(400).json({ success: false, message: 'Schedule for this day already exists' });
     }
 
     await db.execute(
-      'UPDATE mass_schedules SET day = ?, times = ?, language = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      'UPDATE mass_schedule SET day = ?, times = ?, language = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [day, JSON.stringify(times), language, id]
     );
 
@@ -138,7 +138,7 @@ router.put('/:id', authenticateToken, async (req, res) => {
 router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    await db.execute('DELETE FROM mass_schedules WHERE id = ?', [id]);
+    await db.execute('DELETE FROM mass_schedule WHERE id = ?', [id]);
     res.json({ success: true, message: 'Schedule deleted successfully' });
   } catch (error) {
     console.error('Delete schedule error:', error);
