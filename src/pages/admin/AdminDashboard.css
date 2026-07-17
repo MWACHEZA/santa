@@ -360,8 +360,8 @@
   display: flex; justify-content: space-between; align-items: center;
 }
 .modal-header h3 { margin: 0; color: var(--primary-green); }
-.modal-body, .message-form { padding: 2rem; }
-.modal .modal-content { padding: 1.5rem 2rem; }
+.modal-body, .message-form { padding: 2rem; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.modal .modal-content { padding: 1.5rem 2rem; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 .modal-footer {
   padding: 1.5rem 2rem;
   background: #f8f9fa;
@@ -1071,5 +1071,27 @@
   .btn {
     width: 100%;
     justify-content: center;
+  }
+  
+  .modal {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .modal-header, .modal-footer {
+    padding: 1rem;
+  }
+  
+  .modal .modal-content, .modal-body {
+    padding: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .form-actions .btn {
+    width: 100%;
   }
 }

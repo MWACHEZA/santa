@@ -1216,7 +1216,7 @@ const ScheduleSection: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div className="modal-content">
               <form onSubmit={handleFormSubmit} className="modern-form">
                 <div className="form-group">
                   <label htmlFor="schedule-day">Day of the Week</label>
@@ -1393,7 +1393,7 @@ const ThemeManagementSection: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div className="modal-content">
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="theme-year">Year</label>
@@ -1682,7 +1682,7 @@ const MinistryManagementSection: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div className="modal-content">
               <div className="form-row">
                 <div className="form-group">
                   <label htmlFor="ministry-name">Ministry Name</label>

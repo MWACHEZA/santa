@@ -131,7 +131,7 @@ const PriestDeskManager: React.FC = () => {
                 <X size={20} />
               </button>
             </div>
-            <div className="modal-content" style={{ padding: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }}>
+            <div className="modal-content">
               <form onSubmit={handleSubmit} className="modern-form">
                 <div className="form-group">
                   <label>Message Title</label>
