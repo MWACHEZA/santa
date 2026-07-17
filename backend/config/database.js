@@ -19,12 +19,24 @@ const dbConfig = useConnectionString
       host: process.env.DB_HOST || 'localhost',
       port: process.env.DB_PORT || 5432,
       user: process.env.DB_USER || 'postgres',
-      password: process.env.DB_PASSWORD || '',
-      database: process.env.DB_NAME || 'st_patricks_db',
+      password: process.env.DB_PASSWORD || 'password',
+      database: process.env.DB_NAME || 'st_patricks',
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 5000,
     };
+
+// Safely log what we are trying to connect to
+if (useConnectionString && process.env.DATABASE_URL) {
+  try {
+    const parsedUrl = new URL(process.env.DATABASE_URL);
+    console.log(`[DB Config Full] Attempting to connect via DATABASE_URL to host: ${parsedUrl.hostname}`);
+  } catch (e) {
+    console.log(`[DB Config Full] DATABASE_URL provided but could not be parsed as a valid URL`);
+  }
+} else {
+  console.log(`[DB Config Full] DATABASE_URL is MISSING. Falling back to host: ${dbConfig.host}`);
+}
 
 // Create connection pool
 const pool = new Pool(dbConfig);

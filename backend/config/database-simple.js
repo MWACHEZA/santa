@@ -26,6 +26,18 @@ const dbConfig = useConnectionString
       connectionTimeoutMillis: 5000,
     };
 
+// Safely log what we are trying to connect to
+if (useConnectionString && process.env.DATABASE_URL) {
+  try {
+    const parsedUrl = new URL(process.env.DATABASE_URL);
+    console.log(`[DB Config] Attempting to connect via DATABASE_URL to host: ${parsedUrl.hostname}`);
+  } catch (e) {
+    console.log(`[DB Config] DATABASE_URL provided but could not be parsed as a valid URL`);
+  }
+} else {
+  console.log(`[DB Config] DATABASE_URL is MISSING. Falling back to host: ${dbConfig.host}`);
+}
+
 // Create connection pool
 const pool = new Pool(dbConfig);
 
